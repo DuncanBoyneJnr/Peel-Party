@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ArrowRight, Sparkles } from "lucide-react";
 import Button from "@/components/ui/Button";
 
@@ -58,25 +59,16 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* Right: Visual grid */}
-          <div className="hidden lg:grid grid-cols-2 gap-4">
-            {[
-              { label: "Stickers", colour: "#ef8733", icon: "⬡" },
-              { label: "Mugs", colour: "#111111", icon: "◎" },
-              { label: "Keyrings", colour: "#ef8733", icon: "◇" },
-              { label: "Custom", colour: "#ea7316", icon: "✦" },
-            ].map((item, i) => (
-              <div
-                key={item.label}
-                className={`rounded-2xl aspect-square flex flex-col items-center justify-center gap-3 text-white font-display font-700 text-xl ${
-                  i === 1 ? "mt-8" : i === 3 ? "-mt-8" : ""
-                }`}
-                style={{ backgroundColor: item.colour }}
-              >
-                <span className="text-4xl">{item.icon}</span>
-                {item.label}
-              </div>
-            ))}
+          {/* Right: Logo */}
+          <div className="hidden lg:flex items-center justify-center">
+            <Image
+              src="/logo.png"
+              alt="Peel & Party Co."
+              width={480}
+              height={480}
+              className="w-full max-w-md drop-shadow-xl"
+              priority
+            />
           </div>
         </div>
       </div>
