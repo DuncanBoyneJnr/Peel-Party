@@ -43,11 +43,11 @@ export default function Header() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center h-16 gap-6">
           {/* Logo */}
           <Link href="/" className="flex items-center shrink-0">
-            <Image src="/logo.png" alt="Peel & Party Co." width={120} height={120} className="h-12 w-auto" priority />
+            <Image src="/logo.png" alt="Peel & Party Co." width={120} height={120} className="h-10 w-auto max-w-[100px]" priority />
           </Link>
 
           {/* Desktop nav */}
-          <nav className="hidden lg:flex items-center gap-1 flex-1">
+          <nav className="hidden xl:flex items-center gap-1 flex-1">
             {nav.map((item) => (
               <Link
                 key={item.href}
@@ -95,7 +95,7 @@ export default function Header() {
 
             <button
               onClick={() => setMobileOpen(!mobileOpen)}
-              className="lg:hidden flex items-center justify-center w-10 h-10 rounded-full hover:bg-[#f0ede8] transition-colors cursor-pointer"
+              className="xl:hidden flex items-center justify-center w-10 h-10 rounded-full hover:bg-[#f0ede8] transition-colors cursor-pointer"
               aria-label="Toggle menu"
             >
               {mobileOpen ? <X size={20} /> : <Menu size={20} />}
@@ -105,7 +105,7 @@ export default function Header() {
 
         {/* Mobile menu */}
         {mobileOpen && (
-          <div className="lg:hidden border-t border-[#e5e1d8] bg-white px-4 pb-4">
+          <div className="xl:hidden border-t border-[#e5e1d8] bg-white px-4 pb-4">
             <nav className="flex flex-col pt-2 gap-1">
               {nav.map((item) => (
                 <Link

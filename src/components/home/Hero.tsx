@@ -11,7 +11,19 @@ export default function Hero() {
       <div className="absolute -top-24 -right-24 w-96 h-96 bg-[#ef8733]/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-0 left-0 w-64 h-64 bg-[#ef8733]/5 rounded-full blur-2xl pointer-events-none" />
 
-      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-20 lg:py-28">
+      <div className="relative max-w-7xl mx-auto px-4 sm:px-6 py-12 lg:py-28">
+        {/* Mobile logo */}
+        <div className="flex lg:hidden justify-center mb-8">
+          <Image
+            src="/logo.png"
+            alt="Peel & Party Co."
+            width={280}
+            height={280}
+            className="w-56 drop-shadow-lg"
+            priority
+          />
+        </div>
+
         <div className="grid lg:grid-cols-2 gap-12 items-center">
           {/* Left: Copy */}
           <div>
@@ -59,7 +71,7 @@ export default function Hero() {
             </div>
           </div>
 
-          {/* Right: Logo */}
+          {/* Right: Logo — desktop only */}
           <div className="hidden lg:flex items-center justify-center">
             <Image
               src="/logo.png"
