@@ -1,16 +1,25 @@
 import Redis from "ioredis";
 import { Product } from "./types";
 
-const redis = new Redis(process.env.UPSTASH_REDIS_REST_REDIS_URL!);
+let _redis: Redis | null = null;
+function getRedis(): Redis {
+  if (!_redis) {
+    _redis = new Redis(process.env.UPSTASH_REDIS_REST_REDIS_URL!, {
+      maxRetriesPerRequest: 3,
+      lazyConnect: true,
+    });
+  }
+  return _redis;
+}
 
 async function rget<T>(key: string): Promise<T | null> {
-  const raw = await redis.get(key);
+  const raw = await getRedis().get(key);
   if (!raw) return null;
   return JSON.parse(raw) as T;
 }
 
 async function rset(key: string, value: unknown): Promise<void> {
-  await redis.set(key, JSON.stringify(value));
+  await getRedis().set(key, JSON.stringify(value));
 }
 
 // Products

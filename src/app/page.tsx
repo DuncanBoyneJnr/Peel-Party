@@ -1,3 +1,5 @@
+export const dynamic = "force-dynamic";
+
 import Hero from "@/components/home/Hero";
 import CategoryGrid from "@/components/home/CategoryGrid";
 import OurWork from "@/components/home/OurWork";
