@@ -1,0 +1,74 @@
+[
+  {
+    "id": "g1",
+    "src": "/mugs-gallery.jpeg",
+    "category": "Mugs",
+    "title": "Custom Mugs",
+    "description": "Full-wrap sublimation mugs — F1 fan designs, personalised names, pop culture, and Christmas themes.",
+    "tags": ["F1", "Personalised", "Gifts"]
+  },
+  {
+    "id": "g2",
+    "src": "/Coasters.jpeg",
+    "category": "Coasters",
+    "title": "Photo Coasters",
+    "description": "Cork-backed photo coasters with full-colour sublimation print. Perfect for F1 fans and personalised gifts.",
+    "tags": ["F1", "Photo print", "Cork-backed"]
+  },
+  {
+    "id": "g3",
+    "src": "/f1-merch.jpeg",
+    "category": "F1 & Motorsport",
+    "title": "F1 Fan Merch",
+    "description": "Coasters, keyrings, mugs and more — all themed around your favourite drivers.",
+    "tags": ["F1", "Fan merch", "Gifts"]
+  },
+  {
+    "id": "g4",
+    "src": "/tote-bags.jpeg",
+    "category": "Tote Bags & Clothing",
+    "title": "Printed Tote Bags",
+    "description": "Full sublimation tote bags, Christmas stockings, and drawstring bags.",
+    "tags": ["Tote bags", "Clothing", "Seasonal"]
+  },
+  {
+    "id": "g5",
+    "src": "/misc-1.jpeg",
+    "category": "Party & Events",
+    "title": "Party & Event Items",
+    "description": "Toy Story party kits, birthday banners, sticker sheets, cake toppers, acrylic signs, and coloring books.",
+    "tags": ["Party", "Birthday", "Events", "Children"]
+  },
+  {
+    "id": "g6",
+    "src": "/misc-2.jpeg",
+    "category": "Personalised Gifts",
+    "title": "Personalised Everything",
+    "description": "Christening gifts, personalised tote bags, engraved cups, tumblers with names — totally bespoke.",
+    "tags": ["Personalised", "Christening", "Gifts"]
+  },
+  {
+    "id": "g7",
+    "src": "/misc-3.jpeg",
+    "category": "Party & Events",
+    "title": "Party Bags & Signage",
+    "description": "Gift boxes, organza bags, gift tags, room signs, rainbow name signs, Easter bunny headbands.",
+    "tags": ["Party", "Signs", "Easter"]
+  },
+  {
+    "id": "g8",
+    "src": "/misc-4.jpeg",
+    "category": "Keyrings",
+    "title": "Keyrings & Small Gifts",
+    "description": "Acrylic keyrings with tassels, Barbie party items, personalised Starbucks cups, and welcome signs.",
+    "tags": ["Keyrings", "Acrylic", "Barbie", "Christmas"]
+  },
+  {
+    "id": "g9",
+    "src": "/misc-5.jpeg",
+    "category": "Drinkware",
+    "title": "Drinkware & Clothing",
+    "description": "Colour-changing Starbucks cups, personalised water bottles, pet bowls, printed t-shirts, hoodies, and Christmas pyjamas.",
+    "tags": ["Drinkware", "Clothing", "Pets", "Christmas"]
+  }
+]

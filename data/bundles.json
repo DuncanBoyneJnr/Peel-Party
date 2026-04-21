@@ -1,0 +1,21 @@
+[
+  {
+    "id": "b1",
+    "slug": "birthday-party-bundle",
+    "name": "Birthday Party Bundle",
+    "tagline": "Everything you need to make the party unforgettable",
+    "description": "A curated set of personalised party merchandise — stickers, a banner, keyrings, and a custom mug. Perfect for birthdays of all ages. Upload your photo or design and we'll handle the rest.",
+    "price": 49.99,
+    "originalPrice": 64.00,
+    "badge": "Save £14",
+    "emoji": "🎉",
+    "items": [
+      { "name": "Custom Die-Cut Stickers", "qty": "50 stickers" },
+      { "name": "Personalised Mug", "qty": "1 mug" },
+      { "name": "Custom Acrylic Keyrings", "qty": "10 keyrings" },
+      { "name": "Party Banner Sticker Strip", "qty": "1 banner" }
+    ],
+    "featured": true,
+    "active": true
+  }
+]

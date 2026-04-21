@@ -1,0 +1,285 @@
+[
+  {
+    "id": "s1",
+    "slug": "custom-die-cut-stickers",
+    "name": "Custom Die-Cut Stickers",
+    "category": "stickers",
+    "price": 15.00,
+    "description": "Precision-cut to any shape. Perfect for branding, events, or personal use.",
+    "longDescription": "Our custom die-cut stickers are printed on premium vinyl with a UV-resistant laminate, making them waterproof and durable indoors or out. Choose your shape, size, and finish — we cut to any contour.",
+    "images": [],
+    "options": [
+      {
+        "name": "Size",
+        "values": ["50mm", "75mm", "100mm", "Custom"]
+      },
+      {
+        "name": "Finish",
+        "values": ["Gloss", "Matte", "Holographic"]
+      },
+      {
+        "name": "Quantity",
+        "values": ["25", "50", "100", "250", "500+"]
+      }
+    ],
+    "supportsTextInput": true,
+    "supportsFileUpload": true,
+    "orderType": "request-quote",
+    "badge": "Most Popular",
+    "featured": true,
+    "inStock": true,
+    "reviewCount": 124,
+    "rating": 4.9
+  },
+  {
+    "id": "s2",
+    "slug": "sheet-sticker-pack",
+    "name": "Sticker Sheet Pack",
+    "category": "stickers",
+    "price": 7.99,
+    "originalPrice": 9.99,
+    "description": "A4 sticker sheets packed with your design. Great for gifts and giveaways.",
+    "longDescription": "Printed on high-quality gloss or matte paper, our sticker sheets let you pack multiple designs onto one sheet. Upload your artwork and we'll optimise the layout.",
+    "images": [],
+    "options": [
+      {
+        "name": "Finish",
+        "values": ["Gloss", "Matte"]
+      },
+      {
+        "name": "Quantity",
+        "values": ["10", "25", "50", "100"]
+      }
+    ],
+    "supportsTextInput": false,
+    "supportsFileUpload": true,
+    "orderType": "buy-now",
+    "badge": "Sale",
+    "featured": true,
+    "inStock": true,
+    "reviewCount": 89,
+    "rating": 4.8
+  },
+  {
+    "id": "s3",
+    "slug": "holographic-sticker-bundle",
+    "name": "Holographic Sticker Bundle",
+    "category": "stickers",
+    "price": 12.99,
+    "description": "Eye-catching holographic stickers. Pre-designed bundle, ships within 48 hours.",
+    "longDescription": "Ready-to-ship holographic sticker bundle featuring our best-selling designs. Premium holographic vinyl with strong adhesive — perfect for laptops, bottles, and planners.",
+    "images": [],
+    "options": [
+      {
+        "name": "Pack Size",
+        "values": ["10 stickers", "25 stickers", "50 stickers"]
+      }
+    ],
+    "supportsTextInput": false,
+    "supportsFileUpload": false,
+    "orderType": "buy-now",
+    "badge": "Ready to Ship",
+    "featured": true,
+    "inStock": true,
+    "reviewCount": 211,
+    "rating": 5
+  },
+  {
+    "id": "s4",
+    "slug": "kiss-cut-stickers",
+    "name": "Kiss-Cut Stickers",
+    "category": "stickers",
+    "price": 12.00,
+    "description": "Cut to shape on a square backing. Easy to peel and apply.",
+    "longDescription": "Kiss-cut stickers are cut around the shape of your design but leave the backing intact, making them easy to peel. Ideal for product packaging and event giveaways.",
+    "images": [],
+    "options": [
+      {
+        "name": "Size",
+        "values": ["50mm", "75mm", "100mm"]
+      },
+      {
+        "name": "Finish",
+        "values": ["Gloss", "Matte"]
+      },
+      {
+        "name": "Quantity",
+        "values": ["50", "100", "250", "500+"]
+      }
+    ],
+    "supportsTextInput": false,
+    "supportsFileUpload": true,
+    "orderType": "request-quote",
+    "featured": false,
+    "inStock": true,
+    "reviewCount": 67,
+    "rating": 4.7
+  },
+  {
+    "id": "m1",
+    "slug": "custom-photo-mug",
+    "name": "Custom Photo Mug",
+    "category": "mugs",
+    "price": 14.99,
+    "description": "Full-wrap personalised mug. Add a photo, name, or message.",
+    "longDescription": "Our custom photo mugs are printed with a full-wrap sublimation process for vivid, long-lasting colour. Dishwasher safe and microwave safe. The perfect personalised gift.",
+    "images": [],
+    "options": [
+      {
+        "name": "Size",
+        "values": ["11oz", "15oz"]
+      },
+      {
+        "name": "Handle Colour",
+        "values": ["White", "Black", "Red", "Papaya"]
+      }
+    ],
+    "supportsTextInput": true,
+    "supportsFileUpload": true,
+    "orderType": "buy-now",
+    "badge": "Best Seller",
+    "featured": true,
+    "inStock": true,
+    "reviewCount": 302,
+    "rating": 4.9
+  },
+  {
+    "id": "m2",
+    "slug": "branded-business-mugs",
+    "name": "Branded Business Mugs",
+    "category": "mugs",
+    "price": 0,
+    "description": "Bulk branded mugs for offices, events, or merchandise. Quote required.",
+    "longDescription": "Minimum 24 units. Full sublimation print with your company logo and brand colours. We'll send a proof for approval before printing. Bulk discounts available.",
+    "images": [],
+    "options": [
+      {
+        "name": "Size",
+        "values": ["11oz", "15oz"]
+      },
+      {
+        "name": "Quantity",
+        "values": ["24", "48", "100", "250+"]
+      }
+    ],
+    "supportsTextInput": true,
+    "supportsFileUpload": true,
+    "orderType": "request-quote",
+    "badge": "Bulk Available",
+    "featured": false,
+    "inStock": true,
+    "reviewCount": 45,
+    "rating": 4.8
+  },
+  {
+    "id": "m3",
+    "slug": "magic-colour-change-mug",
+    "name": "Magic Colour-Change Mug",
+    "category": "mugs",
+    "price": 17.99,
+    "description": "Reveals your design when filled with a hot drink. A crowd-pleaser every time.",
+    "longDescription": "The colour-change mug looks plain black when cold. Add a hot drink and your design magically appears. Printed with heat-reactive sublimation ink. Upload any image.",
+    "images": [],
+    "options": [
+      {
+        "name": "Size",
+        "values": ["11oz"]
+      }
+    ],
+    "supportsTextInput": true,
+    "supportsFileUpload": true,
+    "orderType": "buy-now",
+    "featured": true,
+    "inStock": true,
+    "reviewCount": 178,
+    "rating": 4.7
+  },
+  {
+    "id": "k1",
+    "slug": "custom-acrylic-keyring",
+    "name": "Custom Acrylic Keyring",
+    "category": "keyrings",
+    "price": 6.99,
+    "description": "Full-colour printed acrylic keyrings. Cut to any shape.",
+    "longDescription": "Double-sided full-colour print on 3mm clear acrylic. Choose from standard shapes or supply your own. UV-stable inks won't fade. Silver split ring included.",
+    "images": [],
+    "options": [
+      {
+        "name": "Shape",
+        "values": ["Circle", "Square", "Heart", "Custom"]
+      },
+      {
+        "name": "Size",
+        "values": ["40mm", "55mm", "70mm"]
+      },
+      {
+        "name": "Quantity",
+        "values": ["10", "25", "50", "100"]
+      }
+    ],
+    "supportsTextInput": true,
+    "supportsFileUpload": true,
+    "orderType": "request-quote",
+    "badge": "Custom Shape",
+    "featured": true,
+    "inStock": true,
+    "reviewCount": 93,
+    "rating": 4.8
+  },
+  {
+    "id": "k2",
+    "slug": "epoxy-dome-keyring",
+    "name": "Epoxy Dome Keyring",
+    "category": "keyrings",
+    "price": 8.99,
+    "description": "Shiny resin-domed keyring with your photo or logo. Premium feel.",
+    "longDescription": "A metal keyring base with your design printed and sealed under a high-gloss epoxy dome. Scratch-resistant, durable, and looks luxurious. Great for events and gifts.",
+    "images": [],
+    "options": [
+      {
+        "name": "Shape",
+        "values": ["Round 38mm", "Rectangle 30x50mm", "Square 38mm"]
+      },
+      {
+        "name": "Quantity",
+        "values": ["10", "25", "50", "100+"]
+      }
+    ],
+    "supportsTextInput": false,
+    "supportsFileUpload": true,
+    "orderType": "request-quote",
+    "featured": false,
+    "inStock": true,
+    "reviewCount": 58,
+    "rating": 4.9
+  },
+  {
+    "id": "k3",
+    "slug": "woven-fabric-keyring",
+    "name": "Woven Fabric Keyring",
+    "category": "keyrings",
+    "price": 5.49,
+    "originalPrice": 7.99,
+    "description": "Soft woven fabric keyring with custom text or logo. Great for sports clubs.",
+    "longDescription": "Woven not printed — meaning the design is part of the fabric, not just on the surface. Soft, tactile, and long-lasting. Perfect for clubs, schools, and events.",
+    "images": [],
+    "options": [
+      {
+        "name": "Colour",
+        "values": ["Black/White", "Full Colour", "Team Colours"]
+      },
+      {
+        "name": "Quantity",
+        "values": ["25", "50", "100", "250"]
+      }
+    ],
+    "supportsTextInput": true,
+    "supportsFileUpload": true,
+    "orderType": "request-quote",
+    "badge": "Sale",
+    "featured": true,
+    "inStock": true,
+    "reviewCount": 34,
+    "rating": 4.6
+  }
+]
