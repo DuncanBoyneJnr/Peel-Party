@@ -1,15 +1,21 @@
-import { Redis } from "@upstash/redis";
+import Redis from "ioredis";
 import { Product } from "./types";
 
-const redis = new Redis({
-  url: process.env.UPSTASH_REDIS_REST_URL!,
-  token: process.env.UPSTASH_REDIS_REST_TOKEN!,
-});
+const redis = new Redis(process.env.UPSTASH_REDIS_REST_REDIS_URL!);
+
+async function rget<T>(key: string): Promise<T | null> {
+  const raw = await redis.get(key);
+  if (!raw) return null;
+  return JSON.parse(raw) as T;
+}
+
+async function rset(key: string, value: unknown): Promise<void> {
+  await redis.set(key, JSON.stringify(value));
+}
 
 // Products
 export async function getProducts(): Promise<Product[]> {
-  const data = await redis.get<Product[]>("products");
-  return data ?? [];
+  return (await rget<Product[]>("products")) ?? [];
 }
 
 export async function getProductBySlug(slug: string): Promise<Product | undefined> {
@@ -28,7 +34,7 @@ export async function getFeaturedProducts(): Promise<Product[]> {
 }
 
 export async function saveProducts(products: Product[]): Promise<void> {
-  await redis.set("products", products);
+  await rset("products", products);
 }
 
 // Gallery
@@ -42,12 +48,11 @@ export interface GalleryItem {
 }
 
 export async function getGallery(): Promise<GalleryItem[]> {
-  const data = await redis.get<GalleryItem[]>("gallery");
-  return data ?? [];
+  return (await rget<GalleryItem[]>("gallery")) ?? [];
 }
 
 export async function saveGallery(items: GalleryItem[]): Promise<void> {
-  await redis.set("gallery", items);
+  await rset("gallery", items);
 }
 
 // Quotes
@@ -68,12 +73,11 @@ export interface Quote {
 }
 
 export async function getQuotes(): Promise<Quote[]> {
-  const data = await redis.get<Quote[]>("quotes");
-  return data ?? [];
+  return (await rget<Quote[]>("quotes")) ?? [];
 }
 
 export async function saveQuotes(quotes: Quote[]): Promise<void> {
-  await redis.set("quotes", quotes);
+  await rset("quotes", quotes);
 }
 
 // Settings
@@ -118,12 +122,11 @@ const defaultSettings: SiteSettings = {
 };
 
 export async function getSettings(): Promise<SiteSettings> {
-  const data = await redis.get<SiteSettings>("settings");
-  return data ?? defaultSettings;
+  return (await rget<SiteSettings>("settings")) ?? defaultSettings;
 }
 
 export async function saveSettings(settings: SiteSettings): Promise<void> {
-  await redis.set("settings", settings);
+  await rset("settings", settings);
 }
 
 // Bundles
@@ -149,10 +152,9 @@ export interface Bundle {
 }
 
 export async function getBundles(): Promise<Bundle[]> {
-  const data = await redis.get<Bundle[]>("bundles");
-  return data ?? [];
+  return (await rget<Bundle[]>("bundles")) ?? [];
 }
 
 export async function saveBundles(bundles: Bundle[]): Promise<void> {
-  await redis.set("bundles", bundles);
+  await rset("bundles", bundles);
 }
