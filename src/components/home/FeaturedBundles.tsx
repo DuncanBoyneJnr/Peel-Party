@@ -1,11 +1,11 @@
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
-import { getFeaturedProducts } from "@/lib/data";
+import { getFeaturedProducts } from "@/lib/server-data";
 import ProductCard from "@/components/ui/ProductCard";
 import Button from "@/components/ui/Button";
 
-export default function FeaturedBundles() {
-  const featured = getFeaturedProducts().slice(0, 4);
+export default async function FeaturedBundles() {
+  const featured = (await getFeaturedProducts()).slice(0, 4);
 
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 py-20">

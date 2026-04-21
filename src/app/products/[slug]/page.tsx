@@ -1,7 +1,9 @@
+export const dynamic = "force-dynamic";
+
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getProductBySlug, products } from "@/lib/data";
+import { getProductBySlug } from "@/lib/server-data";
 import { formatPrice } from "@/lib/utils";
 import ProductActions from "./ProductActions";
 import Rating from "@/components/ui/Rating";
@@ -14,25 +16,20 @@ interface PageProps {
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlug(slug);
   if (!product) return {};
   return { title: product.name, description: product.description };
 }
 
-export function generateStaticParams() {
-  return products.map((p) => ({ slug: p.slug }));
-}
-
 export default async function ProductPage({ params }: PageProps) {
   const { slug } = await params;
-  const product = getProductBySlug(slug);
+  const product = await getProductBySlug(slug);
   if (!product) notFound();
 
   const isQuote = product.orderType === "request-quote";
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-12">
-      {/* Breadcrumb */}
       <nav className="flex items-center gap-2 text-sm text-[#6b7280] mb-8">
         <Link href="/" className="hover:text-[#ef8733] transition-colors">Home</Link>
         <span>/</span>
@@ -44,7 +41,6 @@ export default async function ProductPage({ params }: PageProps) {
       </nav>
 
       <div className="grid lg:grid-cols-2 gap-12 items-start">
-        {/* Left: Image */}
         <div className="relative">
           <div className="aspect-square bg-[#f9f7f4] rounded-2xl border border-[#e5e1d8] flex items-center justify-center overflow-hidden">
             <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
@@ -60,7 +56,6 @@ export default async function ProductPage({ params }: PageProps) {
           )}
         </div>
 
-        {/* Right: Info + actions */}
         <div className="flex flex-col gap-5">
           <div>
             <Link
@@ -73,7 +68,6 @@ export default async function ProductPage({ params }: PageProps) {
             <Rating value={product.rating} count={product.reviewCount} />
           </div>
 
-          {/* Price */}
           {isQuote ? (
             <div className="flex items-center gap-3">
               <span className="font-display font-700 text-2xl text-[#111111]">Price on request</span>
@@ -90,7 +84,6 @@ export default async function ProductPage({ params }: PageProps) {
 
           <p className="text-[#6b7280] leading-relaxed">{product.longDescription}</p>
 
-          {/* Feature list */}
           <ul className="flex flex-col gap-2">
             {[
               product.supportsFileUpload && "Upload your own artwork",
@@ -105,10 +98,8 @@ export default async function ProductPage({ params }: PageProps) {
             ))}
           </ul>
 
-          {/* Interactive product form (client component) */}
           <ProductActions product={product} />
 
-          {/* Mini trust strip */}
           <div className="flex flex-wrap gap-4 pt-4 border-t border-[#e5e1d8]">
             <div className="flex items-center gap-1.5 text-xs text-[#6b7280]">
               <Truck size={14} className="text-[#ef8733]" /> Free delivery over £50
