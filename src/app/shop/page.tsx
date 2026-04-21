@@ -7,7 +7,7 @@ import ProductCard from "@/components/ui/ProductCard";
 
 export const metadata: Metadata = {
   title: "Shop All Products",
-  description: "Browse our full range of custom stickers, personalised mugs, and keyrings.",
+  description: "Browse our full range of personalised stickers, mugs, keyrings, sweet bags and party decor. Made with love in the UK.",
 };
 
 const categories = [
