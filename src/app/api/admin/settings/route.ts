@@ -2,13 +2,13 @@ import { NextRequest, NextResponse } from "next/server";
 import { getSettings, saveSettings } from "@/lib/server-data";
 
 export async function GET() {
-  return NextResponse.json(getSettings());
+  return NextResponse.json(await getSettings());
 }
 
 export async function PUT(req: NextRequest) {
   const body = await req.json();
-  const current = getSettings();
+  const current = await getSettings();
   const updated = { ...current, ...body };
-  saveSettings(updated);
+  await saveSettings(updated);
   return NextResponse.json(updated);
 }

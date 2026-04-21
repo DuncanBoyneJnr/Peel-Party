@@ -3,8 +3,9 @@ import { ArrowRight } from "lucide-react";
 import { getProducts } from "@/lib/server-data";
 import { formatPrice } from "@/lib/utils";
 
-export default function AlsoViewed() {
-  const products = getProducts().filter((p) => p.inStock).slice(0, 8);
+export default async function AlsoViewed() {
+  const allProducts = await getProducts();
+  const products = allProducts.filter((p) => p.inStock).slice(0, 8);
 
   return (
     <section className="py-16 bg-[#f9f7f4]">

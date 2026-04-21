@@ -3,8 +3,8 @@ import GalleryAdmin from "./GalleryAdmin";
 
 export const dynamic = "force-dynamic";
 
-export default function AdminGalleryPage() {
-  const items = getGallery();
+export default async function AdminGalleryPage() {
+  const items = await getGallery();
   return (
     <div>
       <div className="mb-8">

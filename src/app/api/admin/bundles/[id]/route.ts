@@ -7,7 +7,7 @@ interface Ctx { params: Promise<{ id: string }> }
 export async function PUT(req: NextRequest, { params }: Ctx) {
   const { id } = await params;
   const body = await req.json();
-  const bundles = getBundles();
+  const bundles = await getBundles();
   const idx = bundles.findIndex((b) => b.id === id);
   if (idx === -1) return NextResponse.json({ error: "Not found" }, { status: 404 });
   bundles[idx] = {
@@ -21,13 +21,13 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
     active: body.active !== false,
     items: body.items ?? bundles[idx].items,
   };
-  saveBundles(bundles);
+  await saveBundles(bundles);
   return NextResponse.json(bundles[idx]);
 }
 
 export async function DELETE(_req: NextRequest, { params }: Ctx) {
   const { id } = await params;
-  const bundles = getBundles();
-  saveBundles(bundles.filter((b) => b.id !== id));
+  const bundles = await getBundles();
+  await saveBundles(bundles.filter((b) => b.id !== id));
   return NextResponse.json({ ok: true });
 }

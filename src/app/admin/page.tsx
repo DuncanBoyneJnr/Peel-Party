@@ -20,10 +20,9 @@ function StatCard({ label, value, icon: Icon, href, color }: {
   );
 }
 
-export default function AdminDashboard() {
-  const products = getProducts();
-  const gallery = getGallery();
-  const quotes = getQuotes().sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
+export default async function AdminDashboard() {
+  const [products, gallery, allQuotes] = await Promise.all([getProducts(), getGallery(), getQuotes()]);
+  const quotes = allQuotes.sort((a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime());
 
   const newQuotes = quotes.filter((q) => q.status === "new").length;
   const recentQuotes = quotes.slice(0, 6);
@@ -38,7 +37,6 @@ export default function AdminDashboard() {
         <p className="text-[#6b7280] mt-1">Welcome back. Here's what's happening.</p>
       </div>
 
-      {/* Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 mb-10">
         <StatCard label="Total Products" value={products.length} icon={Package} href="/admin/products" color="#ef8733" />
         <StatCard label="Gallery Items" value={gallery.length} icon={Images} href="/admin/gallery" color="#111111" />
@@ -46,7 +44,6 @@ export default function AdminDashboard() {
         <StatCard label="New Quotes" value={newQuotes} icon={TrendingUp} href="/admin/quotes" color="#ef8733" />
       </div>
 
-      {/* Recent quotes */}
       <div className="bg-white rounded-2xl border border-[#e5e1d8]">
         <div className="flex items-center justify-between px-6 py-4 border-b border-[#e5e1d8]">
           <h2 className="font-display font-700 text-lg text-[#111111]">Recent Quote Requests</h2>

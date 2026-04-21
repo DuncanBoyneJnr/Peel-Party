@@ -3,8 +3,9 @@ import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { getBundles } from "@/lib/server-data";
 import { formatPrice } from "@/lib/utils";
 
-export default function BundlesSection() {
-  const bundles = getBundles().filter((b) => b.active && b.featured);
+export default async function BundlesSection() {
+  const allBundles = await getBundles();
+  const bundles = allBundles.filter((b) => b.active && b.featured);
   if (bundles.length === 0) return null;
 
   return (
@@ -25,14 +26,12 @@ export default function BundlesSection() {
               </div>
             )}
 
-            {/* Header */}
             <div className="bg-[#f9f7f4] px-6 pt-8 pb-6">
               <div className="text-4xl mb-3">{bundle.emoji || "📦"}</div>
               <h3 className="font-display font-800 text-xl text-[#111111] mb-1">{bundle.name}</h3>
               <p className="text-sm text-[#6b7280] leading-relaxed">{bundle.tagline}</p>
             </div>
 
-            {/* Items */}
             <div className="px-6 py-5 flex-1">
               <p className="text-xs font-semibold uppercase tracking-wider text-[#6b7280] mb-3">What&apos;s included</p>
               <ul className="flex flex-col gap-2">
@@ -48,7 +47,6 @@ export default function BundlesSection() {
               </ul>
             </div>
 
-            {/* Price + CTA */}
             <div className="px-6 pb-6 pt-4 border-t border-[#e5e1d8]">
               <div className="flex items-baseline gap-2 mb-4">
                 <span className="font-display font-800 text-2xl text-[#111111]">{formatPrice(bundle.price)}</span>

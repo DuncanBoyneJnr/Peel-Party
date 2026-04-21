@@ -3,8 +3,8 @@ import SettingsForm from "./SettingsForm";
 
 export const dynamic = "force-dynamic";
 
-export default function AdminSettingsPage() {
-  const settings = getSettings();
+export default async function AdminSettingsPage() {
+  const settings = await getSettings();
   return (
     <div>
       <div className="mb-8">

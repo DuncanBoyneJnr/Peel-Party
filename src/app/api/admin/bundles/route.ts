@@ -3,12 +3,12 @@ import { getBundles, saveBundles, Bundle } from "@/lib/server-data";
 import { slugify } from "@/lib/utils";
 
 export async function GET() {
-  return NextResponse.json(getBundles());
+  return NextResponse.json(await getBundles());
 }
 
 export async function POST(req: NextRequest) {
   const body = await req.json();
-  const bundles = getBundles();
+  const bundles = await getBundles();
   const newBundle: Bundle = {
     ...body,
     id: `b${Date.now()}`,
@@ -20,6 +20,6 @@ export async function POST(req: NextRequest) {
     items: body.items ?? [],
   };
   bundles.push(newBundle);
-  saveBundles(bundles);
+  await saveBundles(bundles);
   return NextResponse.json(newBundle, { status: 201 });
 }

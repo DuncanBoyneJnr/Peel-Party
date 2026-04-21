@@ -8,9 +8,9 @@ interface Props { params: Promise<{ id: string }> }
 
 export default async function EditBundlePage({ params }: Props) {
   const { id } = await params;
-  const bundle = getBundles().find((b) => b.id === id);
+  const [bundles, products] = await Promise.all([getBundles(), getProducts()]);
+  const bundle = bundles.find((b) => b.id === id);
   if (!bundle) notFound();
-  const products = getProducts();
 
   return (
     <div>

@@ -6,8 +6,8 @@ import { getBundles } from "@/lib/server-data";
 import { formatPrice } from "@/lib/utils";
 import BundleDeleteButton from "./BundleDeleteButton";
 
-export default function BundlesPage() {
-  const bundles = getBundles();
+export default async function BundlesPage() {
+  const bundles = await getBundles();
 
   return (
     <div>

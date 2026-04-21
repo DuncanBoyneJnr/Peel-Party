@@ -1,13 +1,13 @@
 import Link from "next/link";
-import { Plus, Pencil, Trash2, Tag } from "lucide-react";
+import { Plus, Pencil, Tag } from "lucide-react";
 import { getProducts } from "@/lib/server-data";
 import { formatPrice } from "@/lib/utils";
 import DeleteButton from "./DeleteButton";
 
 export const dynamic = "force-dynamic";
 
-export default function AdminProductsPage() {
-  const products = getProducts();
+export default async function AdminProductsPage() {
+  const products = await getProducts();
 
   return (
     <div>

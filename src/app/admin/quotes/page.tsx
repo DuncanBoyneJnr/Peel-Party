@@ -3,8 +3,8 @@ import QuotesAdmin from "./QuotesAdmin";
 
 export const dynamic = "force-dynamic";
 
-export default function AdminQuotesPage() {
-  const quotes = getQuotes().sort(
+export default async function AdminQuotesPage() {
+  const quotes = (await getQuotes()).sort(
     (a, b) => new Date(b.submittedAt).getTime() - new Date(a.submittedAt).getTime()
   );
   return (
