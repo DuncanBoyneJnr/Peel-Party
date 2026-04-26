@@ -4,7 +4,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Package, Images, MessageSquare,
-  Settings, LogOut, ExternalLink, Menu, X, Gift,
+  Settings, LogOut, ExternalLink, Menu, X, Gift, TrendingUp,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -15,6 +15,7 @@ const nav = [
   { label: "Bundles", href: "/admin/bundles", icon: Gift },
   { label: "Gallery", href: "/admin/gallery", icon: Images },
   { label: "Quote Requests", href: "/admin/quotes", icon: MessageSquare },
+  { label: "Costs & Profit", href: "/admin/costs", icon: TrendingUp },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 

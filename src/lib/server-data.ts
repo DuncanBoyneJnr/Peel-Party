@@ -167,3 +167,39 @@ export async function getBundles(): Promise<Bundle[]> {
 export async function saveBundles(bundles: Bundle[]): Promise<void> {
   await rset("bundles", bundles);
 }
+
+// Costs
+export interface ProductCostOverride {
+  stockCostPence?: number;
+  inkCostPence?: number;
+  minutesToMake?: number;
+  postagePence?: number;
+}
+
+export interface CostSettings {
+  stockCostPence: number;
+  inkCostPence: number;
+  postagePence: number;
+  hourlyRatePence: number;
+  minutesToMake: number;
+  targetProfitPercent: number;
+  productOverrides: Record<string, ProductCostOverride>;
+}
+
+const defaultCostSettings: CostSettings = {
+  stockCostPence: 20,
+  inkCostPence: 10,
+  postagePence: 150,
+  hourlyRatePence: 1500,
+  minutesToMake: 5,
+  targetProfitPercent: 40,
+  productOverrides: {},
+};
+
+export async function getCostSettings(): Promise<CostSettings> {
+  return (await rget<CostSettings>("costSettings")) ?? defaultCostSettings;
+}
+
+export async function saveCostSettings(settings: CostSettings): Promise<void> {
+  await rset("costSettings", settings);
+}
