@@ -169,35 +169,47 @@ export async function saveBundles(bundles: Bundle[]): Promise<void> {
 }
 
 // Costs
-export interface ProductCostOverride {
-  stockCostPence?: number;
-  inkCostPence?: number;
-  minutesToMake?: number;
-  postagePence?: number;
+export interface MaterialType {
+  id: string;
+  name: string;
+  costPencePer: number; // pence per unit of material (per sticker/item)
+}
+
+export interface ProductCostConfig {
+  materialId?: string;   // links to MaterialType.id
+  batchSize: number;     // how many units per production batch
+  batchMinutes: number;  // how many minutes that batch takes
+  inkCostPence?: number; // pence per unit, overrides global default
+  postagePence?: number; // pence per order, overrides global default
 }
 
 export interface CostSettings {
-  stockCostPence: number;
-  inkCostPence: number;
-  postagePence: number;
   hourlyRatePence: number;
-  minutesToMake: number;
   targetProfitPercent: number;
-  productOverrides: Record<string, ProductCostOverride>;
+  defaultPostagePence: number;
+  defaultInkCostPence: number;
+  materials: MaterialType[];
+  productConfigs: Record<string, ProductCostConfig>;
 }
 
 const defaultCostSettings: CostSettings = {
-  stockCostPence: 20,
-  inkCostPence: 10,
-  postagePence: 150,
   hourlyRatePence: 1500,
-  minutesToMake: 5,
   targetProfitPercent: 40,
-  productOverrides: {},
+  defaultPostagePence: 150,
+  defaultInkCostPence: 10,
+  materials: [],
+  productConfigs: {},
 };
 
 export async function getCostSettings(): Promise<CostSettings> {
-  return (await rget<CostSettings>("costSettings")) ?? defaultCostSettings;
+  const stored = await rget<Partial<CostSettings>>("costSettings");
+  if (!stored) return defaultCostSettings;
+  return {
+    ...defaultCostSettings,
+    ...stored,
+    materials: stored.materials ?? [],
+    productConfigs: stored.productConfigs ?? {},
+  };
 }
 
 export async function saveCostSettings(settings: CostSettings): Promise<void> {

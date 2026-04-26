@@ -1,130 +1,203 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import { Save, CheckCircle2, ChevronDown, ChevronUp } from "lucide-react";
+import { Save, CheckCircle2, Plus, Trash2, Calculator } from "lucide-react";
 import { Product } from "@/lib/types";
-import { CostSettings, ProductCostOverride } from "@/lib/server-data";
+import { CostSettings, MaterialType, ProductCostConfig } from "@/lib/server-data";
 
 interface Props {
   products: Product[];
   initialSettings: CostSettings;
 }
 
-function p(pence: number) {
+// ── Helpers ─────────────────────────────────────────────────────────────────
+
+function fmt(pence: number) {
   return (pence / 100).toFixed(2);
 }
 
-function computeCosts(product: Product, settings: CostSettings) {
-  const ov = settings.productOverrides[product.id] ?? {};
-  const stockCost = ov.stockCostPence ?? settings.stockCostPence;
-  const inkCost = ov.inkCostPence ?? settings.inkCostPence;
-  const postage = ov.postagePence ?? settings.postagePence;
-  const mins = ov.minutesToMake ?? settings.minutesToMake;
-  const labourCost = Math.round((mins / 60) * settings.hourlyRatePence);
-  const totalCost = stockCost + inkCost + postage + labourCost;
-  const profit = product.price - totalCost;
-  const margin = product.price > 0 ? (profit / product.price) * 100 : 0;
-  return { stockCost, inkCost, postage, labourCost, totalCost, profit, margin };
+function fmtTime(minutes: number) {
+  if (minutes < 60) return `${Math.round(minutes)} min`;
+  const h = Math.floor(minutes / 60);
+  const m = Math.round(minutes % 60);
+  return m > 0 ? `${h}h ${m}m` : `${h}h`;
 }
+
+function calcRunCosts(
+  config: ProductCostConfig,
+  settings: CostSettings,
+  quantity: number,
+  profitPct: number
+) {
+  const material = settings.materials.find((m) => m.id === config.materialId);
+  const materialCost = material ? quantity * material.costPencePer : 0;
+  const inkCost = quantity * (config.inkCostPence ?? settings.defaultInkCostPence);
+  const batches = config.batchSize > 0 ? Math.ceil(quantity / config.batchSize) : 0;
+  const labourMinutes = batches * config.batchMinutes;
+  const labourCost = Math.round((labourMinutes / 60) * settings.hourlyRatePence);
+  const postageCost = config.postagePence ?? settings.defaultPostagePence;
+  const totalCost = materialCost + inkCost + labourCost + postageCost;
+  const suggestedPrice =
+    profitPct < 100
+      ? Math.round(totalCost / (1 - profitPct / 100))
+      : totalCost * 2;
+  const profit = suggestedPrice - totalCost;
+  const pricePerUnit = quantity > 0 ? Math.round(suggestedPrice / quantity) : 0;
+  return {
+    materialCost,
+    inkCost,
+    labourMinutes,
+    labourCost,
+    postageCost,
+    totalCost,
+    profit,
+    suggestedPrice,
+    pricePerUnit,
+  };
+}
+
+// ── Shared styles ────────────────────────────────────────────────────────────
 
 const inputCls =
   "w-full h-10 px-3 rounded-xl border-2 border-[#e5e1d8] text-sm focus:outline-none focus:border-[#ef8733] transition-colors bg-white";
+const cellInputCls =
+  "w-full h-9 px-2.5 rounded-lg border-2 border-[#e5e1d8] text-sm focus:outline-none focus:border-[#ef8733] transition-colors bg-white";
 
-function StatCard({
-  label,
-  value,
-  sub,
-  good,
+// ── Sub-components ───────────────────────────────────────────────────────────
+
+function SectionCard({
+  title,
+  subtitle,
+  action,
+  children,
 }: {
-  label: string;
-  value: string;
-  sub: string;
-  good?: boolean;
+  title: string;
+  subtitle?: string;
+  action?: React.ReactNode;
+  children: React.ReactNode;
 }) {
   return (
-    <div className="bg-white rounded-2xl border border-[#e5e1d8] p-4">
-      <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider mb-1">{label}</p>
-      <p
-        className={`font-display font-800 text-2xl ${
-          good === undefined ? "text-[#111111]" : good ? "text-emerald-600" : "text-amber-500"
-        }`}
-      >
-        {value}
-      </p>
-      <p className="text-xs text-[#6b7280] mt-0.5">{sub}</p>
-    </div>
-  );
-}
-
-function LabelField({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <div>
-      <label className="block text-sm font-semibold text-[#111111] mb-1.5">{label}</label>
+    <div className="bg-white rounded-2xl border border-[#e5e1d8] p-6">
+      <div className="flex items-start justify-between gap-4 mb-5">
+        <div>
+          <h2 className="font-display font-700 text-lg text-[#111111]">{title}</h2>
+          {subtitle && <p className="text-[#6b7280] text-sm mt-0.5">{subtitle}</p>}
+        </div>
+        {action}
+      </div>
       {children}
     </div>
   );
 }
 
-function OverrideField({
+function Label({ children }: { children: React.ReactNode }) {
+  return (
+    <label className="block text-sm font-semibold text-[#111111] mb-1.5">{children}</label>
+  );
+}
+
+function CostRow({
   label,
-  placeholder,
   value,
-  onChange,
-  step = "0.01",
+  bold,
+  green,
+  orange,
 }: {
   label: string;
-  placeholder: string;
   value: string;
-  onChange: (v: string) => void;
-  step?: string;
+  bold?: boolean;
+  green?: boolean;
+  orange?: boolean;
 }) {
   return (
-    <div>
-      <label className="block text-xs font-semibold text-[#6b7280] mb-1">{label}</label>
-      <input
-        type="number"
-        step={step}
-        min="0"
-        placeholder={placeholder}
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        className="w-full h-9 px-3 rounded-lg border-2 border-[#e5e1d8] text-sm focus:outline-none focus:border-[#ef8733] transition-colors bg-white placeholder:text-[#9ca3af]"
-      />
+    <div className="flex items-center justify-between">
+      <span className={`text-sm ${bold ? "font-semibold text-[#111111]" : "text-[#6b7280]"}`}>
+        {label}
+      </span>
+      <span
+        className={`text-sm font-semibold ${
+          orange
+            ? "text-[#ef8733] text-base"
+            : green
+            ? "text-emerald-600"
+            : "text-[#111111]"
+        }`}
+      >
+        {value}
+      </span>
     </div>
   );
 }
 
+// ── Main component ───────────────────────────────────────────────────────────
+
 export default function CostsAdmin({ products, initialSettings }: Props) {
   const [settings, setSettings] = useState<CostSettings>(initialSettings);
-  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
 
-  function updateGlobal(field: keyof Omit<CostSettings, "productOverrides">, value: number) {
+  // Calculator state
+  const [calcProductId, setCalcProductId] = useState("");
+  const [calcQty, setCalcQty] = useState(100);
+  const [calcProfitPct, setCalcProfitPct] = useState(initialSettings.targetProfitPercent);
+
+  // ── Global settings ────────────────────────────────────────────────────────
+
+  function updateGlobal<K extends keyof Omit<CostSettings, "materials" | "productConfigs">>(
+    field: K,
+    value: CostSettings[K]
+  ) {
     setSettings((prev) => ({ ...prev, [field]: value }));
   }
 
-  function updateOverride(
-    productId: string,
-    field: keyof ProductCostOverride,
-    value: number | undefined
-  ) {
-    setSettings((prev) => {
-      const ov = { ...prev.productOverrides };
-      if (value === undefined) {
-        const updated = { ...ov[productId] };
-        delete updated[field];
-        if (Object.keys(updated).length === 0) {
-          delete ov[productId];
-        } else {
-          ov[productId] = updated;
-        }
-      } else {
-        ov[productId] = { ...ov[productId], [field]: value };
-      }
-      return { ...prev, productOverrides: ov };
-    });
+  // ── Materials ──────────────────────────────────────────────────────────────
+
+  function addMaterial() {
+    const mat: MaterialType = { id: `mat_${Date.now()}`, name: "", costPencePer: 0 };
+    setSettings((prev) => ({ ...prev, materials: [...prev.materials, mat] }));
   }
+
+  function updateMaterial(id: string, field: keyof MaterialType, value: string | number) {
+    setSettings((prev) => ({
+      ...prev,
+      materials: prev.materials.map((m) => (m.id === id ? { ...m, [field]: value } : m)),
+    }));
+  }
+
+  function deleteMaterial(id: string) {
+    setSettings((prev) => ({
+      ...prev,
+      materials: prev.materials.filter((m) => m.id !== id),
+      productConfigs: Object.fromEntries(
+        Object.entries(prev.productConfigs).map(([pid, cfg]) => [
+          pid,
+          cfg.materialId === id ? { ...cfg, materialId: undefined } : cfg,
+        ])
+      ),
+    }));
+  }
+
+  // ── Product configs ────────────────────────────────────────────────────────
+
+  function getConfig(productId: string): ProductCostConfig {
+    return settings.productConfigs[productId] ?? { batchSize: 10, batchMinutes: 5 };
+  }
+
+  function updateConfig(
+    productId: string,
+    field: keyof ProductCostConfig,
+    value: string | number | undefined
+  ) {
+    setSettings((prev) => ({
+      ...prev,
+      productConfigs: {
+        ...prev.productConfigs,
+        [productId]: { ...getConfig(productId), [field]: value },
+      },
+    }));
+  }
+
+  // ── Save ───────────────────────────────────────────────────────────────────
 
   async function handleSave() {
     setLoading(true);
@@ -138,103 +211,33 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
     setTimeout(() => setSaved(false), 3000);
   }
 
-  const productData = useMemo(
-    () => products.map((pr) => ({ ...pr, costs: computeCosts(pr, settings) })),
-    [products, settings]
-  );
+  // ── Calculator ─────────────────────────────────────────────────────────────
 
-  const avgMargin =
-    productData.length
-      ? productData.reduce((sum, pr) => sum + pr.costs.margin, 0) / productData.length
-      : 0;
-  const aboveTargetCount = productData.filter(
-    (pr) => pr.costs.margin >= settings.targetProfitPercent
-  ).length;
+  const calcConfig = calcProductId ? getConfig(calcProductId) : null;
+  const calcResult = useMemo(() => {
+    if (!calcConfig || calcQty < 1) return null;
+    return calcRunCosts(calcConfig, settings, calcQty, calcProfitPct);
+  }, [calcConfig, settings, calcQty, calcProfitPct]);
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <div className="max-w-5xl flex flex-col gap-6">
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <StatCard
-          label="Avg Margin"
-          value={`${avgMargin.toFixed(1)}%`}
-          sub="across all products"
-          good={avgMargin >= settings.targetProfitPercent}
-        />
-        <StatCard
-          label="On Target"
-          value={`${aboveTargetCount} / ${productData.length}`}
-          sub="products"
-          good={aboveTargetCount === productData.length}
-        />
-        <StatCard
-          label="Hourly Rate"
-          value={`£${p(settings.hourlyRatePence)}`}
-          sub="your labour rate"
-        />
-        <StatCard
-          label="Default Postage"
-          value={`£${p(settings.postagePence)}`}
-          sub="per order"
-        />
-      </div>
 
-      {/* Global defaults */}
-      <div className="bg-white rounded-2xl border border-[#e5e1d8] p-6">
-        <h2 className="font-display font-700 text-lg text-[#111111] mb-5">Global Defaults</h2>
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <LabelField label="Stock / Material per unit (£)">
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              className={inputCls}
-              value={p(settings.stockCostPence)}
-              onChange={(e) =>
-                updateGlobal(
-                  "stockCostPence",
-                  Math.round(parseFloat(e.target.value || "0") * 100)
-                )
-              }
-            />
-          </LabelField>
-          <LabelField label="Ink per unit (£)">
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              className={inputCls}
-              value={p(settings.inkCostPence)}
-              onChange={(e) =>
-                updateGlobal(
-                  "inkCostPence",
-                  Math.round(parseFloat(e.target.value || "0") * 100)
-                )
-              }
-            />
-          </LabelField>
-          <LabelField label="Postage per order (£)">
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              className={inputCls}
-              value={p(settings.postagePence)}
-              onChange={(e) =>
-                updateGlobal(
-                  "postagePence",
-                  Math.round(parseFloat(e.target.value || "0") * 100)
-                )
-              }
-            />
-          </LabelField>
-          <LabelField label="Hourly Rate (£)">
+      {/* ── 1. Global Settings ── */}
+      <SectionCard
+        title="Global Settings"
+        subtitle="Defaults applied to all products unless overridden below."
+      >
+        <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div>
+            <Label>Hourly Rate (£)</Label>
             <input
               type="number"
               step="0.50"
               min="0"
               className={inputCls}
-              value={p(settings.hourlyRatePence)}
+              value={fmt(settings.hourlyRatePence)}
               onChange={(e) =>
                 updateGlobal(
                   "hourlyRatePence",
@@ -242,190 +245,410 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                 )
               }
             />
-          </LabelField>
-          <LabelField label="Default mins to make (per unit)">
+            <p className="text-xs text-[#6b7280] mt-1">Pro-rata labour cost</p>
+          </div>
+          <div>
+            <Label>Target Profit %</Label>
+            <input
+              type="number"
+              step="1"
+              min="0"
+              max="99"
+              className={inputCls}
+              value={settings.targetProfitPercent}
+              onChange={(e) => {
+                const v = parseFloat(e.target.value || "0");
+                updateGlobal("targetProfitPercent", v);
+                setCalcProfitPct(v);
+              }}
+            />
+          </div>
+          <div>
+            <Label>Default Postage / order (£)</Label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              className={inputCls}
+              value={fmt(settings.defaultPostagePence)}
+              onChange={(e) =>
+                updateGlobal(
+                  "defaultPostagePence",
+                  Math.round(parseFloat(e.target.value || "0") * 100)
+                )
+              }
+            />
+          </div>
+          <div>
+            <Label>Default Ink / unit (£)</Label>
+            <input
+              type="number"
+              step="0.01"
+              min="0"
+              className={inputCls}
+              value={fmt(settings.defaultInkCostPence)}
+              onChange={(e) =>
+                updateGlobal(
+                  "defaultInkCostPence",
+                  Math.round(parseFloat(e.target.value || "0") * 100)
+                )
+              }
+            />
+          </div>
+        </div>
+      </SectionCard>
+
+      {/* ── 2. Materials ── */}
+      <SectionCard
+        title="Materials"
+        subtitle="Define your sticker material types and cost per unit (per sticker)."
+        action={
+          <button
+            type="button"
+            onClick={addMaterial}
+            className="inline-flex items-center gap-1.5 h-9 px-4 bg-[#111111] text-white rounded-xl text-sm font-semibold hover:bg-[#222] transition-colors cursor-pointer shrink-0"
+          >
+            <Plus size={14} /> Add Material
+          </button>
+        }
+      >
+        {settings.materials.length === 0 ? (
+          <p className="text-sm text-[#6b7280] py-6 text-center border-2 border-dashed border-[#e5e1d8] rounded-xl">
+            No materials yet. Click &ldquo;Add Material&rdquo; to get started.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-[1fr_180px_40px] gap-3 px-1 mb-1">
+              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
+                Material Name
+              </span>
+              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
+                Cost per unit (£)
+              </span>
+              <span />
+            </div>
+            {settings.materials.map((mat) => (
+              <div key={mat.id} className="grid grid-cols-[1fr_180px_40px] gap-3 items-center">
+                <input
+                  type="text"
+                  placeholder="e.g. Glossy Vinyl, Matte, Holographic…"
+                  className={cellInputCls}
+                  value={mat.name}
+                  onChange={(e) => updateMaterial(mat.id, "name", e.target.value)}
+                />
+                <input
+                  type="number"
+                  step="0.001"
+                  min="0"
+                  placeholder="0.000"
+                  className={cellInputCls}
+                  value={mat.costPencePer > 0 ? fmt(mat.costPencePer) : ""}
+                  onChange={(e) =>
+                    updateMaterial(
+                      mat.id,
+                      "costPencePer",
+                      Math.round(parseFloat(e.target.value || "0") * 100)
+                    )
+                  }
+                />
+                <button
+                  type="button"
+                  onClick={() => deleteMaterial(mat.id)}
+                  className="h-9 w-9 flex items-center justify-center rounded-lg text-[#6b7280] hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer"
+                >
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+
+      {/* ── 3. Product Setup ── */}
+      <div className="bg-white rounded-2xl border border-[#e5e1d8] overflow-hidden">
+        <div className="px-6 py-4 border-b border-[#e5e1d8]">
+          <h2 className="font-display font-700 text-lg text-[#111111]">Product Setup</h2>
+          <p className="text-[#6b7280] text-sm mt-0.5">
+            Assign a material and set the production batch rate for each product.
+            <br />
+            <span className="text-[#111111] font-medium">Batch size</span> = how many units you
+            make at once.{" "}
+            <span className="text-[#111111] font-medium">Batch time</span> = how many minutes
+            that batch takes.
+          </p>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="border-b border-[#e5e1d8] bg-[#f9f7f4]">
+                <th className="text-left px-6 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
+                  Product
+                </th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
+                  Material
+                </th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
+                  Batch size
+                </th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
+                  Batch time (mins)
+                </th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
+                  Ink/unit £
+                </th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
+                  Postage £
+                </th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#e5e1d8]">
+              {products.map((product) => {
+                const cfg = getConfig(product.id);
+                return (
+                  <tr key={product.id} className="hover:bg-[#f9f7f4] transition-colors">
+                    <td className="px-6 py-3">
+                      <p className="font-medium text-[#111111] truncate max-w-[160px]">
+                        {product.name}
+                      </p>
+                      <p className="text-xs text-[#6b7280] capitalize">{product.category}</p>
+                    </td>
+                    <td className="px-3 py-3 min-w-[160px]">
+                      <select
+                        className={cellInputCls}
+                        value={cfg.materialId ?? ""}
+                        onChange={(e) =>
+                          updateConfig(
+                            product.id,
+                            "materialId",
+                            e.target.value || undefined
+                          )
+                        }
+                      >
+                        <option value="">— none —</option>
+                        {settings.materials.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name || "Unnamed"}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    <td className="px-3 py-3">
+                      <input
+                        type="number"
+                        step="1"
+                        min="1"
+                        className={`${cellInputCls} w-20`}
+                        value={cfg.batchSize}
+                        onChange={(e) =>
+                          updateConfig(
+                            product.id,
+                            "batchSize",
+                            parseInt(e.target.value || "1")
+                          )
+                        }
+                      />
+                    </td>
+                    <td className="px-3 py-3">
+                      <input
+                        type="number"
+                        step="1"
+                        min="1"
+                        className={`${cellInputCls} w-20`}
+                        value={cfg.batchMinutes}
+                        onChange={(e) =>
+                          updateConfig(
+                            product.id,
+                            "batchMinutes",
+                            parseInt(e.target.value || "1")
+                          )
+                        }
+                      />
+                    </td>
+                    <td className="px-3 py-3">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder={fmt(settings.defaultInkCostPence)}
+                        className={`${cellInputCls} w-24`}
+                        value={
+                          cfg.inkCostPence !== undefined ? fmt(cfg.inkCostPence) : ""
+                        }
+                        onChange={(e) =>
+                          updateConfig(
+                            product.id,
+                            "inkCostPence",
+                            e.target.value !== ""
+                              ? Math.round(parseFloat(e.target.value) * 100)
+                              : undefined
+                          )
+                        }
+                      />
+                    </td>
+                    <td className="px-3 py-3">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder={fmt(settings.defaultPostagePence)}
+                        className={`${cellInputCls} w-24`}
+                        value={
+                          cfg.postagePence !== undefined ? fmt(cfg.postagePence) : ""
+                        }
+                        onChange={(e) =>
+                          updateConfig(
+                            product.id,
+                            "postagePence",
+                            e.target.value !== ""
+                              ? Math.round(parseFloat(e.target.value) * 100)
+                              : undefined
+                          )
+                        }
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
+              {products.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={6}
+                    className="px-6 py-10 text-center text-sm text-[#6b7280]"
+                  >
+                    No products found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      {/* ── 4. Production Run Calculator ── */}
+      <SectionCard
+        title="Production Run Calculator"
+        subtitle="Select a product and quantity to get a full cost and pricing breakdown."
+        action={<Calculator size={20} className="text-[#ef8733] mt-0.5" />}
+      >
+        <div className="grid sm:grid-cols-3 gap-4 mb-6">
+          <div>
+            <Label>Product</Label>
+            <select
+              className={inputCls}
+              value={calcProductId}
+              onChange={(e) => setCalcProductId(e.target.value)}
+            >
+              <option value="">Select a product…</option>
+              {products.map((pr) => (
+                <option key={pr.id} value={pr.id}>
+                  {pr.name}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <Label>Quantity</Label>
             <input
               type="number"
               step="1"
               min="1"
               className={inputCls}
-              value={settings.minutesToMake}
-              onChange={(e) =>
-                updateGlobal("minutesToMake", parseInt(e.target.value || "1"))
-              }
+              value={calcQty}
+              onChange={(e) => setCalcQty(Math.max(1, parseInt(e.target.value || "1")))}
             />
-          </LabelField>
-          <LabelField label="Target Profit %">
+          </div>
+          <div>
+            <Label>Profit %</Label>
             <input
               type="number"
               step="1"
               min="0"
-              max="100"
+              max="99"
               className={inputCls}
-              value={settings.targetProfitPercent}
-              onChange={(e) =>
-                updateGlobal("targetProfitPercent", parseFloat(e.target.value || "0"))
-              }
+              value={calcProfitPct}
+              onChange={(e) => setCalcProfitPct(parseFloat(e.target.value || "0"))}
             />
-          </LabelField>
-        </div>
-      </div>
-
-      {/* Product breakdown */}
-      <div className="bg-white rounded-2xl border border-[#e5e1d8] overflow-hidden">
-        <div className="px-6 py-4 border-b border-[#e5e1d8]">
-          <h2 className="font-display font-700 text-lg text-[#111111]">Product Breakdown</h2>
-          <p className="text-[#6b7280] text-sm mt-0.5">
-            Expand a row to set per-product cost overrides. Leave blank to use the global default.
-          </p>
+          </div>
         </div>
 
-        <div className="divide-y divide-[#e5e1d8]">
-          {productData.map((pr) => {
-            const { stockCost, inkCost, labourCost, postage, totalCost, profit, margin } =
-              pr.costs;
-            const isExpanded = expandedId === pr.id;
-            const ov = settings.productOverrides[pr.id] ?? {};
-            const onTarget = margin >= settings.targetProfitPercent;
-            const marginColor =
-              margin < 0 ? "text-red-500" : onTarget ? "text-emerald-600" : "text-amber-500";
-            const dotColor =
-              margin < 0 ? "bg-red-400" : onTarget ? "bg-emerald-400" : "bg-amber-400";
+        {calcResult ? (
+          <div className="grid sm:grid-cols-2 gap-5">
+            {/* Cost breakdown */}
+            <div className="bg-[#f9f7f4] rounded-xl p-5 flex flex-col gap-2.5">
+              <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider mb-1">
+                Cost Breakdown — {calcQty} units
+              </p>
+              <CostRow
+                label={`Material${
+                  calcConfig?.materialId
+                    ? ` (${settings.materials.find((m) => m.id === calcConfig?.materialId)?.name ?? ""})`
+                    : " (none set)"
+                }`}
+                value={`£${fmt(calcResult.materialCost)}`}
+              />
+              <CostRow label="Ink" value={`£${fmt(calcResult.inkCost)}`} />
+              <CostRow
+                label={`Labour — ${fmtTime(calcResult.labourMinutes)}`}
+                value={`£${fmt(calcResult.labourCost)}`}
+              />
+              <CostRow label="Postage" value={`£${fmt(calcResult.postageCost)}`} />
+              <div className="border-t border-[#e5e1d8] pt-2.5">
+                <CostRow label="Total Cost" value={`£${fmt(calcResult.totalCost)}`} bold />
+              </div>
+            </div>
 
-            return (
-              <div key={pr.id}>
-                {/* Main row */}
-                <button
-                  type="button"
-                  className="w-full px-6 py-4 flex items-center gap-4 hover:bg-[#f9f7f4] transition-colors text-left cursor-pointer"
-                  onClick={() => setExpandedId(isExpanded ? null : pr.id)}
-                >
-                  <div className={`w-2.5 h-2.5 rounded-full flex-shrink-0 ${dotColor}`} />
-
-                  <div className="flex-1 min-w-0">
-                    <p className="font-medium text-sm text-[#111111] truncate">{pr.name}</p>
-                    <p className="text-xs text-[#6b7280] capitalize">{pr.category}</p>
-                  </div>
-
-                  {/* Cost breakdown (hidden on small screens) */}
-                  <div className="hidden lg:flex items-center gap-5 text-xs text-[#6b7280]">
-                    <span>Stock £{p(stockCost)}</span>
-                    <span>Ink £{p(inkCost)}</span>
-                    <span>Labour £{p(labourCost)}</span>
-                    <span>Post £{p(postage)}</span>
-                  </div>
-
-                  {/* Prices */}
-                  <div className="flex items-center gap-5 text-sm flex-shrink-0">
-                    <div className="text-right hidden sm:block">
-                      <p className="font-semibold text-[#111111]">£{p(pr.price)}</p>
-                      <p className="text-xs text-[#6b7280]">sale</p>
-                    </div>
-                    <div className="text-right hidden sm:block">
-                      <p className="font-semibold text-[#111111]">£{p(totalCost)}</p>
-                      <p className="text-xs text-[#6b7280]">cost</p>
-                    </div>
-                    <div className="text-right">
-                      <p
-                        className={`font-semibold ${
-                          profit >= 0 ? "text-[#111111]" : "text-red-500"
-                        }`}
-                      >
-                        {profit >= 0 ? "+" : ""}£{p(Math.abs(profit))}
-                      </p>
-                      <p className="text-xs text-[#6b7280]">profit</p>
-                    </div>
-                    <div className="text-right w-14">
-                      <p className={`font-bold text-base ${marginColor}`}>
-                        {margin.toFixed(1)}%
-                      </p>
-                      <p className="text-xs text-[#6b7280]">margin</p>
-                    </div>
-                    {isExpanded ? (
-                      <ChevronUp size={16} className="text-[#6b7280]" />
-                    ) : (
-                      <ChevronDown size={16} className="text-[#6b7280]" />
-                    )}
-                  </div>
-                </button>
-
-                {/* Expanded overrides */}
-                {isExpanded && (
-                  <div className="px-6 pb-5 pt-3 bg-[#f9f7f4] border-t border-[#e5e1d8]">
-                    <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider mb-3">
-                      Override costs for &ldquo;{pr.name}&rdquo;
-                    </p>
-                    <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                      <OverrideField
-                        label="Stock / unit (£)"
-                        placeholder={`Default £${p(settings.stockCostPence)}`}
-                        value={
-                          ov.stockCostPence !== undefined ? p(ov.stockCostPence) : ""
-                        }
-                        onChange={(v) =>
-                          updateOverride(
-                            pr.id,
-                            "stockCostPence",
-                            v !== "" ? Math.round(parseFloat(v) * 100) : undefined
-                          )
-                        }
-                      />
-                      <OverrideField
-                        label="Ink / unit (£)"
-                        placeholder={`Default £${p(settings.inkCostPence)}`}
-                        value={ov.inkCostPence !== undefined ? p(ov.inkCostPence) : ""}
-                        onChange={(v) =>
-                          updateOverride(
-                            pr.id,
-                            "inkCostPence",
-                            v !== "" ? Math.round(parseFloat(v) * 100) : undefined
-                          )
-                        }
-                      />
-                      <OverrideField
-                        label="Mins to make"
-                        placeholder={`Default ${settings.minutesToMake} min`}
-                        value={
-                          ov.minutesToMake !== undefined ? String(ov.minutesToMake) : ""
-                        }
-                        onChange={(v) =>
-                          updateOverride(
-                            pr.id,
-                            "minutesToMake",
-                            v !== "" ? parseInt(v) : undefined
-                          )
-                        }
-                        step="1"
-                      />
-                      <OverrideField
-                        label="Postage (£)"
-                        placeholder={`Default £${p(settings.postagePence)}`}
-                        value={ov.postagePence !== undefined ? p(ov.postagePence) : ""}
-                        onChange={(v) =>
-                          updateOverride(
-                            pr.id,
-                            "postagePence",
-                            v !== "" ? Math.round(parseFloat(v) * 100) : undefined
-                          )
-                        }
-                      />
-                    </div>
-                  </div>
+            {/* Suggested pricing */}
+            <div className="bg-[#f9f7f4] rounded-xl p-5 flex flex-col gap-2.5">
+              <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider mb-1">
+                Suggested Pricing — {calcProfitPct}% margin
+              </p>
+              <CostRow label="Total Cost" value={`£${fmt(calcResult.totalCost)}`} />
+              <CostRow label="Profit" value={`+£${fmt(calcResult.profit)}`} green />
+              <div className="border-t border-[#e5e1d8] pt-2.5">
+                <CostRow
+                  label="Sell for (order total)"
+                  value={`£${fmt(calcResult.suggestedPrice)}`}
+                  bold
+                  orange
+                />
+              </div>
+              <CostRow
+                label={`Per unit (÷ ${calcQty})`}
+                value={`£${fmt(calcResult.pricePerUnit)}`}
+              />
+              <div className="mt-2 p-3 bg-white rounded-lg border border-[#e5e1d8]">
+                <p className="text-xs text-[#6b7280]">
+                  Labour:{" "}
+                  <span className="font-medium text-[#111111]">
+                    {fmtTime(calcResult.labourMinutes)}
+                  </span>{" "}
+                  at £{fmt(settings.hourlyRatePence)}/hr ={" "}
+                  <span className="font-medium text-[#111111]">
+                    £{fmt(calcResult.labourCost)}
+                  </span>
+                </p>
+                {calcConfig && (
+                  <p className="text-xs text-[#6b7280] mt-1">
+                    Rate: {calcConfig.batchSize} units every {calcConfig.batchMinutes} min
+                    {" · "}
+                    {Math.ceil(calcQty / calcConfig.batchSize)} batch
+                    {Math.ceil(calcQty / calcConfig.batchSize) !== 1 ? "es" : ""}
+                  </p>
                 )}
               </div>
-            );
-          })}
-
-          {productData.length === 0 && (
-            <div className="px-6 py-12 text-center text-[#6b7280] text-sm">
-              No products found. Add products first.
             </div>
-          )}
-        </div>
-      </div>
+          </div>
+        ) : (
+          <div className="text-center py-10 border-2 border-dashed border-[#e5e1d8] rounded-xl text-[#6b7280] text-sm">
+            {calcProductId
+              ? "Configure batch size and batch time for this product in the Product Setup table above, then re-select it here."
+              : "Select a product and enter a quantity to see the full breakdown."}
+          </div>
+        )}
+      </SectionCard>
 
-      {/* Save bar */}
-      <div className="flex items-center gap-3 pb-4">
+      {/* ── Save ── */}
+      <div className="flex items-center gap-3 pb-6">
         <button
           type="button"
           onClick={handleSave}
