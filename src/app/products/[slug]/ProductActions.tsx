@@ -62,8 +62,8 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
   const currentTier = hasMatrix
     ? (matrixTiers.find((t) => t.qty === effectiveQty) ?? matrixTiers[0])
     : null;
-  const displayPrice = currentTier?.totalPence ?? product.price;
-  const displayUnit = (currentTier && effectiveQty > 1) ? currentTier.unitPence : null;
+  const displayPrice = currentTier ? currentTier.totalPence / 100 : product.price;
+  const displayUnit = (currentTier && effectiveQty > 1) ? currentTier.unitPence / 100 : null;
 
   function handleAddToCart() {
     addItem(product, selectedOptions, effectiveQty, customText || undefined, artworkFile?.name);
