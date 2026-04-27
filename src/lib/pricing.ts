@@ -36,10 +36,15 @@ export function calcRunCosts(
   sizeVariant?: SizeVariant
 ): RunCostResult {
   const isSticker = !config.productType || config.productType === "sticker";
-  const perSheet = isSticker
-    ? (sizeVariant?.stickersPerSheet ??
-        calcStickersPerSheet(config.widthCm, config.heightCm, settings.sheetWidthCm, settings.sheetHeightCm))
-    : 0;
+
+  // Determine items-per-sheet: explicit override takes priority, then sticker sheet calc
+  let perSheet = 0;
+  if (config.itemsPerSheet && config.itemsPerSheet > 0) {
+    perSheet = config.itemsPerSheet;
+  } else if (isSticker) {
+    perSheet = sizeVariant?.stickersPerSheet ??
+      calcStickersPerSheet(config.widthCm, config.heightCm, settings.sheetWidthCm, settings.sheetHeightCm);
+  }
   const sheetsNeeded = perSheet > 0 ? Math.ceil(quantity / perSheet) : 0;
 
   // Sum costs across all selected materials
@@ -48,10 +53,10 @@ export function calcRunCosts(
   for (const id of materialIds) {
     const mat = settings.materials.find((m) => m.id === id);
     if (!mat) continue;
-    const matIsSticker = !mat.productType || mat.productType === "sticker";
-    if (matIsSticker && sheetsNeeded > 0) {
+    const matIsSheet = !mat.productType || mat.productType === "sticker";
+    if (matIsSheet && sheetsNeeded > 0) {
       materialCost += sheetsNeeded * mat.costPencePerSheet;
-    } else if (!matIsSticker) {
+    } else if (!matIsSheet) {
       materialCost += quantity * mat.costPencePerUnit;
     }
   }
@@ -117,8 +122,11 @@ export function buildPriceMatrix(
     return matrix;
   }
 
-  // No size variants — use standard unit tiers
-  const qtys = UNIT_QTY_TIERS.filter((q) => q <= maxOrderQty);
+  // No size variants — use sheet-snapped tiers if itemsPerSheet is set, else standard unit tiers
+  const ips = product.costConfig.itemsPerSheet;
+  const qtys = ips && ips > 0
+    ? getQuantityTiers(ips, maxOrderQty)
+    : UNIT_QTY_TIERS.filter((q) => q <= maxOrderQty);
   return {
     "": qtys.map((qty) => {
       const r = calcRunCosts(product.costConfig!, costSettings, qty, targetProfitPercent);

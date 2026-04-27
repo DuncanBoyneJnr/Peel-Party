@@ -491,6 +491,25 @@ export default function ProductForm({
             )}
           </div>
 
+          {!isSticker && (
+            <div>
+              <label className={labelClass}>Items per sheet <span className="text-[#6b7280] font-normal">(how many fit on one sheet of material)</span></label>
+              <input
+                type="number" step="1" min="1" placeholder="e.g. 5"
+                className={inputClass}
+                value={costCfg.itemsPerSheet ?? ""}
+                onChange={(e) =>
+                  updateCostConfig("itemsPerSheet", e.target.value !== "" ? parseInt(e.target.value) : undefined)
+                }
+              />
+              {costCfg.itemsPerSheet && costCfg.itemsPerSheet > 0 && (
+                <p className="text-xs text-[#6b7280] mt-1">
+                  Quantity tiers will step in multiples of {costCfg.itemsPerSheet}. Sheet-based materials (e.g. sublimation paper) will be costed per sheet.
+                </p>
+              )}
+            </div>
+          )}
+
           {isSticker && (
             <>
               <div>

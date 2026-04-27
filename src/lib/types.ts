@@ -7,6 +7,7 @@ export interface ProductCostConfig {
   materialIds?: string[];
   widthCm?: number;
   heightCm?: number;
+  itemsPerSheet?: number; // for sublimation products: how many items fit on one sheet
   batchSize: number;
   batchMinutes: number;
   inkCostPence?: number;
