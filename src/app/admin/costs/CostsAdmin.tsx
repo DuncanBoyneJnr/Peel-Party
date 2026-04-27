@@ -12,8 +12,30 @@ interface Props {
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
+const CM_PER_INCH = 2.54;
+
 function fmt(pence: number) {
   return (pence / 100).toFixed(2);
+}
+
+function fmtCm(cm: number | undefined) {
+  return cm ? cm.toFixed(2) : "";
+}
+
+function fmtIn(cm: number | undefined) {
+  return cm ? (cm / CM_PER_INCH).toFixed(3) : "";
+}
+
+function calcStickersPerSheet(
+  widthCm: number | undefined,
+  heightCm: number | undefined,
+  sheetW: number,
+  sheetH: number
+): number {
+  if (!widthCm || !heightCm) return 0;
+  const normal = Math.floor(sheetW / widthCm) * Math.floor(sheetH / heightCm);
+  const rotated = Math.floor(sheetW / heightCm) * Math.floor(sheetH / widthCm);
+  return Math.max(normal, rotated, 0);
 }
 
 function fmtTime(minutes: number) {
@@ -30,7 +52,14 @@ function calcRunCosts(
   profitPct: number
 ) {
   const material = settings.materials.find((m) => m.id === config.materialId);
-  const materialCost = material ? quantity * material.costPencePer : 0;
+  const perSheet = calcStickersPerSheet(
+    config.widthCm,
+    config.heightCm,
+    settings.sheetWidthCm,
+    settings.sheetHeightCm
+  );
+  const sheetsNeeded = perSheet > 0 ? Math.ceil(quantity / perSheet) : 0;
+  const materialCost = material ? sheetsNeeded * material.costPencePerSheet : 0;
   const inkCost = quantity * (config.inkCostPence ?? settings.defaultInkCostPence);
   const batches = config.batchSize > 0 ? Math.ceil(quantity / config.batchSize) : 0;
   const labourMinutes = batches * config.batchMinutes;
@@ -44,6 +73,8 @@ function calcRunCosts(
   const profit = suggestedPrice - totalCost;
   const pricePerUnit = quantity > 0 ? Math.round(suggestedPrice / quantity) : 0;
   return {
+    perSheet,
+    sheetsNeeded,
     materialCost,
     inkCost,
     labourMinutes,
@@ -153,7 +184,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
   // ── Materials ──────────────────────────────────────────────────────────────
 
   function addMaterial() {
-    const mat: MaterialType = { id: `mat_${Date.now()}`, name: "", costPencePer: 0 };
+    const mat: MaterialType = { id: `mat_${Date.now()}`, name: "", costPencePerSheet: 0 };
     setSettings((prev) => ({ ...prev, materials: [...prev.materials, mat] }));
   }
 
@@ -296,12 +327,78 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
             />
           </div>
         </div>
+
+        <div className="mt-4 pt-4 border-t border-[#e5e1d8]">
+          <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider mb-3">
+            Printable Sheet Size
+          </p>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
+            <div>
+              <Label>Sheet Width (cm)</Label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                className={inputCls}
+                value={settings.sheetWidthCm}
+                onChange={(e) =>
+                  updateGlobal("sheetWidthCm", parseFloat(e.target.value || "0"))
+                }
+              />
+            </div>
+            <div>
+              <Label>Sheet Height (cm)</Label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                className={inputCls}
+                value={settings.sheetHeightCm}
+                onChange={(e) =>
+                  updateGlobal("sheetHeightCm", parseFloat(e.target.value || "0"))
+                }
+              />
+            </div>
+            <div>
+              <Label>Sheet Width (in)</Label>
+              <input
+                type="number"
+                step="0.001"
+                min="0"
+                className={inputCls}
+                value={(settings.sheetWidthCm / CM_PER_INCH).toFixed(3)}
+                onChange={(e) =>
+                  updateGlobal(
+                    "sheetWidthCm",
+                    parseFloat(e.target.value || "0") * CM_PER_INCH
+                  )
+                }
+              />
+            </div>
+            <div>
+              <Label>Sheet Height (in)</Label>
+              <input
+                type="number"
+                step="0.001"
+                min="0"
+                className={inputCls}
+                value={(settings.sheetHeightCm / CM_PER_INCH).toFixed(3)}
+                onChange={(e) =>
+                  updateGlobal(
+                    "sheetHeightCm",
+                    parseFloat(e.target.value || "0") * CM_PER_INCH
+                  )
+                }
+              />
+            </div>
+          </div>
+        </div>
       </SectionCard>
 
       {/* ── 2. Materials ── */}
       <SectionCard
         title="Materials"
-        subtitle="Define your sticker material types and cost per unit (per sticker)."
+        subtitle="Define your sticker paper types and cost per A4 sheet."
         action={
           <button
             type="button"
@@ -323,7 +420,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                 Material Name
               </span>
               <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
-                Cost per unit (£)
+                Cost per sheet (£)
               </span>
               <span />
             </div>
@@ -342,11 +439,11 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                   min="0"
                   placeholder="0.00"
                   className={cellInputCls}
-                  value={fmt(mat.costPencePer)}
+                  value={fmt(mat.costPencePerSheet)}
                   onChange={(e) =>
                     updateMaterial(
                       mat.id,
-                      "costPencePer",
+                      "costPencePerSheet",
                       Math.round(parseFloat(e.target.value || "0") * 100)
                     )
                   }
@@ -369,7 +466,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
         <div className="px-6 py-4 border-b border-[#e5e1d8]">
           <h2 className="font-display font-700 text-lg text-[#111111]">Product Setup</h2>
           <p className="text-[#6b7280] text-sm mt-0.5">
-            Assign a material and set the production batch rate for each product.
+            Set sticker dimensions and production batch rate for each product. Dimensions sync between cm and inches automatically.
             <br />
             <span className="text-[#111111] font-medium">Batch size</span> = how many units you
             make at once.{" "}
@@ -387,41 +484,60 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                 <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
                   Material
                 </th>
-                <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
-                  Batch size
+                <th className="text-center px-3 py-1 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap" colSpan={2}>
+                  Height
+                </th>
+                <th className="text-center px-3 py-1 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap" colSpan={2}>
+                  Width
                 </th>
                 <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
-                  Batch time (mins)
+                  /sheet
                 </th>
                 <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
-                  Ink/unit £
+                  Batch
                 </th>
                 <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
-                  Postage £
+                  Mins
                 </th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
+                  Ink £
+                </th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
+                  Post £
+                </th>
+              </tr>
+              <tr className="border-b border-[#e5e1d8] bg-[#f9f7f4]">
+                <th colSpan={2} />
+                <th className="px-3 pb-2 text-xs text-[#9ca3af] font-medium text-center whitespace-nowrap">cm</th>
+                <th className="px-3 pb-2 text-xs text-[#9ca3af] font-medium text-center whitespace-nowrap">in</th>
+                <th className="px-3 pb-2 text-xs text-[#9ca3af] font-medium text-center whitespace-nowrap">cm</th>
+                <th className="px-3 pb-2 text-xs text-[#9ca3af] font-medium text-center whitespace-nowrap">in</th>
+                <th colSpan={5} />
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e5e1d8]">
               {products.map((product) => {
                 const cfg = getConfig(product.id);
+                const perSheet = calcStickersPerSheet(
+                  cfg.widthCm,
+                  cfg.heightCm,
+                  settings.sheetWidthCm,
+                  settings.sheetHeightCm
+                );
                 return (
                   <tr key={product.id} className="hover:bg-[#f9f7f4] transition-colors">
                     <td className="px-6 py-3">
-                      <p className="font-medium text-[#111111] truncate max-w-[160px]">
+                      <p className="font-medium text-[#111111] truncate max-w-[140px]">
                         {product.name}
                       </p>
                       <p className="text-xs text-[#6b7280] capitalize">{product.category}</p>
                     </td>
-                    <td className="px-3 py-3 min-w-[160px]">
+                    <td className="px-3 py-3 min-w-[140px]">
                       <select
                         className={cellInputCls}
                         value={cfg.materialId ?? ""}
                         onChange={(e) =>
-                          updateConfig(
-                            product.id,
-                            "materialId",
-                            e.target.value || undefined
-                          )
+                          updateConfig(product.id, "materialId", e.target.value || undefined)
                         }
                       >
                         <option value="">— none —</option>
@@ -432,19 +548,101 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                         ))}
                       </select>
                     </td>
+                    {/* Height cm */}
+                    <td className="px-2 py-3">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        className={`${cellInputCls} w-20`}
+                        value={fmtCm(cfg.heightCm)}
+                        onChange={(e) =>
+                          updateConfig(
+                            product.id,
+                            "heightCm",
+                            e.target.value ? parseFloat(e.target.value) : undefined
+                          )
+                        }
+                      />
+                    </td>
+                    {/* Height inches */}
+                    <td className="px-2 py-3">
+                      <input
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        placeholder="0.000"
+                        className={`${cellInputCls} w-20`}
+                        value={fmtIn(cfg.heightCm)}
+                        onChange={(e) =>
+                          updateConfig(
+                            product.id,
+                            "heightCm",
+                            e.target.value
+                              ? parseFloat(e.target.value) * CM_PER_INCH
+                              : undefined
+                          )
+                        }
+                      />
+                    </td>
+                    {/* Width cm */}
+                    <td className="px-2 py-3">
+                      <input
+                        type="number"
+                        step="0.01"
+                        min="0"
+                        placeholder="0.00"
+                        className={`${cellInputCls} w-20`}
+                        value={fmtCm(cfg.widthCm)}
+                        onChange={(e) =>
+                          updateConfig(
+                            product.id,
+                            "widthCm",
+                            e.target.value ? parseFloat(e.target.value) : undefined
+                          )
+                        }
+                      />
+                    </td>
+                    {/* Width inches */}
+                    <td className="px-2 py-3">
+                      <input
+                        type="number"
+                        step="0.001"
+                        min="0"
+                        placeholder="0.000"
+                        className={`${cellInputCls} w-20`}
+                        value={fmtIn(cfg.widthCm)}
+                        onChange={(e) =>
+                          updateConfig(
+                            product.id,
+                            "widthCm",
+                            e.target.value
+                              ? parseFloat(e.target.value) * CM_PER_INCH
+                              : undefined
+                          )
+                        }
+                      />
+                    </td>
+                    {/* Stickers per sheet */}
+                    <td className="px-3 py-3">
+                      <span
+                        className={`text-sm font-semibold ${
+                          perSheet > 0 ? "text-[#111111]" : "text-[#d1d5db]"
+                        }`}
+                      >
+                        {perSheet > 0 ? perSheet : "—"}
+                      </span>
+                    </td>
                     <td className="px-3 py-3">
                       <input
                         type="number"
                         step="1"
                         min="1"
-                        className={`${cellInputCls} w-20`}
+                        className={`${cellInputCls} w-16`}
                         value={cfg.batchSize}
                         onChange={(e) =>
-                          updateConfig(
-                            product.id,
-                            "batchSize",
-                            parseInt(e.target.value || "1")
-                          )
+                          updateConfig(product.id, "batchSize", parseInt(e.target.value || "1"))
                         }
                       />
                     </td>
@@ -453,7 +651,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                         type="number"
                         step="1"
                         min="1"
-                        className={`${cellInputCls} w-20`}
+                        className={`${cellInputCls} w-16`}
                         value={cfg.batchMinutes}
                         onChange={(e) =>
                           updateConfig(
@@ -470,10 +668,8 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                         step="0.01"
                         min="0"
                         placeholder={fmt(settings.defaultInkCostPence)}
-                        className={`${cellInputCls} w-24`}
-                        value={
-                          cfg.inkCostPence !== undefined ? fmt(cfg.inkCostPence) : ""
-                        }
+                        className={`${cellInputCls} w-20`}
+                        value={cfg.inkCostPence !== undefined ? fmt(cfg.inkCostPence) : ""}
                         onChange={(e) =>
                           updateConfig(
                             product.id,
@@ -491,10 +687,8 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                         step="0.01"
                         min="0"
                         placeholder={fmt(settings.defaultPostagePence)}
-                        className={`${cellInputCls} w-24`}
-                        value={
-                          cfg.postagePence !== undefined ? fmt(cfg.postagePence) : ""
-                        }
+                        className={`${cellInputCls} w-20`}
+                        value={cfg.postagePence !== undefined ? fmt(cfg.postagePence) : ""}
                         onChange={(e) =>
                           updateConfig(
                             product.id,
@@ -511,10 +705,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
               })}
               {products.length === 0 && (
                 <tr>
-                  <td
-                    colSpan={6}
-                    className="px-6 py-10 text-center text-sm text-[#6b7280]"
-                  >
+                  <td colSpan={11} className="px-6 py-10 text-center text-sm text-[#6b7280]">
                     No products found.
                   </td>
                 </tr>
@@ -579,11 +770,11 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                 Cost Breakdown — {calcQty} units
               </p>
               <CostRow
-                label={`Material${
+                label={`Paper${
                   calcConfig?.materialId
                     ? ` (${settings.materials.find((m) => m.id === calcConfig?.materialId)?.name ?? ""})`
                     : " (none set)"
-                }`}
+                }${calcResult.perSheet > 0 ? ` · ${calcResult.sheetsNeeded} sheet${calcResult.sheetsNeeded !== 1 ? "s" : ""}` : ""}`}
                 value={`£${fmt(calcResult.materialCost)}`}
               />
               <CostRow label="Ink" value={`£${fmt(calcResult.inkCost)}`} />
@@ -617,7 +808,24 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                 value={`£${fmt(calcResult.pricePerUnit)}`}
               />
               <div className="mt-2 p-3 bg-white rounded-lg border border-[#e5e1d8]">
-                <p className="text-xs text-[#6b7280]">
+                {calcResult.perSheet > 0 ? (
+                  <p className="text-xs text-[#6b7280]">
+                    Paper:{" "}
+                    <span className="font-medium text-[#111111]">
+                      {calcResult.perSheet} stickers/sheet
+                    </span>
+                    {" · "}
+                    <span className="font-medium text-[#111111]">
+                      {calcResult.sheetsNeeded} sheet{calcResult.sheetsNeeded !== 1 ? "s" : ""}
+                    </span>{" "}
+                    needed
+                  </p>
+                ) : (
+                  <p className="text-xs text-[#6b7280]">
+                    Set sticker dimensions in Product Setup to calculate sheets needed.
+                  </p>
+                )}
+                <p className="text-xs text-[#6b7280] mt-1">
                   Labour:{" "}
                   <span className="font-medium text-[#111111]">
                     {fmtTime(calcResult.labourMinutes)}

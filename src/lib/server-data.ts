@@ -172,11 +172,13 @@ export async function saveBundles(bundles: Bundle[]): Promise<void> {
 export interface MaterialType {
   id: string;
   name: string;
-  costPencePer: number; // pence per unit of material (per sticker/item)
+  costPencePerSheet: number; // pence per A4 sheet of this material
 }
 
 export interface ProductCostConfig {
   materialId?: string;   // links to MaterialType.id
+  widthCm?: number;      // sticker width in cm (canonical; inches derived)
+  heightCm?: number;     // sticker height in cm
   batchSize: number;     // how many units per production batch
   batchMinutes: number;  // how many minutes that batch takes
   inkCostPence?: number; // pence per unit, overrides global default
@@ -188,6 +190,8 @@ export interface CostSettings {
   targetProfitPercent: number;
   defaultPostagePence: number;
   defaultInkCostPence: number;
+  sheetWidthCm: number;  // max printable width (default 17.32 cm)
+  sheetHeightCm: number; // max printable height (default 23.67 cm)
   materials: MaterialType[];
   productConfigs: Record<string, ProductCostConfig>;
 }
@@ -197,6 +201,8 @@ const defaultCostSettings: CostSettings = {
   targetProfitPercent: 40,
   defaultPostagePence: 150,
   defaultInkCostPence: 10,
+  sheetWidthCm: 17.32,
+  sheetHeightCm: 23.67,
   materials: [],
   productConfigs: {},
 };
