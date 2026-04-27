@@ -272,6 +272,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
     const mat: MaterialType = {
       id: `mat_${Date.now()}`,
       name: "",
+      productType: "sticker",
       costPencePerSheet: 0,
       costPencePerUnit: 0,
     };
@@ -516,64 +517,70 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                 Material Name
               </span>
               <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
-                Cost / sheet (£)
+                Product Type
               </span>
               <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
-                Cost / unit (£)
+                Cost (£)
               </span>
               <span />
             </div>
-            {settings.materials.map((mat) => (
-              <div
-                key={mat.id}
-                className="grid grid-cols-[1fr_160px_160px_40px] gap-3 items-center"
-              >
-                <input
-                  type="text"
-                  placeholder="e.g. Glossy Vinyl, Matte, Holographic, Blank Mug…"
-                  className={cellInputCls}
-                  value={mat.name}
-                  onChange={(e) => updateMaterial(mat.id, "name", e.target.value)}
-                />
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  className={cellInputCls}
-                  value={fmt(mat.costPencePerSheet)}
-                  onChange={(e) =>
-                    updateMaterial(
-                      mat.id,
-                      "costPencePerSheet",
-                      Math.round(parseFloat(e.target.value || "0") * 100)
-                    )
-                  }
-                />
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="0.00"
-                  className={cellInputCls}
-                  value={fmt(mat.costPencePerUnit)}
-                  onChange={(e) =>
-                    updateMaterial(
-                      mat.id,
-                      "costPencePerUnit",
-                      Math.round(parseFloat(e.target.value || "0") * 100)
-                    )
-                  }
-                />
-                <button
-                  type="button"
-                  onClick={() => deleteMaterial(mat.id)}
-                  className="h-9 w-9 flex items-center justify-center rounded-lg text-[#6b7280] hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer"
+            {settings.materials.map((mat) => {
+              const matIsSticker = !mat.productType || mat.productType === "sticker";
+              return (
+                <div
+                  key={mat.id}
+                  className="grid grid-cols-[1fr_160px_160px_40px] gap-3 items-center"
                 >
-                  <Trash2 size={15} />
-                </button>
-              </div>
-            ))}
+                  <input
+                    type="text"
+                    placeholder="e.g. Holographic Sheet, Blank Mug, White T-Shirt…"
+                    className={cellInputCls}
+                    value={mat.name}
+                    onChange={(e) => updateMaterial(mat.id, "name", e.target.value)}
+                  />
+                  <select
+                    className={cellInputCls}
+                    value={mat.productType ?? "sticker"}
+                    onChange={(e) =>
+                      updateMaterial(mat.id, "productType", e.target.value as ProductType)
+                    }
+                  >
+                    {(Object.keys(PRODUCT_TYPE_LABELS) as ProductType[]).map((t) => (
+                      <option key={t} value={t}>
+                        {PRODUCT_TYPE_LABELS[t]}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="0.00"
+                      className={cellInputCls}
+                      value={fmt(matIsSticker ? mat.costPencePerSheet : mat.costPencePerUnit)}
+                      onChange={(e) =>
+                        updateMaterial(
+                          mat.id,
+                          matIsSticker ? "costPencePerSheet" : "costPencePerUnit",
+                          Math.round(parseFloat(e.target.value || "0") * 100)
+                        )
+                      }
+                    />
+                    <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] text-[#9ca3af] pointer-events-none">
+                      {matIsSticker ? "/sheet" : "/unit"}
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => deleteMaterial(mat.id)}
+                    className="h-9 w-9 flex items-center justify-center rounded-lg text-[#6b7280] hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              );
+            })}
           </div>
         )}
       </SectionCard>

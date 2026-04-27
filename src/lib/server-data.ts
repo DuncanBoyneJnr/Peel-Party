@@ -174,8 +174,9 @@ export type ProductType = "sticker" | "cup" | "tshirt" | "other";
 export interface MaterialType {
   id: string;
   name: string;
-  costPencePerSheet: number; // pence per A4 sheet (used for sticker products)
-  costPencePerUnit: number;  // pence per blank item (used for cups, t-shirts, etc.)
+  productType: ProductType;  // determines which cost field is relevant
+  costPencePerSheet: number; // pence per A4 sheet (sticker products)
+  costPencePerUnit: number;  // pence per blank item (cups, t-shirts, etc.)
 }
 
 export interface ProductCostConfig {
