@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { Save, CheckCircle2, Plus, Trash2, Calculator } from "lucide-react";
 import { Product } from "@/lib/types";
-import { CostSettings, MaterialType, ProductCostConfig } from "@/lib/server-data";
+import { CostSettings, MaterialType, ProductCostConfig, ProductType } from "@/lib/server-data";
 
 interface Props {
   products: Product[];
@@ -14,16 +14,15 @@ interface Props {
 
 const CM_PER_INCH = 2.54;
 
+const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
+  sticker: "Sticker Sheet",
+  cup: "Cup / Mug",
+  tshirt: "T-Shirt",
+  other: "Other (per unit)",
+};
+
 function fmt(pence: number) {
   return (pence / 100).toFixed(2);
-}
-
-function fmtCm(cm: number | undefined) {
-  return cm ? cm.toFixed(2) : "";
-}
-
-function fmtIn(cm: number | undefined) {
-  return cm ? (cm / CM_PER_INCH).toFixed(3) : "";
 }
 
 function calcStickersPerSheet(
@@ -52,14 +51,16 @@ function calcRunCosts(
   profitPct: number
 ) {
   const material = settings.materials.find((m) => m.id === config.materialId);
-  const perSheet = calcStickersPerSheet(
-    config.widthCm,
-    config.heightCm,
-    settings.sheetWidthCm,
-    settings.sheetHeightCm
-  );
+  const isSticker = !config.productType || config.productType === "sticker";
+  const perSheet = isSticker
+    ? calcStickersPerSheet(config.widthCm, config.heightCm, settings.sheetWidthCm, settings.sheetHeightCm)
+    : 0;
   const sheetsNeeded = perSheet > 0 ? Math.ceil(quantity / perSheet) : 0;
-  const materialCost = material ? sheetsNeeded * material.costPencePerSheet : 0;
+  const materialCost = material
+    ? isSticker
+      ? sheetsNeeded * material.costPencePerSheet
+      : quantity * material.costPencePerUnit
+    : 0;
   const inkCost = quantity * (config.inkCostPence ?? settings.defaultInkCostPence);
   const batches = config.batchSize > 0 ? Math.ceil(quantity / config.batchSize) : 0;
   const labourMinutes = batches * config.batchMinutes;
@@ -73,6 +74,7 @@ function calcRunCosts(
   const profit = suggestedPrice - totalCost;
   const pricePerUnit = quantity > 0 ? Math.round(suggestedPrice / quantity) : 0;
   return {
+    isSticker,
     perSheet,
     sheetsNeeded,
     materialCost,
@@ -160,6 +162,89 @@ function CostRow({
   );
 }
 
+// ── Dimension cell — keeps cm and inches in sync ──────────────────────────────
+
+function DimPair({
+  valueCm,
+  disabled,
+  onChangeCm,
+}: {
+  valueCm: number | undefined;
+  disabled?: boolean;
+  onChangeCm: (cm: number | undefined) => void;
+}) {
+  // Local string state lets the user type freely; we only push to parent on change
+  const [cmStr, setCmStr] = useState(valueCm ? valueCm.toFixed(2) : "");
+  const [inStr, setInStr] = useState(valueCm ? (valueCm / CM_PER_INCH).toFixed(3) : "");
+
+  // Keep displays in sync when external state changes (e.g. on load)
+  const extCm = valueCm ? valueCm.toFixed(2) : "";
+  const extIn = valueCm ? (valueCm / CM_PER_INCH).toFixed(3) : "";
+
+  function handleCmChange(raw: string) {
+    setCmStr(raw);
+    const n = parseFloat(raw);
+    if (!isNaN(n) && n > 0) {
+      setInStr((n / CM_PER_INCH).toFixed(3));
+      onChangeCm(n);
+    } else if (raw === "" || raw === "0") {
+      setInStr("");
+      onChangeCm(undefined);
+    }
+  }
+
+  function handleInChange(raw: string) {
+    setInStr(raw);
+    const n = parseFloat(raw);
+    if (!isNaN(n) && n > 0) {
+      const cm = n * CM_PER_INCH;
+      setCmStr(cm.toFixed(2));
+      onChangeCm(cm);
+    } else if (raw === "" || raw === "0") {
+      setCmStr("");
+      onChangeCm(undefined);
+    }
+  }
+
+  // Sync from parent when first mounted or externally reset
+  const prevExt = useMemo(() => extCm, []); // eslint-disable-line react-hooks/exhaustive-deps
+  if (extCm !== prevExt && extCm !== cmStr) {
+    setCmStr(extCm);
+    setInStr(extIn);
+  }
+
+  const dimCls = `${cellInputCls} w-28${disabled ? " opacity-40 cursor-not-allowed" : ""}`;
+
+  return (
+    <>
+      <td className="px-2 py-2.5">
+        <input
+          type="number"
+          step="0.01"
+          min="0"
+          placeholder="0.00"
+          disabled={disabled}
+          className={dimCls}
+          value={cmStr}
+          onChange={(e) => handleCmChange(e.target.value)}
+        />
+      </td>
+      <td className="px-2 py-2.5">
+        <input
+          type="number"
+          step="0.001"
+          min="0"
+          placeholder="0.000"
+          disabled={disabled}
+          className={dimCls}
+          value={inStr}
+          onChange={(e) => handleInChange(e.target.value)}
+        />
+      </td>
+    </>
+  );
+}
+
 // ── Main component ───────────────────────────────────────────────────────────
 
 export default function CostsAdmin({ products, initialSettings }: Props) {
@@ -184,7 +269,12 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
   // ── Materials ──────────────────────────────────────────────────────────────
 
   function addMaterial() {
-    const mat: MaterialType = { id: `mat_${Date.now()}`, name: "", costPencePerSheet: 0 };
+    const mat: MaterialType = {
+      id: `mat_${Date.now()}`,
+      name: "",
+      costPencePerSheet: 0,
+      costPencePerUnit: 0,
+    };
     setSettings((prev) => ({ ...prev, materials: [...prev.materials, mat] }));
   }
 
@@ -211,7 +301,13 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
   // ── Product configs ────────────────────────────────────────────────────────
 
   function getConfig(productId: string): ProductCostConfig {
-    return settings.productConfigs[productId] ?? { batchSize: 10, batchMinutes: 5 };
+    return (
+      settings.productConfigs[productId] ?? {
+        productType: "sticker",
+        batchSize: 10,
+        batchMinutes: 5,
+      }
+    );
   }
 
   function updateConfig(
@@ -253,7 +349,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
   // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-5xl flex flex-col gap-6">
+    <div className="max-w-6xl flex flex-col gap-6">
 
       {/* ── 1. Global Settings ── */}
       <SectionCard
@@ -340,7 +436,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                 step="0.01"
                 min="0"
                 className={inputCls}
-                value={settings.sheetWidthCm}
+                value={settings.sheetWidthCm.toFixed(2)}
                 onChange={(e) =>
                   updateGlobal("sheetWidthCm", parseFloat(e.target.value || "0"))
                 }
@@ -353,7 +449,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                 step="0.01"
                 min="0"
                 className={inputCls}
-                value={settings.sheetHeightCm}
+                value={settings.sheetHeightCm.toFixed(2)}
                 onChange={(e) =>
                   updateGlobal("sheetHeightCm", parseFloat(e.target.value || "0"))
                 }
@@ -398,7 +494,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
       {/* ── 2. Materials ── */}
       <SectionCard
         title="Materials"
-        subtitle="Define your sticker paper types and cost per A4 sheet."
+        subtitle="Define your materials. Set cost/sheet for sticker paper; set cost/unit for blank cups, t-shirts, etc."
         action={
           <button
             type="button"
@@ -415,20 +511,26 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
           </p>
         ) : (
           <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-[1fr_180px_40px] gap-3 px-1 mb-1">
+            <div className="grid grid-cols-[1fr_160px_160px_40px] gap-3 px-1 mb-1">
               <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
                 Material Name
               </span>
               <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
-                Cost per sheet (£)
+                Cost / sheet (£)
+              </span>
+              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
+                Cost / unit (£)
               </span>
               <span />
             </div>
             {settings.materials.map((mat) => (
-              <div key={mat.id} className="grid grid-cols-[1fr_180px_40px] gap-3 items-center">
+              <div
+                key={mat.id}
+                className="grid grid-cols-[1fr_160px_160px_40px] gap-3 items-center"
+              >
                 <input
                   type="text"
-                  placeholder="e.g. Glossy Vinyl, Matte, Holographic…"
+                  placeholder="e.g. Glossy Vinyl, Matte, Holographic, Blank Mug…"
                   className={cellInputCls}
                   value={mat.name}
                   onChange={(e) => updateMaterial(mat.id, "name", e.target.value)}
@@ -444,6 +546,21 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                     updateMaterial(
                       mat.id,
                       "costPencePerSheet",
+                      Math.round(parseFloat(e.target.value || "0") * 100)
+                    )
+                  }
+                />
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  className={cellInputCls}
+                  value={fmt(mat.costPencePerUnit)}
+                  onChange={(e) =>
+                    updateMaterial(
+                      mat.id,
+                      "costPencePerUnit",
                       Math.round(parseFloat(e.target.value || "0") * 100)
                     )
                   }
@@ -466,28 +583,35 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
         <div className="px-6 py-4 border-b border-[#e5e1d8]">
           <h2 className="font-display font-700 text-lg text-[#111111]">Product Setup</h2>
           <p className="text-[#6b7280] text-sm mt-0.5">
-            Set sticker dimensions and production batch rate for each product. Dimensions sync between cm and inches automatically.
+            Set the product type, material, and dimensions. Sticker dimensions sync between cm and inches automatically — type in either.
             <br />
-            <span className="text-[#111111] font-medium">Batch size</span> = how many units you
-            make at once.{" "}
-            <span className="text-[#111111] font-medium">Batch time</span> = how many minutes
-            that batch takes.
+            <span className="text-[#111111] font-medium">Batch size</span> = units per run.{" "}
+            <span className="text-[#111111] font-medium">Batch time</span> = minutes per run.
           </p>
         </div>
         <div className="overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#e5e1d8] bg-[#f9f7f4]">
-                <th className="text-left px-6 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
+                <th className="text-left px-4 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
                   Product
                 </th>
-                <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider">
+                <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
+                  Type
+                </th>
+                <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
                   Material
                 </th>
-                <th className="text-center px-3 py-1 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap" colSpan={2}>
+                <th
+                  colSpan={2}
+                  className="text-center px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap"
+                >
                   Height
                 </th>
-                <th className="text-center px-3 py-1 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap" colSpan={2}>
+                <th
+                  colSpan={2}
+                  className="text-center px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap"
+                >
                   Width
                 </th>
                 <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
@@ -507,32 +631,47 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                 </th>
               </tr>
               <tr className="border-b border-[#e5e1d8] bg-[#f9f7f4]">
-                <th colSpan={2} />
-                <th className="px-3 pb-2 text-xs text-[#9ca3af] font-medium text-center whitespace-nowrap">cm</th>
-                <th className="px-3 pb-2 text-xs text-[#9ca3af] font-medium text-center whitespace-nowrap">in</th>
-                <th className="px-3 pb-2 text-xs text-[#9ca3af] font-medium text-center whitespace-nowrap">cm</th>
-                <th className="px-3 pb-2 text-xs text-[#9ca3af] font-medium text-center whitespace-nowrap">in</th>
+                <th colSpan={3} />
+                <th className="px-2 pb-2 text-xs text-[#9ca3af] font-medium text-center whitespace-nowrap">cm</th>
+                <th className="px-2 pb-2 text-xs text-[#9ca3af] font-medium text-center whitespace-nowrap">in</th>
+                <th className="px-2 pb-2 text-xs text-[#9ca3af] font-medium text-center whitespace-nowrap">cm</th>
+                <th className="px-2 pb-2 text-xs text-[#9ca3af] font-medium text-center whitespace-nowrap">in</th>
                 <th colSpan={5} />
               </tr>
             </thead>
             <tbody className="divide-y divide-[#e5e1d8]">
               {products.map((product) => {
                 const cfg = getConfig(product.id);
-                const perSheet = calcStickersPerSheet(
-                  cfg.widthCm,
-                  cfg.heightCm,
-                  settings.sheetWidthCm,
-                  settings.sheetHeightCm
-                );
+                const isSticker = !cfg.productType || cfg.productType === "sticker";
+                const perSheet = isSticker
+                  ? calcStickersPerSheet(cfg.widthCm, cfg.heightCm, settings.sheetWidthCm, settings.sheetHeightCm)
+                  : 0;
                 return (
                   <tr key={product.id} className="hover:bg-[#f9f7f4] transition-colors">
-                    <td className="px-6 py-3">
+                    <td className="px-4 py-2.5">
                       <p className="font-medium text-[#111111] truncate max-w-[140px]">
                         {product.name}
                       </p>
                       <p className="text-xs text-[#6b7280] capitalize">{product.category}</p>
                     </td>
-                    <td className="px-3 py-3 min-w-[140px]">
+                    {/* Product type */}
+                    <td className="px-3 py-2.5 min-w-[140px]">
+                      <select
+                        className={cellInputCls}
+                        value={cfg.productType ?? "sticker"}
+                        onChange={(e) =>
+                          updateConfig(product.id, "productType", e.target.value as ProductType)
+                        }
+                      >
+                        {(Object.keys(PRODUCT_TYPE_LABELS) as ProductType[]).map((t) => (
+                          <option key={t} value={t}>
+                            {PRODUCT_TYPE_LABELS[t]}
+                          </option>
+                        ))}
+                      </select>
+                    </td>
+                    {/* Material */}
+                    <td className="px-3 py-2.5 min-w-[140px]">
                       <select
                         className={cellInputCls}
                         value={cfg.materialId ?? ""}
@@ -548,93 +687,29 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                         ))}
                       </select>
                     </td>
-                    {/* Height cm */}
-                    <td className="px-2 py-3">
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        className={`${cellInputCls} w-20`}
-                        value={fmtCm(cfg.heightCm)}
-                        onChange={(e) =>
-                          updateConfig(
-                            product.id,
-                            "heightCm",
-                            e.target.value ? parseFloat(e.target.value) : undefined
-                          )
-                        }
-                      />
-                    </td>
-                    {/* Height inches */}
-                    <td className="px-2 py-3">
-                      <input
-                        type="number"
-                        step="0.001"
-                        min="0"
-                        placeholder="0.000"
-                        className={`${cellInputCls} w-20`}
-                        value={fmtIn(cfg.heightCm)}
-                        onChange={(e) =>
-                          updateConfig(
-                            product.id,
-                            "heightCm",
-                            e.target.value
-                              ? parseFloat(e.target.value) * CM_PER_INCH
-                              : undefined
-                          )
-                        }
-                      />
-                    </td>
-                    {/* Width cm */}
-                    <td className="px-2 py-3">
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder="0.00"
-                        className={`${cellInputCls} w-20`}
-                        value={fmtCm(cfg.widthCm)}
-                        onChange={(e) =>
-                          updateConfig(
-                            product.id,
-                            "widthCm",
-                            e.target.value ? parseFloat(e.target.value) : undefined
-                          )
-                        }
-                      />
-                    </td>
-                    {/* Width inches */}
-                    <td className="px-2 py-3">
-                      <input
-                        type="number"
-                        step="0.001"
-                        min="0"
-                        placeholder="0.000"
-                        className={`${cellInputCls} w-20`}
-                        value={fmtIn(cfg.widthCm)}
-                        onChange={(e) =>
-                          updateConfig(
-                            product.id,
-                            "widthCm",
-                            e.target.value
-                              ? parseFloat(e.target.value) * CM_PER_INCH
-                              : undefined
-                          )
-                        }
-                      />
-                    </td>
+                    {/* Height cm + in (synced) */}
+                    <DimPair
+                      valueCm={cfg.heightCm}
+                      disabled={!isSticker}
+                      onChangeCm={(cm) => updateConfig(product.id, "heightCm", cm)}
+                    />
+                    {/* Width cm + in (synced) */}
+                    <DimPair
+                      valueCm={cfg.widthCm}
+                      disabled={!isSticker}
+                      onChangeCm={(cm) => updateConfig(product.id, "widthCm", cm)}
+                    />
                     {/* Stickers per sheet */}
-                    <td className="px-3 py-3">
+                    <td className="px-3 py-2.5">
                       <span
                         className={`text-sm font-semibold ${
                           perSheet > 0 ? "text-[#111111]" : "text-[#d1d5db]"
                         }`}
                       >
-                        {perSheet > 0 ? perSheet : "—"}
+                        {isSticker ? (perSheet > 0 ? perSheet : "—") : "—"}
                       </span>
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-3 py-2.5">
                       <input
                         type="number"
                         step="1"
@@ -646,7 +721,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                         }
                       />
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-3 py-2.5">
                       <input
                         type="number"
                         step="1"
@@ -662,7 +737,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                         }
                       />
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-3 py-2.5">
                       <input
                         type="number"
                         step="0.01"
@@ -681,7 +756,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                         }
                       />
                     </td>
-                    <td className="px-3 py-3">
+                    <td className="px-3 py-2.5">
                       <input
                         type="number"
                         step="0.01"
@@ -705,7 +780,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
               })}
               {products.length === 0 && (
                 <tr>
-                  <td colSpan={11} className="px-6 py-10 text-center text-sm text-[#6b7280]">
+                  <td colSpan={12} className="px-6 py-10 text-center text-sm text-[#6b7280]">
                     No products found.
                   </td>
                 </tr>
@@ -770,11 +845,11 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                 Cost Breakdown — {calcQty} units
               </p>
               <CostRow
-                label={`Paper${
-                  calcConfig?.materialId
-                    ? ` (${settings.materials.find((m) => m.id === calcConfig?.materialId)?.name ?? ""})`
-                    : " (none set)"
-                }${calcResult.perSheet > 0 ? ` · ${calcResult.sheetsNeeded} sheet${calcResult.sheetsNeeded !== 1 ? "s" : ""}` : ""}`}
+                label={
+                  calcResult.isSticker
+                    ? `Paper${calcConfig?.materialId ? ` (${settings.materials.find((m) => m.id === calcConfig?.materialId)?.name ?? ""})` : " (none set)"}${calcResult.perSheet > 0 ? ` · ${calcResult.sheetsNeeded} sheet${calcResult.sheetsNeeded !== 1 ? "s" : ""}` : ""}`
+                    : `Material${calcConfig?.materialId ? ` (${settings.materials.find((m) => m.id === calcConfig?.materialId)?.name ?? ""})` : " (none set)"} · ${calcQty} units`
+                }
                 value={`£${fmt(calcResult.materialCost)}`}
               />
               <CostRow label="Ink" value={`£${fmt(calcResult.inkCost)}`} />
@@ -808,7 +883,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                 value={`£${fmt(calcResult.pricePerUnit)}`}
               />
               <div className="mt-2 p-3 bg-white rounded-lg border border-[#e5e1d8]">
-                {calcResult.perSheet > 0 ? (
+                {calcResult.isSticker && calcResult.perSheet > 0 && (
                   <p className="text-xs text-[#6b7280]">
                     Paper:{" "}
                     <span className="font-medium text-[#111111]">
@@ -820,7 +895,8 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                     </span>{" "}
                     needed
                   </p>
-                ) : (
+                )}
+                {calcResult.isSticker && calcResult.perSheet === 0 && (
                   <p className="text-xs text-[#6b7280]">
                     Set sticker dimensions in Product Setup to calculate sheets needed.
                   </p>
