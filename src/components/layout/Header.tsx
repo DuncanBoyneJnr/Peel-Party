@@ -12,6 +12,8 @@ const nav = [
   { label: "Stickers", href: "/shop/stickers" },
   { label: "Mugs", href: "/shop/mugs" },
   { label: "Keyrings", href: "/shop/keyrings" },
+  { label: "Coasters", href: "/shop/coasters" },
+  { label: "Magnets", href: "/shop/magnets" },
   { label: "Our Work", href: "/gallery" },
   { label: "Custom Order", href: "/custom-order" },
   { label: "About", href: "/about" },

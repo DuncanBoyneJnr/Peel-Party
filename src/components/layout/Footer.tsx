@@ -8,6 +8,8 @@ const links = {
     { label: "Stickers", href: "/shop/stickers" },
     { label: "Mugs", href: "/shop/mugs" },
     { label: "Keyrings", href: "/shop/keyrings" },
+    { label: "Coasters", href: "/shop/coasters" },
+    { label: "Magnets", href: "/shop/magnets" },
   ],
   Company: [
     { label: "About Us", href: "/about" },
@@ -34,7 +36,7 @@ export default function Footer() {
               <Image src="/logo.png" alt="Peel & Party Co." width={120} height={120} className="h-16 w-auto brightness-0 invert" />
             </Link>
             <p className="text-sm text-gray-400 leading-relaxed max-w-xs">
-              Custom merchandise made with love. Stickers, mugs, and keyrings for businesses, events, and gifts — all printed to order.
+              Custom merchandise made with love. Stickers, mugs, keyrings, coasters and magnets for businesses, events, and gifts — all printed to order.
             </p>
             <div className="flex items-center gap-3 mt-6">
               <a

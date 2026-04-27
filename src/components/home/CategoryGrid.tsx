@@ -45,6 +45,36 @@ const categories = [
       </svg>
     ),
   },
+  {
+    slug: "coasters",
+    title: "Coasters",
+    description: "Personalised photo and design coasters. Perfect for gifts, weddings, and home décor.",
+    colour: "#6366f1",
+    lightColour: "#eef2ff",
+    icon: (
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="12" fill="#6366f1" fillOpacity="0.15"/>
+        <circle cx="24" cy="24" r="12" stroke="#6366f1" strokeWidth="2.5" fill="none"/>
+        <circle cx="24" cy="24" r="6" stroke="#6366f1" strokeWidth="2" fill="none"/>
+        <circle cx="24" cy="24" r="2" fill="#6366f1"/>
+      </svg>
+    ),
+  },
+  {
+    slug: "magnets",
+    title: "Magnets",
+    description: "Custom printed magnets in any shape or size. Great for fridges, lockers, and marketing.",
+    colour: "#10b981",
+    lightColour: "#ecfdf5",
+    icon: (
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="12" fill="#10b981" fillOpacity="0.15"/>
+        <path d="M16 14h4v12a4 4 0 0 0 8 0V14h4v12a8 8 0 0 1-16 0V14Z" fill="#10b981" fillOpacity="0.3" stroke="#10b981" strokeWidth="2" strokeLinejoin="round"/>
+        <line x1="14" y1="14" x2="20" y2="14" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"/>
+        <line x1="28" y1="14" x2="34" y2="14" stroke="#10b981" strokeWidth="2.5" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
 ];
 
 export default function CategoryGrid() {
@@ -57,7 +87,7 @@ export default function CategoryGrid() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
         {categories.map((cat) => (
           <Link
             key={cat.slug}
