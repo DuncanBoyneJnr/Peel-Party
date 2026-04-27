@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { writeFileSync } from "fs";
-import path from "path";
+import { put } from "@vercel/blob";
 
 export async function POST(req: NextRequest) {
   const formData = await req.formData();
@@ -14,10 +13,7 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "File type not allowed" }, { status: 400 });
   }
 
-  const filename = `gallery-${Date.now()}.${ext}`;
-  const buffer = Buffer.from(await file.arrayBuffer());
-  const dest = path.join(process.cwd(), "public", filename);
-  writeFileSync(dest, buffer);
+  const blob = await put(`uploads/${Date.now()}-${file.name}`, file, { access: "public" });
 
-  return NextResponse.json({ src: `/${filename}` });
+  return NextResponse.json({ src: blob.url });
 }

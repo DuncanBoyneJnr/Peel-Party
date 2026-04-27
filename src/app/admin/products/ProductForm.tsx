@@ -1,8 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, X, Save } from "lucide-react";
+import { useDropzone } from "react-dropzone";
+import Image from "next/image";
+import { Plus, X, Save, Upload, GripVertical } from "lucide-react";
 import { Product } from "@/lib/types";
 
 interface Props {
@@ -29,6 +31,38 @@ export default function ProductForm({ product, isNew }: Props) {
   const [optionRaws, setOptionRaws] = useState<string[]>(
     (product?.options ?? []).map((o) => o.values.join(", "))
   );
+  const [uploadingImages, setUploadingImages] = useState(false);
+
+  const onDrop = useCallback(async (acceptedFiles: File[]) => {
+    setUploadingImages(true);
+    const urls: string[] = [];
+    for (const file of acceptedFiles) {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+      const { src } = await res.json();
+      if (src) urls.push(src);
+    }
+    update("images", [...(form.images ?? []), ...urls]);
+    setUploadingImages(false);
+  }, [form.images]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const { getRootProps, getInputProps, isDragActive } = useDropzone({
+    onDrop,
+    accept: { "image/*": [".jpg", ".jpeg", ".png", ".webp", ".gif"] },
+    multiple: true,
+  });
+
+  function removeImage(url: string) {
+    update("images", (form.images ?? []).filter((u) => u !== url));
+  }
+
+  function moveImage(from: number, to: number) {
+    const imgs = [...(form.images ?? [])];
+    const [moved] = imgs.splice(from, 1);
+    imgs.splice(to, 0, moved);
+    update("images", imgs);
+  }
 
   function update(field: string, value: unknown) {
     setForm((prev) => ({ ...prev, [field]: value }));
@@ -142,6 +176,75 @@ export default function ProductForm({ product, isNew }: Props) {
               <span className="text-sm text-[#111111]">{label}</span>
             </label>
           ))}
+        </div>
+      </div>
+
+      {/* Images */}
+      <div className="bg-white rounded-2xl border border-[#e5e1d8] p-6">
+        <h2 className="font-display font-700 text-lg text-[#111111] mb-1">Product Images</h2>
+        <p className="text-sm text-[#6b7280] mb-5">
+          First image is the main product photo. Drag to reorder.
+        </p>
+
+        {/* Existing images */}
+        {(form.images ?? []).length > 0 && (
+          <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
+            {(form.images ?? []).map((url, i) => (
+              <div key={url} className="relative group aspect-square rounded-xl overflow-hidden border-2 border-[#e5e1d8]">
+                <Image src={url} alt={`Product image ${i + 1}`} fill className="object-cover" sizes="160px" />
+                {/* Primary badge */}
+                {i === 0 && (
+                  <span className="absolute top-1.5 left-1.5 text-[10px] font-semibold bg-[#ef8733] text-white px-1.5 py-0.5 rounded-md">
+                    Main
+                  </span>
+                )}
+                {/* Controls */}
+                <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
+                  {i > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => moveImage(i, i - 1)}
+                      title="Move left"
+                      className="h-7 w-7 bg-white rounded-lg flex items-center justify-center text-[#111111] hover:bg-[#ef8733] hover:text-white transition-colors cursor-pointer"
+                    >
+                      <GripVertical size={13} />
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => removeImage(url)}
+                    title="Remove"
+                    className="h-7 w-7 bg-white rounded-lg flex items-center justify-center text-red-500 hover:bg-red-500 hover:text-white transition-colors cursor-pointer"
+                  >
+                    <X size={13} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Drop zone */}
+        <div
+          {...getRootProps()}
+          className={`border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors ${
+            isDragActive
+              ? "border-[#ef8733] bg-orange-50"
+              : "border-[#e5e1d8] hover:border-[#ef8733] hover:bg-[#fdf9f5]"
+          }`}
+        >
+          <input {...getInputProps()} />
+          <Upload size={24} className={`mx-auto mb-2 ${isDragActive ? "text-[#ef8733]" : "text-[#9ca3af]"}`} />
+          {uploadingImages ? (
+            <p className="text-sm font-medium text-[#ef8733]">Uploading…</p>
+          ) : isDragActive ? (
+            <p className="text-sm font-medium text-[#ef8733]">Drop images here</p>
+          ) : (
+            <>
+              <p className="text-sm font-semibold text-[#111111]">Drop images here or click to browse</p>
+              <p className="text-xs text-[#6b7280] mt-1">JPG, PNG, WebP, GIF — multiple files supported</p>
+            </>
+          )}
         </div>
       </div>
 
