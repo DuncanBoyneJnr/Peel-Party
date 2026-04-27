@@ -6,7 +6,9 @@
       "Bash(git push *)",
       "Bash(npx tsc *)",
       "Bash(npm install *)",
-      "Bash(node -e \"require\\('@vercel/blob'\\); console.log\\('ok'\\)\")"
+      "Bash(node -e \"require\\('@vercel/blob'\\); console.log\\('ok'\\)\")",
+      "Bash(npx vercel *)",
+      "Bash(git mv *)"
     ]
   }
 }
