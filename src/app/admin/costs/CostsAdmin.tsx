@@ -164,6 +164,10 @@ function CostRow({
 
 // ── Dimension cell — keeps cm and inches in sync ──────────────────────────────
 
+// Explicit classes — no w-full so the input doesn't collapse inside a td
+const dimInputCls =
+  "h-9 px-2.5 rounded-lg border-2 border-[#e5e1d8] text-sm focus:outline-none focus:border-[#ef8733] transition-colors bg-white";
+
 function DimPair({
   valueCm,
   disabled,
@@ -173,13 +177,8 @@ function DimPair({
   disabled?: boolean;
   onChangeCm: (cm: number | undefined) => void;
 }) {
-  // Local string state lets the user type freely; we only push to parent on change
   const [cmStr, setCmStr] = useState(valueCm ? valueCm.toFixed(2) : "");
   const [inStr, setInStr] = useState(valueCm ? (valueCm / CM_PER_INCH).toFixed(3) : "");
-
-  // Keep displays in sync when external state changes (e.g. on load)
-  const extCm = valueCm ? valueCm.toFixed(2) : "";
-  const extIn = valueCm ? (valueCm / CM_PER_INCH).toFixed(3) : "";
 
   function handleCmChange(raw: string) {
     setCmStr(raw);
@@ -206,37 +205,30 @@ function DimPair({
     }
   }
 
-  // Sync from parent when first mounted or externally reset
-  const prevExt = useMemo(() => extCm, []); // eslint-disable-line react-hooks/exhaustive-deps
-  if (extCm !== prevExt && extCm !== cmStr) {
-    setCmStr(extCm);
-    setInStr(extIn);
-  }
-
-  const dimCls = `${cellInputCls} w-28${disabled ? " opacity-40 cursor-not-allowed" : ""}`;
+  const cls = `${dimInputCls} w-24${disabled ? " opacity-40 cursor-not-allowed" : ""}`;
 
   return (
     <>
-      <td className="px-2 py-2.5">
+      <td className="px-1 py-2.5 min-w-[6rem]">
         <input
           type="number"
           step="0.01"
           min="0"
           placeholder="0.00"
           disabled={disabled}
-          className={dimCls}
+          className={cls}
           value={cmStr}
           onChange={(e) => handleCmChange(e.target.value)}
         />
       </td>
-      <td className="px-2 py-2.5">
+      <td className="px-1 py-2.5 min-w-[6rem]">
         <input
           type="number"
           step="0.001"
           min="0"
           placeholder="0.000"
           disabled={disabled}
-          className={dimCls}
+          className={cls}
           value={inStr}
           onChange={(e) => handleInChange(e.target.value)}
         />
