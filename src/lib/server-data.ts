@@ -1,5 +1,6 @@
 import Redis from "ioredis";
-import { Product } from "./types";
+import { Product, ProductType, ProductCostConfig } from "./types";
+export type { ProductType, ProductCostConfig };
 
 let _redis: Redis | null = null;
 function getRedis(): Redis {
@@ -169,8 +170,6 @@ export async function saveBundles(bundles: Bundle[]): Promise<void> {
 }
 
 // Costs
-export type ProductType = "sticker" | "cup" | "tshirt" | "other";
-
 export interface StandardSize {
   id: string;
   name: string;
@@ -184,17 +183,6 @@ export interface MaterialType {
   productType: ProductType;  // determines which cost field is relevant
   costPencePerSheet: number; // pence per A4 sheet (sticker products)
   costPencePerUnit: number;  // pence per blank item (cups, t-shirts, etc.)
-}
-
-export interface ProductCostConfig {
-  productType: ProductType; // determines which material cost model to use
-  materialId?: string;      // links to MaterialType.id
-  widthCm?: number;         // sticker width in cm (canonical; inches derived)
-  heightCm?: number;        // sticker height in cm
-  batchSize: number;        // how many units per production batch
-  batchMinutes: number;     // how many minutes that batch takes
-  inkCostPence?: number;    // pence per unit, overrides global default
-  postagePence?: number;    // pence per order, overrides global default
 }
 
 export interface CostSettings {

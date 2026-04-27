@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 import { ShoppingCart, FileText } from "lucide-react";
 import { Product } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
@@ -19,13 +20,23 @@ export default function ProductCard({ product }: ProductCardProps) {
     >
       {/* Image area */}
       <div className="relative bg-[#f9f7f4] aspect-square overflow-hidden">
-        <div className="w-full h-full flex items-center justify-center text-[#6b7280]">
-          <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <rect width="64" height="64" rx="8" fill="#f0ede8"/>
-            <path d="M20 44L28 32L36 40L42 34L52 44H20Z" fill="#d1c8bc"/>
-            <circle cx="26" cy="26" r="4" fill="#d1c8bc"/>
-          </svg>
-        </div>
+        {product.images?.[0] ? (
+          <Image
+            src={product.images[0]}
+            alt={product.name}
+            fill
+            className="object-cover group-hover:scale-105 transition-transform duration-300"
+            sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center text-[#6b7280]">
+            <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+              <rect width="64" height="64" rx="8" fill="#f0ede8"/>
+              <path d="M20 44L28 32L36 40L42 34L52 44H20Z" fill="#d1c8bc"/>
+              <circle cx="26" cy="26" r="4" fill="#d1c8bc"/>
+            </svg>
+          </div>
+        )}
         {product.badge && (
           <div className="absolute top-3 left-3">
             <Badge variant={product.badge === "Sale" ? "black" : "papaya"}>{product.badge}</Badge>

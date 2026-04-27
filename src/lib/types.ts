@@ -1,5 +1,18 @@
 export type Category = "stickers" | "mugs" | "keyrings";
 
+export type ProductType = "sticker" | "cup" | "tshirt" | "other";
+
+export interface ProductCostConfig {
+  productType: ProductType;
+  materialId?: string;
+  widthCm?: number;
+  heightCm?: number;
+  batchSize: number;
+  batchMinutes: number;
+  inkCostPence?: number;
+  postagePence?: number;
+}
+
 export interface SizeVariant {
   name: string;
   widthCm: number;
@@ -34,6 +47,7 @@ export interface Product {
   reviewCount: number;
   rating: number;
   sizeVariants?: SizeVariant[];
+  costConfig?: ProductCostConfig;
 }
 
 export interface CartItem {

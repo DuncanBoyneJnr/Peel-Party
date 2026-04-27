@@ -5,8 +5,8 @@ import { useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
 import Image from "next/image";
 import { Plus, X, Save, Upload, GripVertical } from "lucide-react";
-import { Product, SizeVariant } from "@/lib/types";
-import { StandardSize } from "@/lib/server-data";
+import { Product, SizeVariant, ProductCostConfig, ProductType } from "@/lib/types";
+import { StandardSize, MaterialType } from "@/lib/server-data";
 
 interface Props {
   product?: Product;
@@ -15,6 +15,7 @@ interface Props {
   sheetWidthCm?: number;
   sheetHeightCm?: number;
   maxOrderQty?: number;
+  materials?: MaterialType[];
 }
 
 const emptyProduct: Partial<Product> = {
@@ -29,6 +30,13 @@ const labelClass = "block text-sm font-semibold text-[#111111] mb-1.5";
 
 const CM_PER_INCH = 2.54;
 
+const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
+  sticker: "Sticker Sheet",
+  cup: "Cup / Mug",
+  tshirt: "T-Shirt",
+  other: "Other (per unit)",
+};
+
 function calcPerSheet(w: number, h: number, sw: number, sh: number) {
   if (!w || !h) return 0;
   return Math.max(
@@ -38,7 +46,21 @@ function calcPerSheet(w: number, h: number, sw: number, sh: number) {
   );
 }
 
-export default function ProductForm({ product, isNew, standardSizes = [], sheetWidthCm = 17.32, sheetHeightCm = 23.67, maxOrderQty = 1000 }: Props) {
+const DEFAULT_COST_CONFIG: ProductCostConfig = {
+  productType: "sticker",
+  batchSize: 10,
+  batchMinutes: 5,
+};
+
+export default function ProductForm({
+  product,
+  isNew,
+  standardSizes = [],
+  sheetWidthCm = 17.32,
+  sheetHeightCm = 23.67,
+  maxOrderQty = 1000,
+  materials = [],
+}: Props) {
   const router = useRouter();
   const [form, setForm] = useState<Partial<Product>>(product ?? emptyProduct);
   const [loading, setLoading] = useState(false);
@@ -48,20 +70,94 @@ export default function ProductForm({ product, isNew, standardSizes = [], sheetW
     (product?.options ?? []).map((o) => o.values.join(", "))
   );
   const [uploadingImages, setUploadingImages] = useState(false);
+  const [uploadError, setUploadError] = useState("");
+
+  // Dimension string state for cost setup (always declared, conditionally shown)
+  const initCfg = product?.costConfig ?? DEFAULT_COST_CONFIG;
+  const [heightCmStr, setHeightCmStr] = useState(initCfg.heightCm ? initCfg.heightCm.toFixed(2) : "");
+  const [heightInStr, setHeightInStr] = useState(initCfg.heightCm ? (initCfg.heightCm / CM_PER_INCH).toFixed(3) : "");
+  const [widthCmStr, setWidthCmStr] = useState(initCfg.widthCm ? initCfg.widthCm.toFixed(2) : "");
+  const [widthInStr, setWidthInStr] = useState(initCfg.widthCm ? (initCfg.widthCm / CM_PER_INCH).toFixed(3) : "");
+
+  const costCfg: ProductCostConfig = form.costConfig ?? DEFAULT_COST_CONFIG;
+  const isSticker = costCfg.productType === "sticker";
+  const perSheet = isSticker ? calcPerSheet(costCfg.widthCm ?? 0, costCfg.heightCm ?? 0, sheetWidthCm, sheetHeightCm) : 0;
+
+  function updateCostConfig(field: keyof ProductCostConfig, value: string | number | undefined) {
+    update("costConfig", { ...costCfg, [field]: value });
+  }
+
+  function handleHeightCmChange(raw: string) {
+    setHeightCmStr(raw);
+    const n = parseFloat(raw);
+    if (!isNaN(n) && n > 0) {
+      setHeightInStr((n / CM_PER_INCH).toFixed(3));
+      updateCostConfig("heightCm", n);
+    } else if (raw === "" || raw === "0") {
+      setHeightInStr("");
+      updateCostConfig("heightCm", undefined);
+    }
+  }
+  function handleHeightInChange(raw: string) {
+    setHeightInStr(raw);
+    const n = parseFloat(raw);
+    if (!isNaN(n) && n > 0) {
+      const cm = n * CM_PER_INCH;
+      setHeightCmStr(cm.toFixed(2));
+      updateCostConfig("heightCm", cm);
+    } else if (raw === "" || raw === "0") {
+      setHeightCmStr("");
+      updateCostConfig("heightCm", undefined);
+    }
+  }
+  function handleWidthCmChange(raw: string) {
+    setWidthCmStr(raw);
+    const n = parseFloat(raw);
+    if (!isNaN(n) && n > 0) {
+      setWidthInStr((n / CM_PER_INCH).toFixed(3));
+      updateCostConfig("widthCm", n);
+    } else if (raw === "" || raw === "0") {
+      setWidthInStr("");
+      updateCostConfig("widthCm", undefined);
+    }
+  }
+  function handleWidthInChange(raw: string) {
+    setWidthInStr(raw);
+    const n = parseFloat(raw);
+    if (!isNaN(n) && n > 0) {
+      const cm = n * CM_PER_INCH;
+      setWidthCmStr(cm.toFixed(2));
+      updateCostConfig("widthCm", cm);
+    } else if (raw === "" || raw === "0") {
+      setWidthCmStr("");
+      updateCostConfig("widthCm", undefined);
+    }
+  }
 
   const onDrop = useCallback(async (acceptedFiles: File[]) => {
     setUploadingImages(true);
+    setUploadError("");
     const urls: string[] = [];
     for (const file of acceptedFiles) {
       const fd = new FormData();
       fd.append("file", file);
-      const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
-      const { src } = await res.json();
-      if (src) urls.push(src);
+      try {
+        const res = await fetch("/api/admin/upload", { method: "POST", body: fd });
+        const data = await res.json();
+        if (data.src) {
+          urls.push(data.src);
+        } else {
+          setUploadError(data.error ?? "Upload failed");
+        }
+      } catch {
+        setUploadError("Upload failed — check your connection");
+      }
     }
-    update("images", [...(form.images ?? []), ...urls]);
+    if (urls.length > 0) {
+      setForm((prev) => ({ ...prev, images: [...(prev.images ?? []), ...urls] }));
+    }
     setUploadingImages(false);
-  }, [form.images]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -212,56 +308,6 @@ export default function ProductForm({ product, isNew, standardSizes = [], sheetW
         </div>
       </div>
 
-      {/* Sizes — sticker products only */}
-      {form.category === "stickers" && (
-        <div className="bg-white rounded-2xl border border-[#e5e1d8] p-6">
-          <div className="flex items-start justify-between gap-4 mb-1">
-            <div>
-              <h2 className="font-display font-700 text-lg text-[#111111]">Sizes</h2>
-              <p className="text-sm text-[#6b7280] mt-0.5">
-                Synced from Standard Sizes in Cost Settings. Max order qty: <strong>{maxOrderQty}</strong> — above this, customers are sent to a quote.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={syncSizes}
-              className="inline-flex items-center gap-1.5 h-9 px-4 bg-[#ef8733] text-white rounded-xl text-sm font-semibold hover:bg-[#ea7316] transition-colors cursor-pointer shrink-0"
-            >
-              Sync Sizes
-            </button>
-          </div>
-
-          {standardSizes.length === 0 ? (
-            <p className="text-sm text-[#6b7280] mt-4 p-4 bg-[#f9f7f4] rounded-xl">
-              No standard sizes defined yet. Go to <strong>Admin → Costs &amp; Profit → Standard Sizes</strong> to add them first.
-            </p>
-          ) : (
-            <div className="mt-4 flex flex-col gap-2">
-              {standardSizes.map((s) => {
-                const perSheet = calcPerSheet(s.widthCm, s.heightCm, sheetWidthCm, sheetHeightCm);
-                const synced = (form.sizeVariants ?? []).some((v) => v.name === s.name);
-                return (
-                  <div key={s.id} className={`flex items-center justify-between px-4 py-2.5 rounded-xl border-2 ${synced ? "border-[#ef8733] bg-[#fff7ed]" : "border-[#e5e1d8]"}`}>
-                    <div className="flex items-center gap-3">
-                      <span className={`text-sm font-semibold ${synced ? "text-[#ef8733]" : "text-[#111111]"}`}>{s.name || "Unnamed"}</span>
-                      <span className="text-xs text-[#6b7280]">{s.widthCm}×{s.heightCm} cm · {(s.widthCm / CM_PER_INCH).toFixed(2)}″×{(s.heightCm / CM_PER_INCH).toFixed(2)}″</span>
-                    </div>
-                    <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${perSheet > 0 ? "bg-[#f0fdf4] text-emerald-700" : "bg-red-50 text-red-500"}`}>
-                      {perSheet > 0 ? `${perSheet}/sheet` : "too large"}
-                    </span>
-                  </div>
-                );
-              })}
-              {(form.sizeVariants ?? []).length > 0 && (
-                <p className="text-xs text-[#6b7280] mt-1">
-                  ✓ {form.sizeVariants!.length} size{form.sizeVariants!.length !== 1 ? "s" : ""} synced to this product. Quantities will step in multiples of each size&apos;s stickers/sheet.
-                </p>
-              )}
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Images */}
       <div className="bg-white rounded-2xl border border-[#e5e1d8] p-6">
         <h2 className="font-display font-700 text-lg text-[#111111] mb-1">Product Images</h2>
@@ -269,19 +315,23 @@ export default function ProductForm({ product, isNew, standardSizes = [], sheetW
           First image is the main product photo. Drag to reorder.
         </p>
 
+        {uploadError && (
+          <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-xl text-sm text-red-600">
+            {uploadError}
+          </div>
+        )}
+
         {/* Existing images */}
         {(form.images ?? []).length > 0 && (
           <div className="grid grid-cols-3 sm:grid-cols-4 lg:grid-cols-6 gap-3 mb-4">
             {(form.images ?? []).map((url, i) => (
               <div key={url} className="relative group aspect-square rounded-xl overflow-hidden border-2 border-[#e5e1d8]">
                 <Image src={url} alt={`Product image ${i + 1}`} fill className="object-cover" sizes="160px" />
-                {/* Primary badge */}
                 {i === 0 && (
                   <span className="absolute top-1.5 left-1.5 text-[10px] font-semibold bg-[#ef8733] text-white px-1.5 py-0.5 rounded-md">
                     Main
                   </span>
                 )}
-                {/* Controls */}
                 <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-1.5">
                   {i > 0 && (
                     <button
@@ -328,6 +378,201 @@ export default function ProductForm({ product, isNew, standardSizes = [], sheetW
               <p className="text-xs text-[#6b7280] mt-1">JPG, PNG, WebP, GIF — multiple files supported</p>
             </>
           )}
+        </div>
+      </div>
+
+      {/* Sizes — sticker products only */}
+      {form.category === "stickers" && (
+        <div className="bg-white rounded-2xl border border-[#e5e1d8] p-6">
+          <div className="flex items-start justify-between gap-4 mb-1">
+            <div>
+              <h2 className="font-display font-700 text-lg text-[#111111]">Sizes</h2>
+              <p className="text-sm text-[#6b7280] mt-0.5">
+                Synced from Standard Sizes in Cost Settings. Max order qty: <strong>{maxOrderQty}</strong> — above this, customers are sent to a quote.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={syncSizes}
+              className="inline-flex items-center gap-1.5 h-9 px-4 bg-[#ef8733] text-white rounded-xl text-sm font-semibold hover:bg-[#ea7316] transition-colors cursor-pointer shrink-0"
+            >
+              Sync Sizes
+            </button>
+          </div>
+
+          {standardSizes.length === 0 ? (
+            <p className="text-sm text-[#6b7280] mt-4 p-4 bg-[#f9f7f4] rounded-xl">
+              No standard sizes defined yet. Go to <strong>Admin → Costs &amp; Profit → Standard Sizes</strong> to add them first.
+            </p>
+          ) : (
+            <div className="mt-4 flex flex-col gap-2">
+              {standardSizes.map((s) => {
+                const synced = (form.sizeVariants ?? []).some((v) => v.name === s.name);
+                const perSh = calcPerSheet(s.widthCm, s.heightCm, sheetWidthCm, sheetHeightCm);
+                return (
+                  <div key={s.id} className={`flex items-center justify-between px-4 py-2.5 rounded-xl border-2 ${synced ? "border-[#ef8733] bg-[#fff7ed]" : "border-[#e5e1d8]"}`}>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-sm font-semibold ${synced ? "text-[#ef8733]" : "text-[#111111]"}`}>{s.name || "Unnamed"}</span>
+                      <span className="text-xs text-[#6b7280]">{s.widthCm}×{s.heightCm} cm · {(s.widthCm / CM_PER_INCH).toFixed(2)}″×{(s.heightCm / CM_PER_INCH).toFixed(2)}″</span>
+                    </div>
+                    <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${perSh > 0 ? "bg-[#f0fdf4] text-emerald-700" : "bg-red-50 text-red-500"}`}>
+                      {perSh > 0 ? `${perSh}/sheet` : "too large"}
+                    </span>
+                  </div>
+                );
+              })}
+              {(form.sizeVariants ?? []).length > 0 && (
+                <p className="text-xs text-[#6b7280] mt-1">
+                  ✓ {form.sizeVariants!.length} size{form.sizeVariants!.length !== 1 ? "s" : ""} synced to this product. Quantities will step in multiples of each size&apos;s stickers/sheet.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Cost Setup */}
+      <div className="bg-white rounded-2xl border border-[#e5e1d8] p-6">
+        <h2 className="font-display font-700 text-lg text-[#111111] mb-1">Cost Setup</h2>
+        <p className="text-sm text-[#6b7280] mb-5">
+          Internal only — used in Costs &amp; Profit to calculate suggested pricing.{" "}
+          <span className="font-medium text-[#111111]">Batch size</span> = units per run.{" "}
+          <span className="font-medium text-[#111111]">Batch time</span> = minutes per run.
+        </p>
+
+        <div className="grid sm:grid-cols-2 gap-4">
+          <div>
+            <label className={labelClass}>Product Type</label>
+            <select
+              className={inputClass}
+              value={costCfg.productType}
+              onChange={(e) => updateCostConfig("productType", e.target.value as ProductType)}
+            >
+              {(Object.entries(PRODUCT_TYPE_LABELS) as [ProductType, string][]).map(([v, label]) => (
+                <option key={v} value={v}>{label}</option>
+              ))}
+            </select>
+          </div>
+
+          <div>
+            <label className={labelClass}>Material</label>
+            <select
+              className={inputClass}
+              value={costCfg.materialId ?? ""}
+              onChange={(e) => updateCostConfig("materialId", e.target.value || undefined)}
+            >
+              <option value="">— none —</option>
+              {materials.map((m) => (
+                <option key={m.id} value={m.id}>{m.name || "Unnamed"}</option>
+              ))}
+            </select>
+            {materials.length === 0 && (
+              <p className="text-xs text-[#9ca3af] mt-1">Add materials in Costs &amp; Profit first.</p>
+            )}
+          </div>
+
+          {isSticker && (
+            <>
+              <div>
+                <label className={labelClass}>Height</label>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <input
+                      type="number" step="0.01" min="0" placeholder="0.00"
+                      className={inputClass}
+                      value={heightCmStr}
+                      onChange={(e) => handleHeightCmChange(e.target.value)}
+                    />
+                    <p className="text-xs text-[#9ca3af] mt-0.5 px-1">cm</p>
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="number" step="0.001" min="0" placeholder="0.000"
+                      className={inputClass}
+                      value={heightInStr}
+                      onChange={(e) => handleHeightInChange(e.target.value)}
+                    />
+                    <p className="text-xs text-[#9ca3af] mt-0.5 px-1">inches</p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <label className={labelClass}>Width</label>
+                <div className="flex gap-2">
+                  <div className="flex-1">
+                    <input
+                      type="number" step="0.01" min="0" placeholder="0.00"
+                      className={inputClass}
+                      value={widthCmStr}
+                      onChange={(e) => handleWidthCmChange(e.target.value)}
+                    />
+                    <p className="text-xs text-[#9ca3af] mt-0.5 px-1">cm</p>
+                  </div>
+                  <div className="flex-1">
+                    <input
+                      type="number" step="0.001" min="0" placeholder="0.000"
+                      className={inputClass}
+                      value={widthInStr}
+                      onChange={(e) => handleWidthInChange(e.target.value)}
+                    />
+                    <p className="text-xs text-[#9ca3af] mt-0.5 px-1">inches</p>
+                  </div>
+                </div>
+              </div>
+
+              {perSheet > 0 && (
+                <div className="sm:col-span-2 flex items-center gap-3 px-4 py-3 bg-[#f0fdf4] rounded-xl border border-emerald-100">
+                  <span className="text-sm text-[#6b7280]">Stickers per sheet:</span>
+                  <span className="text-sm font-bold text-emerald-700">{perSheet}</span>
+                </div>
+              )}
+            </>
+          )}
+
+          <div>
+            <label className={labelClass}>Batch Size <span className="text-[#6b7280] font-normal">(units per run)</span></label>
+            <input
+              type="number" step="1" min="1"
+              className={inputClass}
+              value={costCfg.batchSize}
+              onChange={(e) => updateCostConfig("batchSize", parseInt(e.target.value || "1"))}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>Batch Time <span className="text-[#6b7280] font-normal">(minutes per run)</span></label>
+            <input
+              type="number" step="1" min="1"
+              className={inputClass}
+              value={costCfg.batchMinutes}
+              onChange={(e) => updateCostConfig("batchMinutes", parseInt(e.target.value || "1"))}
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>Ink Cost / unit <span className="text-[#6b7280] font-normal">(£, blank = global default)</span></label>
+            <input
+              type="number" step="0.01" min="0" placeholder="default"
+              className={inputClass}
+              value={costCfg.inkCostPence !== undefined ? (costCfg.inkCostPence / 100).toFixed(2) : ""}
+              onChange={(e) =>
+                updateCostConfig("inkCostPence", e.target.value !== "" ? Math.round(parseFloat(e.target.value) * 100) : undefined)
+              }
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>Postage / order <span className="text-[#6b7280] font-normal">(£, blank = global default)</span></label>
+            <input
+              type="number" step="0.01" min="0" placeholder="default"
+              className={inputClass}
+              value={costCfg.postagePence !== undefined ? (costCfg.postagePence / 100).toFixed(2) : ""}
+              onChange={(e) =>
+                updateCostConfig("postagePence", e.target.value !== "" ? Math.round(parseFloat(e.target.value) * 100) : undefined)
+              }
+            />
+          </div>
         </div>
       </div>
 

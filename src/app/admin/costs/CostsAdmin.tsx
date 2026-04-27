@@ -2,8 +2,8 @@
 
 import { useState, useMemo } from "react";
 import { Save, CheckCircle2, Plus, Trash2, Calculator } from "lucide-react";
-import { Product } from "@/lib/types";
-import { CostSettings, MaterialType, ProductCostConfig, ProductType, StandardSize } from "@/lib/server-data";
+import { Product, ProductType, SizeVariant } from "@/lib/types";
+import { CostSettings, MaterialType, ProductCostConfig, StandardSize } from "@/lib/server-data";
 
 interface Props {
   products: Product[];
@@ -48,12 +48,13 @@ function calcRunCosts(
   config: ProductCostConfig,
   settings: CostSettings,
   quantity: number,
-  profitPct: number
+  profitPct: number,
+  sizeVariant?: SizeVariant
 ) {
   const material = settings.materials.find((m) => m.id === config.materialId);
   const isSticker = !config.productType || config.productType === "sticker";
   const perSheet = isSticker
-    ? calcStickersPerSheet(config.widthCm, config.heightCm, settings.sheetWidthCm, settings.sheetHeightCm)
+    ? (sizeVariant?.stickersPerSheet ?? calcStickersPerSheet(config.widthCm, config.heightCm, settings.sheetWidthCm, settings.sheetHeightCm))
     : 0;
   const sheetsNeeded = perSheet > 0 ? Math.ceil(quantity / perSheet) : 0;
   const materialCost = material
@@ -162,80 +163,10 @@ function CostRow({
   );
 }
 
-// ── Dimension cell — keeps cm and inches in sync ──────────────────────────────
+// ── Shared dim input style (used in Standard Sizes table) ────────────────────
 
-// Explicit classes — no w-full so the input doesn't collapse inside a td
 const dimInputCls =
   "h-9 px-2.5 rounded-lg border-2 border-[#e5e1d8] text-sm focus:outline-none focus:border-[#ef8733] transition-colors bg-white";
-
-function DimPair({
-  valueCm,
-  disabled,
-  onChangeCm,
-}: {
-  valueCm: number | undefined;
-  disabled?: boolean;
-  onChangeCm: (cm: number | undefined) => void;
-}) {
-  const [cmStr, setCmStr] = useState(valueCm ? valueCm.toFixed(2) : "");
-  const [inStr, setInStr] = useState(valueCm ? (valueCm / CM_PER_INCH).toFixed(3) : "");
-
-  function handleCmChange(raw: string) {
-    setCmStr(raw);
-    const n = parseFloat(raw);
-    if (!isNaN(n) && n > 0) {
-      setInStr((n / CM_PER_INCH).toFixed(3));
-      onChangeCm(n);
-    } else if (raw === "" || raw === "0") {
-      setInStr("");
-      onChangeCm(undefined);
-    }
-  }
-
-  function handleInChange(raw: string) {
-    setInStr(raw);
-    const n = parseFloat(raw);
-    if (!isNaN(n) && n > 0) {
-      const cm = n * CM_PER_INCH;
-      setCmStr(cm.toFixed(2));
-      onChangeCm(cm);
-    } else if (raw === "" || raw === "0") {
-      setCmStr("");
-      onChangeCm(undefined);
-    }
-  }
-
-  const cls = `${dimInputCls} w-24${disabled ? " opacity-40 cursor-not-allowed" : ""}`;
-
-  return (
-    <>
-      <td className="px-1 py-2.5 min-w-[6rem]">
-        <input
-          type="number"
-          step="0.01"
-          min="0"
-          placeholder="0.00"
-          disabled={disabled}
-          className={cls}
-          value={cmStr}
-          onChange={(e) => handleCmChange(e.target.value)}
-        />
-      </td>
-      <td className="px-1 py-2.5 min-w-[6rem]">
-        <input
-          type="number"
-          step="0.001"
-          min="0"
-          placeholder="0.000"
-          disabled={disabled}
-          className={cls}
-          value={inStr}
-          onChange={(e) => handleInChange(e.target.value)}
-        />
-      </td>
-    </>
-  );
-}
 
 // ── Main component ───────────────────────────────────────────────────────────
 
@@ -246,6 +177,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
 
   // Calculator state
   const [calcProductId, setCalcProductId] = useState("");
+  const [calcSizeName, setCalcSizeName] = useState("");
   const [calcQty, setCalcQty] = useState(100);
   const [calcProfitPct, setCalcProfitPct] = useState(initialSettings.targetProfitPercent);
 
@@ -321,20 +253,6 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
     );
   }
 
-  function updateConfig(
-    productId: string,
-    field: keyof ProductCostConfig,
-    value: string | number | undefined
-  ) {
-    setSettings((prev) => ({
-      ...prev,
-      productConfigs: {
-        ...prev.productConfigs,
-        [productId]: { ...getConfig(productId), [field]: value },
-      },
-    }));
-  }
-
   // ── Save ───────────────────────────────────────────────────────────────────
 
   async function handleSave() {
@@ -351,11 +269,15 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
 
   // ── Calculator ─────────────────────────────────────────────────────────────
 
-  const calcConfig = calcProductId ? getConfig(calcProductId) : null;
+  const calcProduct = products.find((p) => p.id === calcProductId);
+  const calcConfig = calcProductId
+    ? (calcProduct?.costConfig ?? getConfig(calcProductId))
+    : null;
+  const calcSizeVariant = calcProduct?.sizeVariants?.find((v) => v.name === calcSizeName) ?? undefined;
   const calcResult = useMemo(() => {
     if (!calcConfig || calcQty < 1) return null;
-    return calcRunCosts(calcConfig, settings, calcQty, calcProfitPct);
-  }, [calcConfig, settings, calcQty, calcProfitPct]);
+    return calcRunCosts(calcConfig, settings, calcQty, calcProfitPct, calcSizeVariant);
+  }, [calcConfig, settings, calcQty, calcProfitPct, calcSizeVariant]);
 
   // ── Render ─────────────────────────────────────────────────────────────────
 
@@ -691,218 +613,6 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
         )}
       </SectionCard>
 
-      {/* ── 4. Product Setup ── */}
-      <div className="bg-white rounded-2xl border border-[#e5e1d8] overflow-hidden">
-        <div className="px-6 py-4 border-b border-[#e5e1d8]">
-          <h2 className="font-display font-700 text-lg text-[#111111]">Product Setup</h2>
-          <p className="text-[#6b7280] text-sm mt-0.5">
-            Set the product type, material, and dimensions. Sticker dimensions sync between cm and inches automatically — type in either.
-            <br />
-            <span className="text-[#111111] font-medium">Batch size</span> = units per run.{" "}
-            <span className="text-[#111111] font-medium">Batch time</span> = minutes per run.
-          </p>
-        </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-[#e5e1d8] bg-[#f9f7f4]">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
-                  Product
-                </th>
-                <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
-                  Type
-                </th>
-                <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
-                  Material
-                </th>
-                <th
-                  colSpan={2}
-                  className="text-center px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap"
-                >
-                  Height
-                </th>
-                <th
-                  colSpan={2}
-                  className="text-center px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap"
-                >
-                  Width
-                </th>
-                <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
-                  /sheet
-                </th>
-                <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
-                  Batch
-                </th>
-                <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
-                  Mins
-                </th>
-                <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
-                  Ink £
-                </th>
-                <th className="text-left px-3 py-3 text-xs font-semibold text-[#6b7280] uppercase tracking-wider whitespace-nowrap">
-                  Post £
-                </th>
-              </tr>
-              <tr className="border-b border-[#e5e1d8] bg-[#f9f7f4]">
-                <th colSpan={3} />
-                <th className="px-2 pb-2 text-xs text-[#9ca3af] font-medium text-center whitespace-nowrap">cm</th>
-                <th className="px-2 pb-2 text-xs text-[#9ca3af] font-medium text-center whitespace-nowrap">in</th>
-                <th className="px-2 pb-2 text-xs text-[#9ca3af] font-medium text-center whitespace-nowrap">cm</th>
-                <th className="px-2 pb-2 text-xs text-[#9ca3af] font-medium text-center whitespace-nowrap">in</th>
-                <th colSpan={5} />
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-[#e5e1d8]">
-              {products.map((product) => {
-                const cfg = getConfig(product.id);
-                const isSticker = !cfg.productType || cfg.productType === "sticker";
-                const perSheet = isSticker
-                  ? calcStickersPerSheet(cfg.widthCm, cfg.heightCm, settings.sheetWidthCm, settings.sheetHeightCm)
-                  : 0;
-                return (
-                  <tr key={product.id} className="hover:bg-[#f9f7f4] transition-colors">
-                    <td className="px-4 py-2.5">
-                      <p className="font-medium text-[#111111] truncate max-w-[140px]">
-                        {product.name}
-                      </p>
-                      <p className="text-xs text-[#6b7280] capitalize">{product.category}</p>
-                    </td>
-                    {/* Product type */}
-                    <td className="px-3 py-2.5 min-w-[140px]">
-                      <select
-                        className={cellInputCls}
-                        value={cfg.productType ?? "sticker"}
-                        onChange={(e) =>
-                          updateConfig(product.id, "productType", e.target.value as ProductType)
-                        }
-                      >
-                        {(Object.keys(PRODUCT_TYPE_LABELS) as ProductType[]).map((t) => (
-                          <option key={t} value={t}>
-                            {PRODUCT_TYPE_LABELS[t]}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    {/* Material */}
-                    <td className="px-3 py-2.5 min-w-[140px]">
-                      <select
-                        className={cellInputCls}
-                        value={cfg.materialId ?? ""}
-                        onChange={(e) =>
-                          updateConfig(product.id, "materialId", e.target.value || undefined)
-                        }
-                      >
-                        <option value="">— none —</option>
-                        {settings.materials.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.name || "Unnamed"}
-                          </option>
-                        ))}
-                      </select>
-                    </td>
-                    {/* Height cm + in (synced) */}
-                    <DimPair
-                      valueCm={cfg.heightCm}
-                      disabled={!isSticker}
-                      onChangeCm={(cm) => updateConfig(product.id, "heightCm", cm)}
-                    />
-                    {/* Width cm + in (synced) */}
-                    <DimPair
-                      valueCm={cfg.widthCm}
-                      disabled={!isSticker}
-                      onChangeCm={(cm) => updateConfig(product.id, "widthCm", cm)}
-                    />
-                    {/* Stickers per sheet */}
-                    <td className="px-3 py-2.5">
-                      <span
-                        className={`text-sm font-semibold ${
-                          perSheet > 0 ? "text-[#111111]" : "text-[#d1d5db]"
-                        }`}
-                      >
-                        {isSticker ? (perSheet > 0 ? perSheet : "—") : "—"}
-                      </span>
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <input
-                        type="number"
-                        step="1"
-                        min="1"
-                        className={`${cellInputCls} w-16`}
-                        value={cfg.batchSize}
-                        onChange={(e) =>
-                          updateConfig(product.id, "batchSize", parseInt(e.target.value || "1"))
-                        }
-                      />
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <input
-                        type="number"
-                        step="1"
-                        min="1"
-                        className={`${cellInputCls} w-16`}
-                        value={cfg.batchMinutes}
-                        onChange={(e) =>
-                          updateConfig(
-                            product.id,
-                            "batchMinutes",
-                            parseInt(e.target.value || "1")
-                          )
-                        }
-                      />
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder={fmt(settings.defaultInkCostPence)}
-                        className={`${cellInputCls} w-20`}
-                        value={cfg.inkCostPence !== undefined ? fmt(cfg.inkCostPence) : ""}
-                        onChange={(e) =>
-                          updateConfig(
-                            product.id,
-                            "inkCostPence",
-                            e.target.value !== ""
-                              ? Math.round(parseFloat(e.target.value) * 100)
-                              : undefined
-                          )
-                        }
-                      />
-                    </td>
-                    <td className="px-3 py-2.5">
-                      <input
-                        type="number"
-                        step="0.01"
-                        min="0"
-                        placeholder={fmt(settings.defaultPostagePence)}
-                        className={`${cellInputCls} w-20`}
-                        value={cfg.postagePence !== undefined ? fmt(cfg.postagePence) : ""}
-                        onChange={(e) =>
-                          updateConfig(
-                            product.id,
-                            "postagePence",
-                            e.target.value !== ""
-                              ? Math.round(parseFloat(e.target.value) * 100)
-                              : undefined
-                          )
-                        }
-                      />
-                    </td>
-                  </tr>
-                );
-              })}
-              {products.length === 0 && (
-                <tr>
-                  <td colSpan={12} className="px-6 py-10 text-center text-sm text-[#6b7280]">
-                    No products found.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
       {/* ── 4. Production Run Calculator ── */}
       <SectionCard
         title="Production Run Calculator"
@@ -915,7 +625,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
             <select
               className={inputCls}
               value={calcProductId}
-              onChange={(e) => setCalcProductId(e.target.value)}
+              onChange={(e) => { setCalcProductId(e.target.value); setCalcSizeName(""); }}
             >
               <option value="">Select a product…</option>
               {products.map((pr) => (
@@ -925,6 +635,23 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
               ))}
             </select>
           </div>
+          {calcProduct?.sizeVariants?.length ? (
+            <div>
+              <Label>Size</Label>
+              <select
+                className={inputCls}
+                value={calcSizeName}
+                onChange={(e) => setCalcSizeName(e.target.value)}
+              >
+                <option value="">— any (use cost config dims) —</option>
+                {calcProduct.sizeVariants.map((v) => (
+                  <option key={v.name} value={v.name}>
+                    {v.name} · {v.stickersPerSheet}/sheet
+                  </option>
+                ))}
+              </select>
+            </div>
+          ) : null}
           <div>
             <Label>Quantity</Label>
             <input
@@ -1011,7 +738,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                 )}
                 {calcResult.isSticker && calcResult.perSheet === 0 && (
                   <p className="text-xs text-[#6b7280]">
-                    Set sticker dimensions in Product Setup to calculate sheets needed.
+                    Set sticker dimensions in the product&apos;s Cost Setup, or select a size above.
                   </p>
                 )}
                 <p className="text-xs text-[#6b7280] mt-1">
@@ -1038,7 +765,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
         ) : (
           <div className="text-center py-10 border-2 border-dashed border-[#e5e1d8] rounded-xl text-[#6b7280] text-sm">
             {calcProductId
-              ? "Configure batch size and batch time for this product in the Product Setup table above, then re-select it here."
+              ? "Configure batch size and batch time on the product's edit page, then return here."
               : "Select a product and enter a quantity to see the full breakdown."}
           </div>
         )}

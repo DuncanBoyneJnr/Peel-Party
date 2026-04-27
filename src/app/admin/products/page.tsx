@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Plus, Pencil, Tag } from "lucide-react";
+import Image from "next/image";
+import { Plus, Pencil, Tag, ImageOff } from "lucide-react";
 import { getProducts } from "@/lib/server-data";
 import { formatPrice } from "@/lib/utils";
 import DeleteButton from "./DeleteButton";
@@ -29,7 +30,7 @@ export default async function AdminProductsPage() {
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b border-[#e5e1d8] bg-[#f9f7f4]">
-                {["Product", "Category", "Price", "Type", "Featured", "Actions"].map((h) => (
+                {["", "Product", "Category", "Price", "Type", "Featured", "Actions"].map((h) => (
                   <th key={h} className="px-5 py-3.5 text-left text-xs font-semibold text-[#6b7280] uppercase tracking-wide whitespace-nowrap">
                     {h}
                   </th>
@@ -39,6 +40,15 @@ export default async function AdminProductsPage() {
             <tbody>
               {products.map((p) => (
                 <tr key={p.id} className="border-b border-[#f0ede8] last:border-0 hover:bg-[#fafafa] transition-colors">
+                  <td className="pl-4 pr-1 py-3">
+                    <div className="relative w-12 h-12 rounded-lg overflow-hidden bg-[#f0ede8] shrink-0 flex items-center justify-center">
+                      {p.images?.[0] ? (
+                        <Image src={p.images[0]} alt={p.name} fill className="object-cover" sizes="48px" />
+                      ) : (
+                        <ImageOff size={16} className="text-[#d1c8bc]" />
+                      )}
+                    </div>
+                  </td>
                   <td className="px-5 py-4">
                     <div>
                       <p className="font-semibold text-[#111111]">{p.name}</p>

@@ -22,6 +22,7 @@ export default async function NewProductPage() {
         sheetWidthCm={costSettings.sheetWidthCm}
         sheetHeightCm={costSettings.sheetHeightCm}
         maxOrderQty={costSettings.maxOrderQty}
+        materials={costSettings.materials}
       />
     </div>
   );

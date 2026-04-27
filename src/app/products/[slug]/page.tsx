@@ -6,6 +6,7 @@ import Link from "next/link";
 import { getProductBySlug, getCostSettings } from "@/lib/server-data";
 import { formatPrice } from "@/lib/utils";
 import ProductActions from "./ProductActions";
+import ProductGallery from "./ProductGallery";
 import Rating from "@/components/ui/Rating";
 import Badge from "@/components/ui/Badge";
 import { CheckCircle2, Truck, Shield } from "lucide-react";
@@ -42,15 +43,9 @@ export default async function ProductPage({ params }: PageProps) {
 
       <div className="grid lg:grid-cols-2 gap-12 items-start">
         <div className="relative">
-          <div className="aspect-square bg-[#f9f7f4] rounded-2xl border border-[#e5e1d8] flex items-center justify-center overflow-hidden">
-            <svg width="120" height="120" viewBox="0 0 120 120" fill="none">
-              <rect width="120" height="120" rx="16" fill="#f0ede8"/>
-              <circle cx="46" cy="46" r="14" fill="#d1c8bc"/>
-              <path d="M20 95L38 68L55 80L72 60L90 80L108 58L120 70V95H20Z" fill="#d1c8bc"/>
-            </svg>
-          </div>
+          <ProductGallery images={product.images} name={product.name} />
           {product.badge && (
-            <div className="absolute top-4 left-4">
+            <div className="absolute top-4 left-4 z-10">
               <Badge variant={product.badge === "Sale" ? "black" : "papaya"}>{product.badge}</Badge>
             </div>
           )}

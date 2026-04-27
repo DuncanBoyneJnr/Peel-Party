@@ -29,6 +29,7 @@ export default async function EditProductPage({ params }: Props) {
         sheetWidthCm={costSettings.sheetWidthCm}
         sheetHeightCm={costSettings.sheetHeightCm}
         maxOrderQty={costSettings.maxOrderQty}
+        materials={costSettings.materials}
       />
     </div>
   );

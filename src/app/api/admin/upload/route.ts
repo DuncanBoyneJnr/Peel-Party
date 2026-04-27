@@ -13,7 +13,11 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "File type not allowed" }, { status: 400 });
   }
 
-  const blob = await put(`uploads/${Date.now()}-${file.name}`, file, { access: "public" });
-
-  return NextResponse.json({ src: blob.url });
+  try {
+    const blob = await put(`uploads/${Date.now()}-${file.name}`, file, { access: "public" });
+    return NextResponse.json({ src: blob.url });
+  } catch (err) {
+    console.error("Blob upload failed:", err);
+    return NextResponse.json({ error: "Upload failed — check BLOB_READ_WRITE_TOKEN is set" }, { status: 500 });
+  }
 }

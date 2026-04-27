@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { revalidatePath } from "next/cache";
 import { getProducts, saveProducts } from "@/lib/server-data";
 import { Product } from "@/lib/types";
 
@@ -16,5 +17,6 @@ export async function POST(req: NextRequest) {
   };
   products.push(newProduct);
   await saveProducts(products);
+  revalidatePath("/", "layout");
   return NextResponse.json(newProduct, { status: 201 });
 }
