@@ -13,6 +13,12 @@ export interface ProductCostConfig {
   postagePence?: number;
 }
 
+export interface PriceTier {
+  qty: number;
+  totalPence: number;
+  unitPence: number;
+}
+
 export interface SizeVariant {
   name: string;
   widthCm: number;
@@ -48,6 +54,7 @@ export interface Product {
   rating: number;
   sizeVariants?: SizeVariant[];
   costConfig?: ProductCostConfig;
+  priceMatrix?: { [sizeName: string]: PriceTier[] };
 }
 
 export interface CartItem {

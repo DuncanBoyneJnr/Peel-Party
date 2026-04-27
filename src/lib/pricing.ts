@@ -1,4 +1,4 @@
-import { ProductCostConfig, SizeVariant } from "./types";
+import { Product, ProductCostConfig, PriceTier, SizeVariant } from "./types";
 import { CostSettings } from "./server-data";
 
 export function calcStickersPerSheet(
@@ -82,5 +82,47 @@ export function calcRunCosts(
     profit,
     suggestedPrice,
     pricePerUnit,
+  };
+}
+
+// Quantity tiers for sheet-based products (multiples of stickersPerSheet)
+export function getQuantityTiers(stickersPerSheet: number, maxQty: number): number[] {
+  const multipliers = [1, 2, 3, 5, 10, 15, 25, 50, 100, 150, 250, 500, 1000];
+  return [...new Set(
+    multipliers.map((m) => m * stickersPerSheet).filter((q) => q <= maxQty)
+  )].sort((a, b) => a - b);
+}
+
+// Standard quantity tiers for unit-based products
+export const UNIT_QTY_TIERS = [1, 5, 10, 25, 50, 100, 250, 500];
+
+// Build a price matrix for a product and store it alongside the product.
+// Called server-side when a product is saved.
+export function buildPriceMatrix(
+  product: Product,
+  costSettings: CostSettings
+): { [sizeName: string]: PriceTier[] } {
+  if (!product.costConfig) return {};
+  const { targetProfitPercent, maxOrderQty } = costSettings;
+
+  if (product.sizeVariants?.length) {
+    const matrix: { [sizeName: string]: PriceTier[] } = {};
+    for (const variant of product.sizeVariants) {
+      const qtys = getQuantityTiers(variant.stickersPerSheet, maxOrderQty);
+      matrix[variant.name] = qtys.map((qty) => {
+        const r = calcRunCosts(product.costConfig!, costSettings, qty, targetProfitPercent, variant);
+        return { qty, totalPence: r.suggestedPrice, unitPence: r.pricePerUnit };
+      });
+    }
+    return matrix;
+  }
+
+  // No size variants — use standard unit tiers
+  const qtys = UNIT_QTY_TIERS.filter((q) => q <= maxOrderQty);
+  return {
+    "": qtys.map((qty) => {
+      const r = calcRunCosts(product.costConfig!, costSettings, qty, targetProfitPercent);
+      return { qty, totalPence: r.suggestedPrice, unitPence: r.pricePerUnit };
+    }),
   };
 }

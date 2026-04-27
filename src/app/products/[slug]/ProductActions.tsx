@@ -4,8 +4,6 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { ShoppingCart, FileText, Plus, Minus } from "lucide-react";
 import { Product } from "@/lib/types";
-import { CostSettings } from "@/lib/server-data";
-import { calcRunCosts } from "@/lib/pricing";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import Button from "@/components/ui/Button";
@@ -14,91 +12,82 @@ import FileUpload from "@/components/ui/FileUpload";
 interface ProductActionsProps {
   product: Product;
   maxOrderQty?: number;
-  costSettings?: CostSettings;
 }
 
-function getQuantityTiers(step: number, max: number): number[] {
-  const multipliers = [1, 2, 3, 5, 10, 15, 25, 50, 100, 150, 250, 500, 1000];
-  return [...new Set(
-    multipliers.map((m) => m * step).filter((q) => q <= max)
-  )].sort((a, b) => a - b);
-}
-
-export default function ProductActions({ product, maxOrderQty = 1000, costSettings }: ProductActionsProps) {
+export default function ProductActions({ product, maxOrderQty = 1000 }: ProductActionsProps) {
   const { addItem } = useCart();
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(
     Object.fromEntries(product.options.map((o) => [o.name, o.values[0]]))
   );
   const [customText, setCustomText] = useState("");
   const [artworkFile, setArtworkFile] = useState<File | null>(null);
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState<number | null>(null);
   const [added, setAdded] = useState(false);
 
   const isQuote = product.orderType === "request-quote";
 
-  // Dynamic quantity tiers based on selected size variant
   const selectedSizeVariant = useMemo(() => {
     if (!product.sizeVariants?.length) return null;
-    const selectedSize = selectedOptions["Size"];
-    return product.sizeVariants.find((v) => v.name === selectedSize) ?? null;
+    return product.sizeVariants.find((v) => v.name === selectedOptions["Size"]) ?? null;
   }, [product.sizeVariants, selectedOptions]);
 
-  const quantityTiers = useMemo(() => {
-    if (!selectedSizeVariant || selectedSizeVariant.stickersPerSheet < 1) return null;
-    return getQuantityTiers(selectedSizeVariant.stickersPerSheet, maxOrderQty);
-  }, [selectedSizeVariant, maxOrderQty]);
+  // Price matrix tiers for the selected size (or "" for no-size products)
+  const sizeKey = selectedSizeVariant?.name ?? "";
+  const matrixTiers = product.priceMatrix?.[sizeKey] ?? [];
+  const hasMatrix = matrixTiers.length > 0;
 
-  // Snap quantity to first valid tier when size changes
-  const firstTier = quantityTiers?.[0] ?? 1;
-  if (quantityTiers && !quantityTiers.includes(quantity)) {
-    setQuantity(firstTier);
-  }
+  // Derive the effective quantity — snap to first valid tier on size change
+  const validQtys = hasMatrix ? matrixTiers.map((t) => t.qty) : null;
+  const defaultQty = validQtys?.[0] ?? 1;
+  const effectiveQty = quantity !== null && (!validQtys || validQtys.includes(quantity))
+    ? quantity
+    : defaultQty;
 
-  // Dynamic price calculation
-  const priceResult = useMemo(() => {
-    if (!product.costConfig || !costSettings || quantity < 1) return null;
-    return calcRunCosts(
-      product.costConfig,
-      costSettings,
-      quantity,
-      costSettings.targetProfitPercent,
-      selectedSizeVariant ?? undefined
-    );
-  }, [product.costConfig, costSettings, quantity, selectedSizeVariant]);
+  // Fall back to stickersPerSheet-based tiers when no matrix (legacy path)
+  const stickersPerSheet = selectedSizeVariant?.stickersPerSheet ?? 0;
+  const legacyTiers = useMemo(() => {
+    if (hasMatrix || !stickersPerSheet) return null;
+    const multipliers = [1, 2, 3, 5, 10, 15, 25, 50, 100, 150, 250, 500, 1000];
+    return [...new Set(
+      multipliers.map((m) => m * stickersPerSheet).filter((q) => q <= maxOrderQty)
+    )].sort((a, b) => a - b);
+  }, [hasMatrix, stickersPerSheet, maxOrderQty]);
 
-  const displayPrice = priceResult
-    ? priceResult.suggestedPrice
-    : product.price;
+  const tierQtys: number[] = hasMatrix
+    ? matrixTiers.map((t) => t.qty)
+    : (legacyTiers ?? []);
+  const showTierButtons = tierQtys.length > 1;
 
-  const displayPricePerUnit = priceResult
-    ? priceResult.pricePerUnit
+  // Price from matrix (or fallback to product.price)
+  const currentTier = hasMatrix
+    ? (matrixTiers.find((t) => t.qty === effectiveQty) ?? matrixTiers[0])
     : null;
+  const displayPrice = currentTier?.totalPence ?? product.price;
+  const displayUnit = (currentTier && effectiveQty > 1) ? currentTier.unitPence : null;
 
   function handleAddToCart() {
-    addItem(product, selectedOptions, quantity, customText || undefined, artworkFile?.name);
+    addItem(product, selectedOptions, effectiveQty, customText || undefined, artworkFile?.name);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   }
 
   return (
     <div className="flex flex-col gap-5">
-      {/* Dynamic price display (buy-now only) */}
+      {/* Price */}
       {!isQuote && (
         <div className="flex items-baseline gap-3 flex-wrap">
           <span className="font-display font-700 text-3xl text-[#111111]">
             {formatPrice(displayPrice)}
           </span>
-          {product.originalPrice && !priceResult && (
+          {displayUnit && effectiveQty > 1 && (
+            <span className="text-sm text-[#6b7280]">{formatPrice(displayUnit)} each</span>
+          )}
+          {!currentTier && product.originalPrice && (
             <span className="text-lg text-[#6b7280] line-through">{formatPrice(product.originalPrice)}</span>
           )}
-          {displayPricePerUnit && quantity > 1 && (
-            <span className="text-sm text-[#6b7280]">
-              {formatPrice(displayPricePerUnit)} each
-            </span>
-          )}
-          {priceResult && (
+          {currentTier && (
             <span className="text-xs text-[#6b7280] bg-[#f0ede8] px-2 py-1 rounded-lg">
-              for {quantity}
+              for {effectiveQty}
             </span>
           )}
         </div>
@@ -114,7 +103,10 @@ export default function ProductActions({ product, maxOrderQty = 1000, costSettin
             {opt.values.map((val) => (
               <button
                 key={val}
-                onClick={() => setSelectedOptions((prev) => ({ ...prev, [opt.name]: val }))}
+                onClick={() => {
+                  setSelectedOptions((prev) => ({ ...prev, [opt.name]: val }));
+                  setQuantity(null); // reset to default tier for new size
+                }}
                 className={`px-4 py-2 text-sm rounded-full border-2 transition-all cursor-pointer ${
                   selectedOptions[opt.name] === val
                     ? "border-[#ef8733] bg-[#fff7ed] text-[#ef8733] font-semibold"
@@ -150,20 +142,20 @@ export default function ProductActions({ product, maxOrderQty = 1000, costSettin
         <FileUpload onFile={setArtworkFile} label="Upload Artwork (optional)" />
       )}
 
-      {/* Quantity (only for buy-now) */}
+      {/* Quantity */}
       {!isQuote && (
         <div>
           <label className="block text-sm font-semibold text-[#111111] mb-2">Quantity</label>
 
-          {quantityTiers ? (
+          {showTierButtons ? (
             <>
               <div className="flex flex-wrap gap-2">
-                {quantityTiers.map((q) => (
+                {tierQtys.map((q) => (
                   <button
                     key={q}
                     onClick={() => setQuantity(q)}
                     className={`px-4 py-2 text-sm rounded-full border-2 transition-all cursor-pointer ${
-                      quantity === q
+                      effectiveQty === q
                         ? "border-[#ef8733] bg-[#fff7ed] text-[#ef8733] font-semibold"
                         : "border-[#e5e1d8] text-[#111111] hover:border-[#ef8733]"
                     }`}
@@ -172,24 +164,26 @@ export default function ProductActions({ product, maxOrderQty = 1000, costSettin
                   </button>
                 ))}
               </div>
-              <p className="text-xs text-[#6b7280] mt-2">
-                Quantities in multiples of {selectedSizeVariant!.stickersPerSheet} (full sheets).{" "}
-                <Link href={`/custom-order?product=${product.slug}`} className="text-[#ef8733] hover:underline font-medium">
-                  Need more than {maxOrderQty}?
-                </Link>
-              </p>
+              {selectedSizeVariant && (
+                <p className="text-xs text-[#6b7280] mt-2">
+                  Quantities in multiples of {selectedSizeVariant.stickersPerSheet} (full sheets).{" "}
+                  <Link href={`/custom-order?product=${product.slug}`} className="text-[#ef8733] hover:underline font-medium">
+                    Need more than {maxOrderQty}?
+                  </Link>
+                </p>
+              )}
             </>
           ) : (
             <div className="flex items-center gap-3">
               <button
-                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                onClick={() => setQuantity(Math.max(1, effectiveQty - 1))}
                 className="w-10 h-10 rounded-full border-2 border-[#e5e1d8] flex items-center justify-center hover:border-[#ef8733] transition-colors cursor-pointer"
               >
                 <Minus size={16} />
               </button>
-              <span className="text-lg font-semibold text-[#111111] w-8 text-center">{quantity}</span>
+              <span className="text-lg font-semibold text-[#111111] w-8 text-center">{effectiveQty}</span>
               <button
-                onClick={() => setQuantity(quantity + 1)}
+                onClick={() => setQuantity(effectiveQty + 1)}
                 className="w-10 h-10 rounded-full border-2 border-[#e5e1d8] flex items-center justify-center hover:border-[#ef8733] transition-colors cursor-pointer"
               >
                 <Plus size={16} />
