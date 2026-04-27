@@ -15,6 +15,8 @@ const categories = [
   { label: "Stickers", value: "stickers" },
   { label: "Mugs", value: "mugs" },
   { label: "Keyrings", value: "keyrings" },
+  { label: "Coasters", value: "coasters" },
+  { label: "Magnets", value: "magnets" },
 ];
 
 export default async function ShopPage() {

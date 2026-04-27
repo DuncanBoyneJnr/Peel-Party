@@ -258,4 +258,16 @@ export const categoryMeta = {
     heroImage: "/images/cat-keyrings.jpg",
     colour: "#ef8733",
   },
+  coasters: {
+    title: "Coasters",
+    description: "Personalised photo and design coasters. Ideal for gifts, events, and home décor.",
+    heroImage: "/images/cat-coasters.jpg",
+    colour: "#ef8733",
+  },
+  magnets: {
+    title: "Magnets",
+    description: "Custom printed magnets in any shape or size. Great for fridges, lockers, and marketing.",
+    heroImage: "/images/cat-magnets.jpg",
+    colour: "#ef8733",
+  },
 };

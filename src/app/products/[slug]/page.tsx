@@ -4,7 +4,6 @@ import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { getProductBySlug, getCostSettings } from "@/lib/server-data";
-import { formatPrice } from "@/lib/utils";
 import ProductActions from "./ProductActions";
 import ProductGallery from "./ProductGallery";
 import Rating from "@/components/ui/Rating";
@@ -63,17 +62,10 @@ export default async function ProductPage({ params }: PageProps) {
             <Rating value={product.rating} count={product.reviewCount} />
           </div>
 
-          {isQuote ? (
+          {isQuote && (
             <div className="flex items-center gap-3">
               <span className="font-display font-700 text-2xl text-[#111111]">Price on request</span>
               <Badge variant="outline">Request a Quote</Badge>
-            </div>
-          ) : (
-            <div className="flex items-baseline gap-3">
-              <span className="font-display font-700 text-3xl text-[#111111]">{formatPrice(product.price)}</span>
-              {product.originalPrice && (
-                <span className="text-lg text-[#6b7280] line-through">{formatPrice(product.originalPrice)}</span>
-              )}
             </div>
           )}
 
@@ -93,7 +85,7 @@ export default async function ProductPage({ params }: PageProps) {
             ))}
           </ul>
 
-          <ProductActions product={product} maxOrderQty={costSettings.maxOrderQty} />
+          <ProductActions product={product} maxOrderQty={costSettings.maxOrderQty} costSettings={costSettings} />
 
           <div className="flex flex-wrap gap-4 pt-4 border-t border-[#e5e1d8]">
             <div className="flex items-center gap-1.5 text-xs text-[#6b7280]">

@@ -83,7 +83,7 @@ export default function ProductForm({
   const isSticker = costCfg.productType === "sticker";
   const perSheet = isSticker ? calcPerSheet(costCfg.widthCm ?? 0, costCfg.heightCm ?? 0, sheetWidthCm, sheetHeightCm) : 0;
 
-  function updateCostConfig(field: keyof ProductCostConfig, value: string | number | undefined) {
+  function updateCostConfig(field: keyof ProductCostConfig, value: string | number | string[] | undefined) {
     update("costConfig", { ...costCfg, [field]: value });
   }
 
@@ -260,6 +260,8 @@ export default function ProductForm({
               <option value="stickers">Stickers</option>
               <option value="mugs">Mugs</option>
               <option value="keyrings">Keyrings</option>
+              <option value="coasters">Coasters</option>
+              <option value="magnets">Magnets</option>
             </select>
           </div>
           <div>
@@ -381,8 +383,8 @@ export default function ProductForm({
         </div>
       </div>
 
-      {/* Sizes — sticker products only */}
-      {form.category === "stickers" && (
+      {/* Sizes — sheet-based products */}
+      {["stickers", "coasters", "magnets"].includes(form.category ?? "") && (
         <div className="bg-white rounded-2xl border border-[#e5e1d8] p-6">
           <div className="flex items-start justify-between gap-4 mb-1">
             <div>
@@ -455,19 +457,37 @@ export default function ProductForm({
           </div>
 
           <div>
-            <label className={labelClass}>Material</label>
-            <select
-              className={inputClass}
-              value={costCfg.materialId ?? ""}
-              onChange={(e) => updateCostConfig("materialId", e.target.value || undefined)}
-            >
-              <option value="">— none —</option>
-              {materials.map((m) => (
-                <option key={m.id} value={m.id}>{m.name || "Unnamed"}</option>
-              ))}
-            </select>
-            {materials.length === 0 && (
-              <p className="text-xs text-[#9ca3af] mt-1">Add materials in Costs &amp; Profit first.</p>
+            <label className={labelClass}>Materials <span className="text-[#6b7280] font-normal">(select all that apply)</span></label>
+            {materials.length === 0 ? (
+              <p className="text-xs text-[#9ca3af] mt-1">Add materials in Costs &amp; Profit → Materials first.</p>
+            ) : (
+              <div className="flex flex-col gap-2 p-3 rounded-xl border-2 border-[#e5e1d8] bg-[#fafaf9]">
+                {materials.map((m) => {
+                  const checked = (costCfg.materialIds ?? []).includes(m.id);
+                  return (
+                    <label key={m.id} className="flex items-center gap-2.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={checked}
+                        onChange={(e) => {
+                          const current = costCfg.materialIds ?? [];
+                          const next = e.target.checked
+                            ? [...current, m.id]
+                            : current.filter((id) => id !== m.id);
+                          updateCostConfig("materialIds", next.length > 0 ? next : undefined);
+                        }}
+                        className="w-4 h-4 accent-[#ef8733]"
+                      />
+                      <span className="text-sm text-[#111111]">{m.name || "Unnamed"}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
+            {(costCfg.materialIds ?? []).length > 0 && (
+              <p className="text-xs text-[#6b7280] mt-1.5">
+                {(costCfg.materialIds ?? []).length} material{(costCfg.materialIds ?? []).length !== 1 ? "s" : ""} selected — costs will be summed.
+              </p>
             )}
           </div>
 

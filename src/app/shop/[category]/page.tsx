@@ -20,13 +20,19 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export function generateStaticParams() {
-  return [{ category: "stickers" }, { category: "mugs" }, { category: "keyrings" }];
+  return [
+    { category: "stickers" },
+    { category: "mugs" },
+    { category: "keyrings" },
+    { category: "coasters" },
+    { category: "magnets" },
+  ];
 }
 
 export default async function CategoryPage({ params }: PageProps) {
   const { category } = await params;
 
-  if (!["stickers", "mugs", "keyrings"].includes(category)) notFound();
+  if (!["stickers", "mugs", "keyrings", "coasters", "magnets"].includes(category)) notFound();
 
   const meta = categoryMeta[category as Category];
   const categoryProducts = await getProductsByCategory(category);
@@ -53,6 +59,8 @@ export default async function CategoryPage({ params }: PageProps) {
           { label: "Stickers", href: "/shop/stickers" },
           { label: "Mugs", href: "/shop/mugs" },
           { label: "Keyrings", href: "/shop/keyrings" },
+          { label: "Coasters", href: "/shop/coasters" },
+          { label: "Magnets", href: "/shop/magnets" },
         ].map((item) => (
           <Link
             key={item.href}

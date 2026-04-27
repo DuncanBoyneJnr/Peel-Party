@@ -4,6 +4,9 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { ShoppingCart, FileText, Plus, Minus } from "lucide-react";
 import { Product } from "@/lib/types";
+import { CostSettings } from "@/lib/server-data";
+import { calcRunCosts } from "@/lib/pricing";
+import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import Button from "@/components/ui/Button";
 import FileUpload from "@/components/ui/FileUpload";
@@ -11,6 +14,7 @@ import FileUpload from "@/components/ui/FileUpload";
 interface ProductActionsProps {
   product: Product;
   maxOrderQty?: number;
+  costSettings?: CostSettings;
 }
 
 function getQuantityTiers(step: number, max: number): number[] {
@@ -20,7 +24,7 @@ function getQuantityTiers(step: number, max: number): number[] {
   )].sort((a, b) => a - b);
 }
 
-export default function ProductActions({ product, maxOrderQty = 1000 }: ProductActionsProps) {
+export default function ProductActions({ product, maxOrderQty = 1000, costSettings }: ProductActionsProps) {
   const { addItem } = useCart();
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(
     Object.fromEntries(product.options.map((o) => [o.name, o.values[0]]))
@@ -44,11 +48,31 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
     return getQuantityTiers(selectedSizeVariant.stickersPerSheet, maxOrderQty);
   }, [selectedSizeVariant, maxOrderQty]);
 
-  // When size changes, snap quantity to first valid tier
+  // Snap quantity to first valid tier when size changes
   const firstTier = quantityTiers?.[0] ?? 1;
   if (quantityTiers && !quantityTiers.includes(quantity)) {
     setQuantity(firstTier);
   }
+
+  // Dynamic price calculation
+  const priceResult = useMemo(() => {
+    if (!product.costConfig || !costSettings || quantity < 1) return null;
+    return calcRunCosts(
+      product.costConfig,
+      costSettings,
+      quantity,
+      costSettings.targetProfitPercent,
+      selectedSizeVariant ?? undefined
+    );
+  }, [product.costConfig, costSettings, quantity, selectedSizeVariant]);
+
+  const displayPrice = priceResult
+    ? priceResult.suggestedPrice
+    : product.price;
+
+  const displayPricePerUnit = priceResult
+    ? priceResult.pricePerUnit
+    : null;
 
   function handleAddToCart() {
     addItem(product, selectedOptions, quantity, customText || undefined, artworkFile?.name);
@@ -58,6 +82,28 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
 
   return (
     <div className="flex flex-col gap-5">
+      {/* Dynamic price display (buy-now only) */}
+      {!isQuote && (
+        <div className="flex items-baseline gap-3 flex-wrap">
+          <span className="font-display font-700 text-3xl text-[#111111]">
+            {formatPrice(displayPrice)}
+          </span>
+          {product.originalPrice && !priceResult && (
+            <span className="text-lg text-[#6b7280] line-through">{formatPrice(product.originalPrice)}</span>
+          )}
+          {displayPricePerUnit && quantity > 1 && (
+            <span className="text-sm text-[#6b7280]">
+              {formatPrice(displayPricePerUnit)} each
+            </span>
+          )}
+          {priceResult && (
+            <span className="text-xs text-[#6b7280] bg-[#f0ede8] px-2 py-1 rounded-lg">
+              for {quantity}
+            </span>
+          )}
+        </div>
+      )}
+
       {/* Option selectors */}
       {product.options.map((opt) => (
         <div key={opt.name}>
@@ -168,7 +214,7 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
           {added ? (
             "✓ Added to cart!"
           ) : (
-            <><ShoppingCart size={18} /> Add to Cart</>
+            <><ShoppingCart size={18} /> Add to Cart — {formatPrice(displayPrice)}</>
           )}
         </Button>
       )}

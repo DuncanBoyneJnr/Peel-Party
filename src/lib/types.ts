@@ -1,10 +1,10 @@
-export type Category = "stickers" | "mugs" | "keyrings";
+export type Category = "stickers" | "mugs" | "keyrings" | "coasters" | "magnets";
 
 export type ProductType = "sticker" | "cup" | "tshirt" | "other";
 
 export interface ProductCostConfig {
   productType: ProductType;
-  materialId?: string;
+  materialIds?: string[];
   widthCm?: number;
   heightCm?: number;
   batchSize: number;
