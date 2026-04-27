@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { Save, CheckCircle2, Plus, Trash2, Calculator } from "lucide-react";
 import { Product } from "@/lib/types";
-import { CostSettings, MaterialType, ProductCostConfig, ProductType } from "@/lib/server-data";
+import { CostSettings, MaterialType, ProductCostConfig, ProductType, StandardSize } from "@/lib/server-data";
 
 interface Props {
   products: Product[];
@@ -289,6 +289,24 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
         ])
       ),
     }));
+  }
+
+  // ── Standard sizes ────────────────────────────────────────────────────────
+
+  function addStandardSize() {
+    const s: StandardSize = { id: `sz_${Date.now()}`, name: "", widthCm: 0, heightCm: 0 };
+    setSettings((prev) => ({ ...prev, standardSizes: [...prev.standardSizes, s] }));
+  }
+
+  function updateStandardSize(id: string, field: keyof StandardSize, value: string | number) {
+    setSettings((prev) => ({
+      ...prev,
+      standardSizes: prev.standardSizes.map((s) => (s.id === id ? { ...s, [field]: value } : s)),
+    }));
+  }
+
+  function deleteStandardSize(id: string) {
+    setSettings((prev) => ({ ...prev, standardSizes: prev.standardSizes.filter((s) => s.id !== id) }));
   }
 
   // ── Product configs ────────────────────────────────────────────────────────
@@ -577,7 +595,103 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
         )}
       </SectionCard>
 
-      {/* ── 3. Product Setup ── */}
+      {/* ── 3. Standard Sizes ── */}
+      <SectionCard
+        title="Standard Sizes"
+        subtitle="Define the sizes you offer for sticker products. These will be auto-synced onto products in the Product admin."
+        action={
+          <button
+            type="button"
+            onClick={addStandardSize}
+            className="inline-flex items-center gap-1.5 h-9 px-4 bg-[#111111] text-white rounded-xl text-sm font-semibold hover:bg-[#222] transition-colors cursor-pointer shrink-0"
+          >
+            <Plus size={14} /> Add Size
+          </button>
+        }
+      >
+        <div className="mb-4 flex items-center gap-4">
+          <div className="flex items-center gap-3">
+            <label className="text-sm font-semibold text-[#111111]">Max order quantity</label>
+            <input
+              type="number"
+              step="1"
+              min="1"
+              className="h-9 w-28 px-2.5 rounded-lg border-2 border-[#e5e1d8] text-sm focus:outline-none focus:border-[#ef8733] transition-colors bg-white"
+              value={settings.maxOrderQty}
+              onChange={(e) => updateGlobal("maxOrderQty", parseInt(e.target.value || "1000"))}
+            />
+            <span className="text-xs text-[#6b7280]">Above this → customer sent to quote</span>
+          </div>
+        </div>
+
+        {settings.standardSizes.length === 0 ? (
+          <p className="text-sm text-[#6b7280] py-6 text-center border-2 border-dashed border-[#e5e1d8] rounded-xl">
+            No sizes yet. Click &ldquo;Add Size&rdquo; to get started.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-[1fr_90px_90px_90px_90px_70px_40px] gap-2 px-1 mb-1">
+              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">Name</span>
+              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">H (cm)</span>
+              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">W (cm)</span>
+              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">H (in)</span>
+              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">W (in)</span>
+              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">/sheet</span>
+              <span />
+            </div>
+            {settings.standardSizes.map((size) => {
+              const perSheet = calcStickersPerSheet(size.widthCm, size.heightCm, settings.sheetWidthCm, settings.sheetHeightCm);
+              return (
+                <div key={size.id} className="grid grid-cols-[1fr_90px_90px_90px_90px_70px_40px] gap-2 items-center">
+                  <input
+                    type="text"
+                    placeholder="e.g. 3×3 cm, A6, Small"
+                    className={cellInputCls}
+                    value={size.name}
+                    onChange={(e) => updateStandardSize(size.id, "name", e.target.value)}
+                  />
+                  <input
+                    type="number" step="0.01" min="0" placeholder="0.00"
+                    className={`${dimInputCls} w-full`}
+                    value={size.heightCm || ""}
+                    onChange={(e) => updateStandardSize(size.id, "heightCm", parseFloat(e.target.value || "0"))}
+                  />
+                  <input
+                    type="number" step="0.01" min="0" placeholder="0.00"
+                    className={`${dimInputCls} w-full`}
+                    value={size.widthCm || ""}
+                    onChange={(e) => updateStandardSize(size.id, "widthCm", parseFloat(e.target.value || "0"))}
+                  />
+                  <input
+                    type="number" step="0.001" min="0" placeholder="0.000"
+                    className={`${dimInputCls} w-full`}
+                    value={size.heightCm ? (size.heightCm / CM_PER_INCH).toFixed(3) : ""}
+                    onChange={(e) => updateStandardSize(size.id, "heightCm", parseFloat(e.target.value || "0") * CM_PER_INCH)}
+                  />
+                  <input
+                    type="number" step="0.001" min="0" placeholder="0.000"
+                    className={`${dimInputCls} w-full`}
+                    value={size.widthCm ? (size.widthCm / CM_PER_INCH).toFixed(3) : ""}
+                    onChange={(e) => updateStandardSize(size.id, "widthCm", parseFloat(e.target.value || "0") * CM_PER_INCH)}
+                  />
+                  <span className={`text-sm font-semibold text-center ${perSheet > 0 ? "text-[#111111]" : "text-[#d1d5db]"}`}>
+                    {perSheet > 0 ? perSheet : "—"}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => deleteStandardSize(size.id)}
+                    className="h-9 w-9 flex items-center justify-center rounded-lg text-[#6b7280] hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </SectionCard>
+
+      {/* ── 4. Product Setup ── */}
       <div className="bg-white rounded-2xl border border-[#e5e1d8] overflow-hidden">
         <div className="px-6 py-4 border-b border-[#e5e1d8]">
           <h2 className="font-display font-700 text-lg text-[#111111]">Product Setup</h2>

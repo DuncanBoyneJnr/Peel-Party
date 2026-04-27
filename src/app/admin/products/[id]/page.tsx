@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
-import { getProducts } from "@/lib/server-data";
+import { getProducts, getCostSettings } from "@/lib/server-data";
 import ProductForm from "../ProductForm";
 
 export const dynamic = "force-dynamic";
@@ -10,7 +10,7 @@ interface Props { params: Promise<{ id: string }> }
 
 export default async function EditProductPage({ params }: Props) {
   const { id } = await params;
-  const products = await getProducts();
+  const [products, costSettings] = await Promise.all([getProducts(), getCostSettings()]);
   const product = products.find((p) => p.id === id);
   if (!product) notFound();
 
@@ -23,7 +23,13 @@ export default async function EditProductPage({ params }: Props) {
         <h1 className="font-display font-800 text-3xl text-[#111111]">Edit Product</h1>
         <p className="text-[#6b7280] mt-1">{product.name}</p>
       </div>
-      <ProductForm product={product} />
+      <ProductForm
+        product={product}
+        standardSizes={costSettings.standardSizes}
+        sheetWidthCm={costSettings.sheetWidthCm}
+        sheetHeightCm={costSettings.sheetHeightCm}
+        maxOrderQty={costSettings.maxOrderQty}
+      />
     </div>
   );
 }

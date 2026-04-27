@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { ShoppingCart, FileText, Plus, Minus } from "lucide-react";
 import { Product } from "@/lib/types";
@@ -10,9 +10,17 @@ import FileUpload from "@/components/ui/FileUpload";
 
 interface ProductActionsProps {
   product: Product;
+  maxOrderQty?: number;
 }
 
-export default function ProductActions({ product }: ProductActionsProps) {
+function getQuantityTiers(step: number, max: number): number[] {
+  const multipliers = [1, 2, 3, 5, 10, 15, 25, 50, 100, 150, 250, 500, 1000];
+  return [...new Set(
+    multipliers.map((m) => m * step).filter((q) => q <= max)
+  )].sort((a, b) => a - b);
+}
+
+export default function ProductActions({ product, maxOrderQty = 1000 }: ProductActionsProps) {
   const { addItem } = useCart();
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(
     Object.fromEntries(product.options.map((o) => [o.name, o.values[0]]))
@@ -23,6 +31,24 @@ export default function ProductActions({ product }: ProductActionsProps) {
   const [added, setAdded] = useState(false);
 
   const isQuote = product.orderType === "request-quote";
+
+  // Dynamic quantity tiers based on selected size variant
+  const selectedSizeVariant = useMemo(() => {
+    if (!product.sizeVariants?.length) return null;
+    const selectedSize = selectedOptions["Size"];
+    return product.sizeVariants.find((v) => v.name === selectedSize) ?? null;
+  }, [product.sizeVariants, selectedOptions]);
+
+  const quantityTiers = useMemo(() => {
+    if (!selectedSizeVariant || selectedSizeVariant.stickersPerSheet < 1) return null;
+    return getQuantityTiers(selectedSizeVariant.stickersPerSheet, maxOrderQty);
+  }, [selectedSizeVariant, maxOrderQty]);
+
+  // When size changes, snap quantity to first valid tier
+  const firstTier = quantityTiers?.[0] ?? 1;
+  if (quantityTiers && !quantityTiers.includes(quantity)) {
+    setQuantity(firstTier);
+  }
 
   function handleAddToCart() {
     addItem(product, selectedOptions, quantity, customText || undefined, artworkFile?.name);
@@ -82,21 +108,48 @@ export default function ProductActions({ product }: ProductActionsProps) {
       {!isQuote && (
         <div>
           <label className="block text-sm font-semibold text-[#111111] mb-2">Quantity</label>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setQuantity(Math.max(1, quantity - 1))}
-              className="w-10 h-10 rounded-full border-2 border-[#e5e1d8] flex items-center justify-center hover:border-[#ef8733] transition-colors cursor-pointer"
-            >
-              <Minus size={16} />
-            </button>
-            <span className="text-lg font-semibold text-[#111111] w-8 text-center">{quantity}</span>
-            <button
-              onClick={() => setQuantity(quantity + 1)}
-              className="w-10 h-10 rounded-full border-2 border-[#e5e1d8] flex items-center justify-center hover:border-[#ef8733] transition-colors cursor-pointer"
-            >
-              <Plus size={16} />
-            </button>
-          </div>
+
+          {quantityTiers ? (
+            <>
+              <div className="flex flex-wrap gap-2">
+                {quantityTiers.map((q) => (
+                  <button
+                    key={q}
+                    onClick={() => setQuantity(q)}
+                    className={`px-4 py-2 text-sm rounded-full border-2 transition-all cursor-pointer ${
+                      quantity === q
+                        ? "border-[#ef8733] bg-[#fff7ed] text-[#ef8733] font-semibold"
+                        : "border-[#e5e1d8] text-[#111111] hover:border-[#ef8733]"
+                    }`}
+                  >
+                    {q}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-[#6b7280] mt-2">
+                Quantities in multiples of {selectedSizeVariant!.stickersPerSheet} (full sheets).{" "}
+                <Link href={`/custom-order?product=${product.slug}`} className="text-[#ef8733] hover:underline font-medium">
+                  Need more than {maxOrderQty}?
+                </Link>
+              </p>
+            </>
+          ) : (
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setQuantity(Math.max(1, quantity - 1))}
+                className="w-10 h-10 rounded-full border-2 border-[#e5e1d8] flex items-center justify-center hover:border-[#ef8733] transition-colors cursor-pointer"
+              >
+                <Minus size={16} />
+              </button>
+              <span className="text-lg font-semibold text-[#111111] w-8 text-center">{quantity}</span>
+              <button
+                onClick={() => setQuantity(quantity + 1)}
+                className="w-10 h-10 rounded-full border-2 border-[#e5e1d8] flex items-center justify-center hover:border-[#ef8733] transition-colors cursor-pointer"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+          )}
         </div>
       )}
 

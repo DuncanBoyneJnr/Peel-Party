@@ -171,6 +171,13 @@ export async function saveBundles(bundles: Bundle[]): Promise<void> {
 // Costs
 export type ProductType = "sticker" | "cup" | "tshirt" | "other";
 
+export interface StandardSize {
+  id: string;
+  name: string;
+  widthCm: number;
+  heightCm: number;
+}
+
 export interface MaterialType {
   id: string;
   name: string;
@@ -195,8 +202,10 @@ export interface CostSettings {
   targetProfitPercent: number;
   defaultPostagePence: number;
   defaultInkCostPence: number;
-  sheetWidthCm: number;  // max printable width (default 17.32 cm)
-  sheetHeightCm: number; // max printable height (default 23.67 cm)
+  sheetWidthCm: number;
+  sheetHeightCm: number;
+  standardSizes: StandardSize[];
+  maxOrderQty: number;
   materials: MaterialType[];
   productConfigs: Record<string, ProductCostConfig>;
 }
@@ -208,6 +217,8 @@ const defaultCostSettings: CostSettings = {
   defaultInkCostPence: 10,
   sheetWidthCm: 17.32,
   sheetHeightCm: 23.67,
+  standardSizes: [],
+  maxOrderQty: 1000,
   materials: [],
   productConfigs: {},
 };
@@ -218,6 +229,8 @@ export async function getCostSettings(): Promise<CostSettings> {
   return {
     ...defaultCostSettings,
     ...stored,
+    standardSizes: stored.standardSizes ?? [],
+    maxOrderQty: stored.maxOrderQty ?? 1000,
     materials: stored.materials ?? [],
     productConfigs: stored.productConfigs ?? {},
   };

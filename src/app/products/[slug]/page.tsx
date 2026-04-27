@@ -3,7 +3,7 @@ export const dynamic = "force-dynamic";
 import { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { getProductBySlug } from "@/lib/server-data";
+import { getProductBySlug, getCostSettings } from "@/lib/server-data";
 import { formatPrice } from "@/lib/utils";
 import ProductActions from "./ProductActions";
 import Rating from "@/components/ui/Rating";
@@ -23,7 +23,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
 export default async function ProductPage({ params }: PageProps) {
   const { slug } = await params;
-  const product = await getProductBySlug(slug);
+  const [product, costSettings] = await Promise.all([getProductBySlug(slug), getCostSettings()]);
   if (!product) notFound();
 
   const isQuote = product.orderType === "request-quote";
@@ -98,7 +98,7 @@ export default async function ProductPage({ params }: PageProps) {
             ))}
           </ul>
 
-          <ProductActions product={product} />
+          <ProductActions product={product} maxOrderQty={costSettings.maxOrderQty} />
 
           <div className="flex flex-wrap gap-4 pt-4 border-t border-[#e5e1d8]">
             <div className="flex items-center gap-1.5 text-xs text-[#6b7280]">

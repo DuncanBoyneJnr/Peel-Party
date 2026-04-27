@@ -1,5 +1,12 @@
 export type Category = "stickers" | "mugs" | "keyrings";
 
+export interface SizeVariant {
+  name: string;
+  widthCm: number;
+  heightCm: number;
+  stickersPerSheet: number;
+}
+
 export type OrderType = "buy-now" | "request-quote";
 
 export interface ProductOption {
@@ -26,6 +33,7 @@ export interface Product {
   inStock: boolean;
   reviewCount: number;
   rating: number;
+  sizeVariants?: SizeVariant[];
 }
 
 export interface CartItem {

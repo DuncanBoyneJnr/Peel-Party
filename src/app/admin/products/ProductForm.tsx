@@ -5,11 +5,16 @@ import { useRouter } from "next/navigation";
 import { useDropzone } from "react-dropzone";
 import Image from "next/image";
 import { Plus, X, Save, Upload, GripVertical } from "lucide-react";
-import { Product } from "@/lib/types";
+import { Product, SizeVariant } from "@/lib/types";
+import { StandardSize } from "@/lib/server-data";
 
 interface Props {
   product?: Product;
   isNew?: boolean;
+  standardSizes?: StandardSize[];
+  sheetWidthCm?: number;
+  sheetHeightCm?: number;
+  maxOrderQty?: number;
 }
 
 const emptyProduct: Partial<Product> = {
@@ -22,7 +27,18 @@ const emptyProduct: Partial<Product> = {
 const inputClass = "w-full h-10 px-3 rounded-xl border-2 border-[#e5e1d8] text-sm focus:outline-none focus:border-[#ef8733] transition-colors bg-white";
 const labelClass = "block text-sm font-semibold text-[#111111] mb-1.5";
 
-export default function ProductForm({ product, isNew }: Props) {
+const CM_PER_INCH = 2.54;
+
+function calcPerSheet(w: number, h: number, sw: number, sh: number) {
+  if (!w || !h) return 0;
+  return Math.max(
+    Math.floor(sw / w) * Math.floor(sh / h),
+    Math.floor(sw / h) * Math.floor(sh / w),
+    0
+  );
+}
+
+export default function ProductForm({ product, isNew, standardSizes = [], sheetWidthCm = 17.32, sheetHeightCm = 23.67, maxOrderQty = 1000 }: Props) {
   const router = useRouter();
   const [form, setForm] = useState<Partial<Product>>(product ?? emptyProduct);
   const [loading, setLoading] = useState(false);
@@ -55,6 +71,23 @@ export default function ProductForm({ product, isNew }: Props) {
 
   function removeImage(url: string) {
     update("images", (form.images ?? []).filter((u) => u !== url));
+  }
+
+  function syncSizes() {
+    const validSizes: SizeVariant[] = standardSizes
+      .map((s) => ({
+        name: s.name,
+        widthCm: s.widthCm,
+        heightCm: s.heightCm,
+        stickersPerSheet: calcPerSheet(s.widthCm, s.heightCm, sheetWidthCm, sheetHeightCm),
+      }))
+      .filter((s) => s.stickersPerSheet > 0 && s.name);
+
+    const existingOptions = (form.options ?? []).filter((o) => o.name !== "Size");
+    const sizeOption = { name: "Size", values: validSizes.map((s) => s.name) };
+
+    update("sizeVariants", validSizes);
+    update("options", validSizes.length > 0 ? [sizeOption, ...existingOptions] : existingOptions);
   }
 
   function moveImage(from: number, to: number) {
@@ -178,6 +211,56 @@ export default function ProductForm({ product, isNew }: Props) {
           ))}
         </div>
       </div>
+
+      {/* Sizes — sticker products only */}
+      {form.category === "stickers" && (
+        <div className="bg-white rounded-2xl border border-[#e5e1d8] p-6">
+          <div className="flex items-start justify-between gap-4 mb-1">
+            <div>
+              <h2 className="font-display font-700 text-lg text-[#111111]">Sizes</h2>
+              <p className="text-sm text-[#6b7280] mt-0.5">
+                Synced from Standard Sizes in Cost Settings. Max order qty: <strong>{maxOrderQty}</strong> — above this, customers are sent to a quote.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={syncSizes}
+              className="inline-flex items-center gap-1.5 h-9 px-4 bg-[#ef8733] text-white rounded-xl text-sm font-semibold hover:bg-[#ea7316] transition-colors cursor-pointer shrink-0"
+            >
+              Sync Sizes
+            </button>
+          </div>
+
+          {standardSizes.length === 0 ? (
+            <p className="text-sm text-[#6b7280] mt-4 p-4 bg-[#f9f7f4] rounded-xl">
+              No standard sizes defined yet. Go to <strong>Admin → Costs &amp; Profit → Standard Sizes</strong> to add them first.
+            </p>
+          ) : (
+            <div className="mt-4 flex flex-col gap-2">
+              {standardSizes.map((s) => {
+                const perSheet = calcPerSheet(s.widthCm, s.heightCm, sheetWidthCm, sheetHeightCm);
+                const synced = (form.sizeVariants ?? []).some((v) => v.name === s.name);
+                return (
+                  <div key={s.id} className={`flex items-center justify-between px-4 py-2.5 rounded-xl border-2 ${synced ? "border-[#ef8733] bg-[#fff7ed]" : "border-[#e5e1d8]"}`}>
+                    <div className="flex items-center gap-3">
+                      <span className={`text-sm font-semibold ${synced ? "text-[#ef8733]" : "text-[#111111]"}`}>{s.name || "Unnamed"}</span>
+                      <span className="text-xs text-[#6b7280]">{s.widthCm}×{s.heightCm} cm · {(s.widthCm / CM_PER_INCH).toFixed(2)}″×{(s.heightCm / CM_PER_INCH).toFixed(2)}″</span>
+                    </div>
+                    <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${perSheet > 0 ? "bg-[#f0fdf4] text-emerald-700" : "bg-red-50 text-red-500"}`}>
+                      {perSheet > 0 ? `${perSheet}/sheet` : "too large"}
+                    </span>
+                  </div>
+                );
+              })}
+              {(form.sizeVariants ?? []).length > 0 && (
+                <p className="text-xs text-[#6b7280] mt-1">
+                  ✓ {form.sizeVariants!.length} size{form.sizeVariants!.length !== 1 ? "s" : ""} synced to this product. Quantities will step in multiples of each size&apos;s stickers/sheet.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Images */}
       <div className="bg-white rounded-2xl border border-[#e5e1d8] p-6">
