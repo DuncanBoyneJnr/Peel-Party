@@ -17,6 +17,7 @@ type CartAction =
   | { type: "OPEN" }
   | { type: "CLOSE" };
 
+
 const initialState: CartState = {
   items: [],
   isOpen: false,
@@ -44,9 +45,14 @@ function cartReducer(state: CartState, action: CartAction): CartState {
     case "UPDATE_QTY":
       return {
         ...state,
-        items: state.items.map((i) =>
-          i.id === action.payload.id ? { ...i, quantity: action.payload.quantity } : i
-        ),
+        items: state.items.map((i) => {
+          if (i.id !== action.payload.id) return i;
+          const newQty = action.payload.quantity;
+          // Recalculate linePrice using per-unit product.price (flat-price products).
+          // For matrix-priced products product.price is 0, so keep the original linePrice.
+          const newLinePrice = i.product.price > 0 ? i.product.price * newQty : i.linePrice;
+          return { ...i, quantity: newQty, linePrice: newLinePrice };
+        }),
       };
     case "CLEAR":
       return { ...state, items: [] };
@@ -61,7 +67,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 
 interface CartContextValue {
   state: CartState;
-  addItem: (product: Product, options: Record<string, string>, qty?: number, text?: string, artwork?: string) => void;
+  addItem: (product: Product, options: Record<string, string>, qty?: number, text?: string, artwork?: string, linePrice?: number) => void;
   removeItem: (id: string) => void;
   updateQty: (id: string, qty: number) => void;
   clearCart: () => void;
@@ -77,11 +83,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, initialState);
 
   const addItem = useCallback(
-    (product: Product, options: Record<string, string>, qty = 1, text?: string, artwork?: string) => {
+    (product: Product, options: Record<string, string>, qty = 1, text?: string, artwork?: string, linePrice?: number) => {
       const id = `${product.id}-${Object.values(options).join("-")}-${text ?? ""}`;
+      const resolvedLinePrice = linePrice ?? product.price * qty;
       dispatch({
         type: "ADD_ITEM",
-        payload: { id, product, quantity: qty, selectedOptions: options, customText: text, artworkFileName: artwork },
+        payload: { id, product, quantity: qty, linePrice: resolvedLinePrice, selectedOptions: options, customText: text, artworkFileName: artwork },
       });
     },
     []
@@ -94,7 +101,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const closeCart = useCallback(() => dispatch({ type: "CLOSE" }), []);
 
   const totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
-  const subtotal = state.items.reduce((sum, i) => sum + i.product.price * i.quantity, 0);
+  const subtotal = state.items.reduce((sum, i) => sum + i.linePrice, 0);
 
   return (
     <CartContext.Provider value={{ state, addItem, removeItem, updateQty, clearCart, openCart, closeCart, totalItems, subtotal }}>

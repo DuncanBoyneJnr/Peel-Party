@@ -1,41 +1,14 @@
 import Link from "next/link";
 import Image from "next/image";
 import { ArrowRight } from "lucide-react";
+import { getGallery } from "@/lib/server-data";
 
-const items = [
-  {
-    src: "/mugs-gallery.jpeg",
-    label: "Mugs",
-    caption: "F1, personalised & pop culture",
-    span: "col-span-1 row-span-2",
-  },
-  {
-    src: "/f1-merch.jpeg",
-    label: "F1 Merch",
-    caption: "Coasters, keyrings & mugs",
-    span: "col-span-1 row-span-1",
-  },
-  {
-    src: "/Coasters.jpeg",
-    label: "Coasters",
-    caption: "Cork-backed photo coasters",
-    span: "col-span-1 row-span-1",
-  },
-  {
-    src: "/tote-bags.jpeg",
-    label: "Tote Bags",
-    caption: "Full sublimation print",
-    span: "col-span-1 row-span-1",
-  },
-  {
-    src: "/misc-2.jpeg",
-    label: "Personalised Gifts",
-    caption: "Cups, bags & more",
-    span: "col-span-1 row-span-1",
-  },
-];
+export default async function OurWork() {
+  const allItems = await getGallery();
+  const items = allItems.slice(0, 5);
 
-export default function OurWork() {
+  if (items.length === 0) return null;
+
   return (
     <section className="max-w-7xl mx-auto px-4 sm:px-6 py-20">
       {/* Header */}
@@ -59,68 +32,27 @@ export default function OurWork() {
         </Link>
       </div>
 
-      {/* Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 grid-rows-2 gap-3 h-[520px] sm:h-[600px] lg:h-[680px]">
-        {/* Large left tile */}
-        <div className="relative col-span-1 row-span-2 rounded-2xl overflow-hidden group">
-          <Image
-            src={items[0].src}
-            alt={items[0].label}
-            fill
-            sizes="(max-width: 768px) 50vw, 33vw"
-            className="object-cover group-hover:scale-105 transition-transform duration-500"
-          />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-          <div className="absolute bottom-4 left-4">
-            <span className="inline-block bg-[#ef8733] text-white text-xs font-semibold px-3 py-1 rounded-full mb-1">
-              {items[0].label}
-            </span>
-            <p className="text-white text-sm font-medium">{items[0].caption}</p>
-          </div>
+      {/* Grid — mosaic layout for 5 items, simpler grid for fewer */}
+      {items.length >= 5 ? (
+        <div className="grid grid-cols-2 lg:grid-cols-3 grid-rows-2 gap-3 h-[520px] sm:h-[600px] lg:h-[680px]">
+          {/* Large left tile */}
+          <Tile item={items[0]} className="col-span-1 row-span-2" large />
+          {/* Top right two */}
+          <Tile item={items[1]} />
+          <Tile item={items[2]} />
+          {/* Bottom right two */}
+          <Tile item={items[3]} />
+          <Tile item={items[4]} />
         </div>
+      ) : (
+        <div className={`grid gap-3 h-64 sm:h-80 ${items.length === 1 ? "grid-cols-1" : "grid-cols-2"}`}>
+          {items.map((item) => (
+            <Tile key={item.id} item={item} />
+          ))}
+        </div>
+      )}
 
-        {/* Top right two tiles */}
-        {[items[1], items[2]].map((item) => (
-          <div key={item.src} className="relative rounded-2xl overflow-hidden group">
-            <Image
-              src={item.src}
-              alt={item.label}
-              fill
-              sizes="(max-width: 768px) 50vw, 33vw"
-              className="object-cover group-hover:scale-105 transition-transform duration-500"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-            <div className="absolute bottom-3 left-3">
-              <span className="inline-block bg-[#ef8733] text-white text-xs font-semibold px-2.5 py-0.5 rounded-full mb-1">
-                {item.label}
-              </span>
-              <p className="text-white text-xs">{item.caption}</p>
-            </div>
-          </div>
-        ))}
-
-        {/* Bottom right two tiles */}
-        {[items[3], items[4]].map((item) => (
-          <div key={item.src} className="relative rounded-2xl overflow-hidden group">
-            <Image
-              src={item.src}
-              alt={item.label}
-              fill
-              sizes="(max-width: 768px) 50vw, 33vw"
-              className="object-cover group-hover:scale-105 transition-transform duration-500"
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
-            <div className="absolute bottom-3 left-3">
-              <span className="inline-block bg-[#ef8733] text-white text-xs font-semibold px-2.5 py-0.5 rounded-full mb-1">
-                {item.label}
-              </span>
-              <p className="text-white text-xs">{item.caption}</p>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {/* Bottom strip — product type tags */}
+      {/* Bottom strip */}
       <div className="mt-6 flex flex-wrap gap-2 items-center">
         <span className="text-sm text-[#6b7280] font-medium mr-1">We also make:</span>
         {[
@@ -143,5 +75,34 @@ export default function OurWork() {
         </Link>
       </div>
     </section>
+  );
+}
+
+function Tile({
+  item,
+  className = "",
+  large = false,
+}: {
+  item: { src: string; title: string; category: string };
+  className?: string;
+  large?: boolean;
+}) {
+  return (
+    <div className={`relative rounded-2xl overflow-hidden group ${className}`}>
+      <Image
+        src={item.src}
+        alt={item.title}
+        fill
+        sizes="(max-width: 768px) 50vw, 33vw"
+        className="object-cover group-hover:scale-105 transition-transform duration-500"
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+      <div className={`absolute left-3 ${large ? "bottom-4" : "bottom-3"}`}>
+        <span className={`inline-block bg-[#ef8733] text-white font-semibold px-3 py-0.5 rounded-full mb-1 ${large ? "text-xs" : "text-xs"}`}>
+          {item.category}
+        </span>
+        <p className={`text-white font-medium ${large ? "text-sm" : "text-xs"}`}>{item.title}</p>
+      </div>
+    </div>
   );
 }

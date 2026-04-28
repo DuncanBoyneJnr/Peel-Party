@@ -200,7 +200,7 @@ export default function CheckoutPage() {
                     <p className="font-medium text-[#111111] truncate">{item.product.name}</p>
                     <p className="text-[#6b7280] text-xs">Qty: {item.quantity}</p>
                   </div>
-                  <span className="font-semibold text-[#111111] shrink-0">{formatPrice(item.product.price * item.quantity)}</span>
+                  <span className="font-semibold text-[#111111] shrink-0">{formatPrice(item.linePrice)}</span>
                 </li>
               ))}
             </ul>

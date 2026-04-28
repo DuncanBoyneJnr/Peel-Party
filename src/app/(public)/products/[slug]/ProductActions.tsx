@@ -66,7 +66,9 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
   const displayUnit = (currentTier && effectiveQty > 1) ? currentTier.unitPence / 100 : null;
 
   function handleAddToCart() {
-    addItem(product, selectedOptions, effectiveQty, customText || undefined, artworkFile?.name);
+    // For matrix products, displayPrice is already the tier total; for flat-price products multiply by qty.
+    const linePrice = currentTier ? currentTier.totalPence / 100 : product.price * effectiveQty;
+    addItem(product, selectedOptions, effectiveQty, customText || undefined, artworkFile?.name, linePrice);
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   }

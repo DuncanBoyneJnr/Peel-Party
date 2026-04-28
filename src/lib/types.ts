@@ -62,6 +62,7 @@ export interface CartItem {
   id: string;
   product: Product;
   quantity: number;
+  linePrice: number; // total for this line as shown at time of adding
   selectedOptions: Record<string, string>;
   customText?: string;
   artworkFileName?: string;
