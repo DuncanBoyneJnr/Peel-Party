@@ -62,7 +62,9 @@ export function calcRunCosts(
   }
 
   const inkCost = quantity * (config.inkCostPence ?? settings.defaultInkCostPence);
-  const batches = config.batchSize > 0 ? Math.ceil(quantity / config.batchSize) : 0;
+  // Sheet-based products batch by sheets; unit-based batch by units
+  const batchDivisor = sheetsNeeded > 0 ? sheetsNeeded : quantity;
+  const batches = config.batchSize > 0 ? Math.ceil(batchDivisor / config.batchSize) : 0;
   const labourMinutes = batches * config.batchMinutes;
   const labourCost = Math.round((labourMinutes / 60) * settings.hourlyRatePence);
   const postageCost = config.postagePence ?? settings.defaultPostagePence;

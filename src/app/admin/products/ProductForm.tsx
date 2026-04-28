@@ -570,7 +570,7 @@ export default function ProductForm({
           )}
 
           <div>
-            <label className={labelClass}>Batch Size <span className="text-[#6b7280] font-normal">(units per run)</span></label>
+            <label className={labelClass}>Batch Size <span className="text-[#6b7280] font-normal">({isSticker || costCfg.itemsPerSheet ? "sheets per run" : "units per run"})</span></label>
             <input
               type="number" step="1" min="1"
               className={inputClass}
