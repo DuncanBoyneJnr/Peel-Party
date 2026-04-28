@@ -60,7 +60,7 @@ export default function AboutPage() {
             <p className="text-[#ef8733] text-sm font-semibold uppercase tracking-wider mb-2">What drives me</p>
             <h2 className="font-display font-800 text-4xl text-white">My values</h2>
           </div>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {values.map(({ icon: Icon, title, body }) => (
               <div key={title} className="p-6 bg-white/5 rounded-2xl border border-white/10">
                 <div className="w-12 h-12 bg-[#ef8733]/20 rounded-xl flex items-center justify-center mb-4">

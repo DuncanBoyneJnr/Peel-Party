@@ -21,8 +21,10 @@ const links = {
   ],
   Legal: [
     { label: "Privacy Policy", href: "/privacy" },
-    { label: "Terms of Service", href: "/terms" },
+    { label: "Terms & Conditions", href: "/terms" },
     { label: "Returns & Refunds", href: "/returns" },
+    { label: "Shipping Policy", href: "/shipping" },
+    { label: "Cookie Policy", href: "/cookies" },
   ],
 };
 

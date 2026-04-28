@@ -1,5 +1,8 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import { getSettings } from "@/lib/server-data";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "Privacy Policy",
@@ -15,7 +18,10 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  const { businessName } = await getSettings();
+  const name = businessName || "EL4 Designs";
+
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16">
       <div className="mb-12">
@@ -25,7 +31,7 @@ export default function PrivacyPage() {
       </div>
 
       <Section title="Who we are">
-        <p>We are EL4 Designs, a UK-based custom merchandise business. When you use our website or place an order with us, we collect and use certain personal data. This policy explains what we collect, why we collect it, and your rights.</p>
+        <p>We are {name}, a UK-based custom merchandise business. When you use our website or place an order with us, we collect and use certain personal data. This policy explains what we collect, why we collect it, and your rights.</p>
       </Section>
 
       <Section title="What data we collect">
@@ -63,7 +69,7 @@ export default function PrivacyPage() {
       </Section>
 
       <Section title="Cookies">
-        <p>Our website uses only essential cookies required for the site to function (e.g. your shopping cart). We do not use tracking or advertising cookies.</p>
+        <p>Our website uses only essential cookies required for the site to function (e.g. your shopping cart). We do not use tracking or advertising cookies. See our <Link href="/cookies" className="text-[#ef8733] hover:underline">Cookie Policy</Link> for more details.</p>
       </Section>
 
       <Section title="Contact">

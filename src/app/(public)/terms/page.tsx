@@ -1,8 +1,11 @@
 import { Metadata } from "next";
 import Link from "next/link";
+import { getSettings } from "@/lib/server-data";
+
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
-  title: "Terms of Service",
+  title: "Terms & Conditions",
   description: "Terms and conditions for using our website and placing orders.",
 };
 
@@ -15,17 +18,20 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  const { businessName } = await getSettings();
+  const name = businessName || "EL4 Designs";
+
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16">
       <div className="mb-12">
         <p className="text-[#ef8733] text-sm font-semibold uppercase tracking-wider mb-2">Legal</p>
-        <h1 className="font-display font-800 text-4xl text-[#111111] mb-3">Terms of Service</h1>
+        <h1 className="font-display font-800 text-4xl text-[#111111] mb-3">Terms &amp; Conditions</h1>
         <p className="text-[#6b7280]">Last updated: April 2025</p>
       </div>
 
       <Section title="About these terms">
-        <p>These terms apply when you use our website or place an order with EL4 Designs. By placing an order you agree to these terms. Please read them carefully.</p>
+        <p>These terms apply when you use our website or place an order with {name}. By placing an order you agree to these terms. Please read them carefully.</p>
       </Section>
 
       <Section title="Orders and contract">
