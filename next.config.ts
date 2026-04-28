@@ -1,11 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Prevent bundling of packages that rely on native Node.js TLS/TCP modules.
-  // Without this, the Stripe SDK can't open connections in serverless functions,
-  // and ioredis loses its native net/tls stack, causing StripeConnectionError and
-  // Redis AggregateErrors at runtime.
-  serverExternalPackages: ["stripe", "ioredis"],
+  // ioredis uses native Node.js net/tls — must not be bundled
+  serverExternalPackages: ["ioredis"],
   images: {
     remotePatterns: [
       {

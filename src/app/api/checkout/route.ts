@@ -1,5 +1,4 @@
 import { NextRequest, NextResponse } from "next/server";
-import Stripe from "stripe";
 import { getProducts, getPostageSettings } from "@/lib/server-data";
 import { PriceTier } from "@/lib/types";
 
@@ -20,12 +19,30 @@ interface CustomerDetails {
   postcode: string;
 }
 
+// Flatten a nested object into Stripe's URL-encoded param format:
+// { line_items: [{ price_data: { currency: "gbp" } }] }
+// → "line_items[0][price_data][currency]=gbp"
+function flattenParams(obj: unknown, prefix = ""): string {
+  if (obj === null || obj === undefined) return "";
+  if (Array.isArray(obj)) {
+    return obj
+      .map((item, i) => flattenParams(item, `${prefix}[${i}]`))
+      .filter(Boolean)
+      .join("&");
+  }
+  if (typeof obj === "object") {
+    return Object.entries(obj as Record<string, unknown>)
+      .map(([key, val]) => flattenParams(val, prefix ? `${prefix}[${key}]` : key))
+      .filter(Boolean)
+      .join("&");
+  }
+  return `${encodeURIComponent(prefix)}=${encodeURIComponent(String(obj))}`;
+}
+
 export async function POST(req: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY) {
     return NextResponse.json({ error: "Stripe is not configured." }, { status: 503 });
   }
-
-  const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, { apiVersion: "2026-04-22.dahlia" });
 
   let body: { items: CheckoutItem[]; customer: CustomerDetails };
   try {
@@ -49,10 +66,7 @@ export async function POST(req: NextRequest) {
     getPostageSettings(),
   ]);
 
-  const lineItems: {
-    price_data: { currency: string; product_data: { name: string }; unit_amount: number };
-    quantity: number;
-  }[] = [];
+  const lineItems: { price_data: { currency: string; product_data: { name: string }; unit_amount: number }; quantity: number }[] = [];
   let subtotalPounds = 0;
 
   for (const item of items) {
@@ -66,30 +80,26 @@ export async function POST(req: NextRequest) {
     let displayName: string;
 
     if (product.priceMatrix && Object.keys(product.priceMatrix).length > 0) {
-      // Matrix-priced product: price lives in tiers, not product.price (which is 0)
       const sizeKey = item.selectedOptions?.["Size"] ?? "";
       const tiers: PriceTier[] = product.priceMatrix[sizeKey] ?? product.priceMatrix[""] ?? [];
 
       if (!tiers.length) {
-        console.error(`[checkout] No price tiers found for "${product.name}" sizeKey="${sizeKey}"`);
+        console.error(`[checkout] No price tiers for "${product.name}" sizeKey="${sizeKey}"`);
         return NextResponse.json({ error: `No pricing found for: ${product.name}` }, { status: 400 });
       }
 
-      // Match the exact qty tier; fall back to nearest lower tier
       const tier =
         tiers.find((t) => t.qty === item.quantity) ??
         [...tiers].reverse().find((t) => t.qty <= item.quantity) ??
         tiers[0];
 
-      // Pass as a single line at totalPence to avoid rounding drift
       unitAmountPence = tier.totalPence;
       stripeQuantity = 1;
       subtotalPounds += tier.totalPence / 100;
       displayName = `${product.name} × ${item.quantity}`;
     } else {
-      // Flat-price product: product.price is in pounds
       if (!product.price || product.price <= 0) {
-        console.error(`[checkout] Zero/missing price for flat-price product "${product.name}" id=${product.id}`);
+        console.error(`[checkout] Zero price for "${product.name}" id=${product.id}`);
         return NextResponse.json({ error: `Invalid price for: ${product.name}` }, { status: 400 });
       }
       unitAmountPence = Math.round(product.price * 100);
@@ -99,16 +109,12 @@ export async function POST(req: NextRequest) {
     }
 
     if (unitAmountPence <= 0) {
-      console.error(`[checkout] unit_amount ${unitAmountPence} for "${product.name}" — aborting`);
+      console.error(`[checkout] unit_amount ${unitAmountPence} for "${product.name}"`);
       return NextResponse.json({ error: `Invalid price for: ${product.name}` }, { status: 400 });
     }
 
     lineItems.push({
-      price_data: {
-        currency: "gbp",
-        product_data: { name: displayName },
-        unit_amount: unitAmountPence,
-      },
+      price_data: { currency: "gbp", product_data: { name: displayName }, unit_amount: unitAmountPence },
       quantity: stripeQuantity,
     });
   }
@@ -120,11 +126,7 @@ export async function POST(req: NextRequest) {
 
   if (shippingCost > 0) {
     lineItems.push({
-      price_data: {
-        currency: "gbp",
-        product_data: { name: "Postage & Packaging" },
-        unit_amount: Math.round(shippingCost * 100),
-      },
+      price_data: { currency: "gbp", product_data: { name: "Postage & Packaging" }, unit_amount: Math.round(shippingCost * 100) },
       quantity: 1,
     });
   }
@@ -134,40 +136,50 @@ export async function POST(req: NextRequest) {
     process.env.NEXT_PUBLIC_SITE_URL ??
     "https://peelpartyco.co.uk";
 
+  const sessionParams = {
+    mode: "payment",
+    customer_email: customer.email,
+    success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
+    cancel_url: `${origin}/checkout`,
+    metadata: {
+      firstName: customer.firstName,
+      lastName: customer.lastName,
+      phone: customer.phone ?? "",
+      address1: customer.address1,
+      address2: customer.address2 ?? "",
+      city: customer.city,
+      postcode: customer.postcode,
+    },
+    line_items: lineItems,
+  };
+
   try {
-    const session = await stripe.checkout.sessions.create({
-      line_items: lineItems,
-      mode: "payment",
-      customer_email: customer.email,
-      metadata: {
-        firstName: customer.firstName,
-        lastName: customer.lastName,
-        phone: customer.phone ?? "",
-        address1: customer.address1,
-        address2: customer.address2 ?? "",
-        city: customer.city,
-        postcode: customer.postcode,
+    const stripeRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`,
+        "Content-Type": "application/x-www-form-urlencoded",
       },
-      success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${origin}/checkout`,
+      body: flattenParams(sessionParams),
     });
 
-    if (!session.url) {
-      console.error("[checkout] Stripe session created but no URL returned");
+    const stripeBody = await stripeRes.json() as { url?: string; id?: string; error?: { message: string; type: string } };
+
+    if (!stripeRes.ok || stripeBody.error) {
+      const detail = stripeBody.error?.message ?? `HTTP ${stripeRes.status}`;
+      console.error("[checkout] Stripe error:", stripeBody.error ?? stripeRes.status);
+      return NextResponse.json({ error: "Payment service error. Please try again.", detail }, { status: 500 });
+    }
+
+    if (!stripeBody.url) {
+      console.error("[checkout] No URL in Stripe response:", stripeBody);
       return NextResponse.json({ error: "Payment service error. Please try again." }, { status: 500 });
     }
 
-    return NextResponse.json({ url: session.url });
+    return NextResponse.json({ url: stripeBody.url });
   } catch (err) {
-    const stripeErr = err as { type?: string; code?: string; message?: string };
-    const detail = stripeErr.type
-      ? `${stripeErr.type}: ${stripeErr.message}`
-      : (err instanceof Error ? err.message : String(err));
-    console.error("[checkout] Stripe session creation failed:", detail);
-    // Return the Stripe error type/message so it can be diagnosed from the browser
-    return NextResponse.json(
-      { error: "Payment service error. Please try again.", detail },
-      { status: 500 }
-    );
+    const detail = err instanceof Error ? err.message : String(err);
+    console.error("[checkout] fetch to Stripe failed:", detail);
+    return NextResponse.json({ error: "Payment service error. Please try again.", detail }, { status: 500 });
   }
 }
