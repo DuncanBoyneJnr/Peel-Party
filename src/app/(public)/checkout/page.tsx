@@ -59,7 +59,8 @@ export default function CheckoutPage() {
 
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        alert(err.error ?? "Something went wrong. Please try again.");
+        const msg = err.detail ? `${err.error}\n\n${err.detail}` : (err.error ?? "Something went wrong. Please try again.");
+        alert(msg);
         setLoading(false);
         return;
       }

@@ -136,7 +136,6 @@ export async function POST(req: NextRequest) {
 
   try {
     const session = await stripe.checkout.sessions.create({
-      payment_method_types: ["card"],
       line_items: lineItems,
       mode: "payment",
       customer_email: customer.email,
@@ -160,7 +159,15 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ url: session.url });
   } catch (err) {
-    console.error("[checkout] Stripe session creation failed:", err instanceof Error ? err.message : err);
-    return NextResponse.json({ error: "Payment service error. Please try again." }, { status: 500 });
+    const stripeErr = err as { type?: string; code?: string; message?: string };
+    const detail = stripeErr.type
+      ? `${stripeErr.type}: ${stripeErr.message}`
+      : (err instanceof Error ? err.message : String(err));
+    console.error("[checkout] Stripe session creation failed:", detail);
+    // Return the Stripe error type/message so it can be diagnosed from the browser
+    return NextResponse.json(
+      { error: "Payment service error. Please try again.", detail },
+      { status: 500 }
+    );
   }
 }
