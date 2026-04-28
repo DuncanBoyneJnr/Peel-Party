@@ -48,21 +48,31 @@ export default function CheckoutPage() {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          items: state.items.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
+          items: state.items.map((i) => ({
+            productId: i.product.id,
+            quantity: i.quantity,
+            selectedOptions: i.selectedOptions,
+          })),
           customer: { ...form },
         }),
       });
 
       if (!res.ok) {
-        const err = await res.json();
+        const err = await res.json().catch(() => ({}));
         alert(err.error ?? "Something went wrong. Please try again.");
         setLoading(false);
         return;
       }
 
-      const { url } = await res.json();
+      const data = await res.json();
+      if (!data.url) {
+        alert("Could not create payment session. Please try again.");
+        setLoading(false);
+        return;
+      }
+
       clearCart();
-      window.location.href = url;
+      window.location.href = data.url;
     } catch {
       alert("Could not connect to payment service. Please try again.");
       setLoading(false);
