@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Package, Images, MessageSquare,
@@ -37,15 +38,8 @@ export default function AdminSidebar() {
       {/* Logo */}
       <div className="px-6 py-5 border-b border-white/10">
         <Link href="/admin" className="flex items-center gap-2.5">
-          <div className="w-8 h-8 bg-[#ef8733] rounded-lg flex items-center justify-center shrink-0">
-            <svg width="16" height="16" viewBox="0 0 18 18" fill="none">
-              <path d="M9 2L11.5 7H16.5L12.5 10.5L14 16L9 13L4 16L5.5 10.5L1.5 7H6.5L9 2Z" fill="white" />
-            </svg>
-          </div>
-          <div>
-            <p className="font-display font-700 text-white text-sm leading-none">EL4 Designs</p>
-            <p className="text-xs text-gray-400 mt-0.5">Admin Panel</p>
-          </div>
+          <Image src="/logo.png" alt="Logo" width={80} height={80} className="h-9 w-auto" priority />
+          <p className="text-xs text-gray-400">Admin Panel</p>
         </Link>
       </div>
 
@@ -101,12 +95,7 @@ export default function AdminSidebar() {
       {/* Mobile top bar */}
       <div className="lg:hidden fixed top-0 left-0 right-0 z-30 bg-[#111111] border-b border-white/10 flex items-center justify-between px-4 h-14">
         <Link href="/admin" className="flex items-center gap-2">
-          <div className="w-7 h-7 bg-[#ef8733] rounded-lg flex items-center justify-center">
-            <svg width="14" height="14" viewBox="0 0 18 18" fill="none">
-              <path d="M9 2L11.5 7H16.5L12.5 10.5L14 16L9 13L4 16L5.5 10.5L1.5 7H6.5L9 2Z" fill="white" />
-            </svg>
-          </div>
-          <span className="font-display font-700 text-white text-sm">Admin</span>
+          <Image src="/logo.png" alt="Logo" width={60} height={60} className="h-8 w-auto" priority />
         </Link>
         <button
           onClick={() => setMobileOpen(!mobileOpen)}
