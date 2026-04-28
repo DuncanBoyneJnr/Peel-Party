@@ -43,6 +43,8 @@ export async function POST(req: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY) {
     return NextResponse.json({ error: "Stripe is not configured." }, { status: 503 });
   }
+  // Trim to defend against keys pasted with accidental newlines/whitespace
+  const stripeKey = process.env.STRIPE_SECRET_KEY.trim();
 
   let body: { items: CheckoutItem[]; customer: CustomerDetails };
   try {
@@ -157,7 +159,7 @@ export async function POST(req: NextRequest) {
     const stripeRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${process.env.STRIPE_SECRET_KEY}`,
+        Authorization: `Bearer ${stripeKey}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: flattenParams(sessionParams),
@@ -166,20 +168,18 @@ export async function POST(req: NextRequest) {
     const stripeBody = await stripeRes.json() as { url?: string; id?: string; error?: { message: string; type: string } };
 
     if (!stripeRes.ok || stripeBody.error) {
-      const detail = stripeBody.error?.message ?? `HTTP ${stripeRes.status}`;
       console.error("[checkout] Stripe error:", stripeBody.error ?? stripeRes.status);
-      return NextResponse.json({ error: "Payment service error. Please try again.", detail }, { status: 500 });
+      return NextResponse.json({ error: "Payment service error. Please try again." }, { status: 500 });
     }
 
     if (!stripeBody.url) {
-      console.error("[checkout] No URL in Stripe response:", stripeBody);
+      console.error("[checkout] No URL in Stripe response");
       return NextResponse.json({ error: "Payment service error. Please try again." }, { status: 500 });
     }
 
     return NextResponse.json({ url: stripeBody.url });
   } catch (err) {
-    const detail = err instanceof Error ? err.message : String(err);
-    console.error("[checkout] fetch to Stripe failed:", detail);
-    return NextResponse.json({ error: "Payment service error. Please try again.", detail }, { status: 500 });
+    console.error("[checkout] fetch to Stripe failed:", err instanceof Error ? err.message : String(err));
+    return NextResponse.json({ error: "Payment service error. Please try again." }, { status: 500 });
   }
 }
