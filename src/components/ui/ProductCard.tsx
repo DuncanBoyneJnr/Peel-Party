@@ -10,8 +10,21 @@ interface ProductCardProps {
   product: Product;
 }
 
+function getFromPrice(product: Product): number | null {
+  const matrix = product.priceMatrix;
+  if (!matrix) return null;
+  let min = Infinity;
+  for (const tiers of Object.values(matrix)) {
+    for (const tier of tiers) {
+      if (tier.totalPence < min) min = tier.totalPence;
+    }
+  }
+  return min === Infinity ? null : min / 100;
+}
+
 export default function ProductCard({ product }: ProductCardProps) {
   const isQuote = product.orderType === "request-quote";
+  const fromPrice = getFromPrice(product);
 
   return (
     <Link
@@ -66,6 +79,10 @@ export default function ProductCard({ product }: ProductCardProps) {
           <div className="flex items-baseline gap-2">
             {isQuote ? (
               <span className="text-sm font-semibold text-[#6b7280]">Price on request</span>
+            ) : fromPrice !== null ? (
+              <span className="text-lg font-bold text-[#111111]">
+                From {formatPrice(fromPrice)}
+              </span>
             ) : (
               <>
                 <span className="text-lg font-bold text-[#111111]">{formatPrice(product.price)}</span>
