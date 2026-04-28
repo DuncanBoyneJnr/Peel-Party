@@ -1,6 +1,6 @@
 import { Metadata } from "next";
 import Link from "next/link";
-import { Heart, Award, Users, Leaf } from "lucide-react";
+import { Heart, Award, Users } from "lucide-react";
 import Button from "@/components/ui/Button";
 
 export const metadata: Metadata = {
@@ -12,7 +12,6 @@ const values = [
   { icon: Heart, title: "Made with care", body: "Every order gets personal attention. I check every proof before it goes to print." },
   { icon: Award, title: "Quality first", body: "I only use premium materials. If it's not right, I'll reprint it — no questions asked." },
   { icon: Users, title: "Built for people", body: "Whether you're planning a birthday party or a boardroom meeting, you get the same great service." },
-  { icon: Leaf, title: "Sustainably minded", body: "I use eco-friendly inks and work with suppliers who share my values." },
 ];
 
 export default function AboutPage() {
@@ -75,23 +74,9 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Stats */}
-      <section className="max-w-4xl mx-auto px-4 sm:px-6 py-20 text-center">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-          {[
-            { stat: "7+", label: "Years creating" },
-            { stat: "5,000+", label: "Happy customers" },
-            { stat: "50k+", label: "Products made" },
-            { stat: "4.9★", label: "Average rating" },
-          ].map((item) => (
-            <div key={item.stat}>
-              <p className="font-display font-800 text-4xl text-[#ef8733]">{item.stat}</p>
-              <p className="text-sm text-[#6b7280] mt-1">{item.label}</p>
-            </div>
-          ))}
-        </div>
-
-        <div className="mt-14 p-8 bg-[#f9f7f4] rounded-2xl border border-[#e5e1d8]">
+      {/* CTA */}
+      <section className="max-w-4xl mx-auto px-4 sm:px-6 py-20">
+        <div className="p-8 bg-[#f9f7f4] rounded-2xl border border-[#e5e1d8] text-center">
           <h2 className="font-display font-700 text-2xl text-[#111111] mb-3">Ready to create something special?</h2>
           <p className="text-[#6b7280] mb-6">Whether you need party pieces or polished branded items, let&apos;s bring your vision to life.</p>
           <div className="flex flex-wrap justify-center gap-3">
