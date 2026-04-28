@@ -1,6 +1,6 @@
 import Redis from "ioredis";
-import { Product, ProductType, ProductCostConfig } from "./types";
-export type { ProductType, ProductCostConfig };
+import { Product, ProductType, ProductCostConfig, PostageSettings } from "./types";
+export type { ProductType, ProductCostConfig, PostageSettings };
 
 let _redis: Redis | null = null;
 function getRedis(): Redis {
@@ -226,4 +226,18 @@ export async function getCostSettings(): Promise<CostSettings> {
 
 export async function saveCostSettings(settings: CostSettings): Promise<void> {
   await rset("costSettings", settings);
+}
+
+// Postage
+const defaultPostageSettings: PostageSettings = {
+  flatRate: 3.95,
+  freeThreshold: 50.00,
+};
+
+export async function getPostageSettings(): Promise<PostageSettings> {
+  return (await rget<PostageSettings>("postageSettings")) ?? defaultPostageSettings;
+}
+
+export async function savePostageSettings(settings: PostageSettings): Promise<void> {
+  await rset("postageSettings", settings);
 }

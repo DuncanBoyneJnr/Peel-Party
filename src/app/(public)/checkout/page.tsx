@@ -1,57 +1,72 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
-import { Lock, ArrowLeft, CreditCard, CheckCircle2 } from "lucide-react";
+import { Lock, ArrowLeft } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { formatPrice } from "@/lib/utils";
 import Button from "@/components/ui/Button";
+import { PostageSettings } from "@/lib/types";
 
-type Step = "details" | "payment" | "success";
+type Step = "details" | "payment";
+
+const defaultPostage: PostageSettings = { flatRate: 3.95, freeThreshold: 50 };
 
 export default function CheckoutPage() {
   const { state, subtotal, clearCart } = useCart();
   const [step, setStep] = useState<Step>("details");
   const [loading, setLoading] = useState(false);
+  const [postage, setPostage] = useState<PostageSettings>(defaultPostage);
 
   const [form, setForm] = useState({
     firstName: "", lastName: "", email: "", phone: "",
-    address1: "", address2: "", city: "", postcode: "", country: "GB",
-    cardName: "", cardNumber: "", expiry: "", cvv: "",
+    address1: "", address2: "", city: "", postcode: "",
   });
+
+  useEffect(() => {
+    fetch("/api/postage")
+      .then((r) => r.json())
+      .then((data: PostageSettings) => setPostage(data))
+      .catch(() => {/* keep defaults */});
+  }, []);
 
   function update(field: string, value: string) {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
-  const shipping = subtotal > 50 ? 0 : 3.95;
-  const total = subtotal + shipping;
+  const shippingCost =
+    postage.freeThreshold > 0 && subtotal >= postage.freeThreshold
+      ? 0
+      : postage.flatRate;
+  const total = subtotal + shippingCost;
 
   async function handlePayment(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
-    // TODO: integrate Stripe payment intent here
-    await new Promise((r) => setTimeout(r, 1500));
-    setLoading(false);
-    clearCart();
-    setStep("success");
-  }
+    try {
+      const res = await fetch("/api/checkout", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          items: state.items.map((i) => ({ productId: i.product.id, quantity: i.quantity })),
+          customer: { ...form },
+        }),
+      });
 
-  if (step === "success") {
-    return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center px-4 text-center py-20">
-        <div className="w-20 h-20 bg-[#fff7ed] rounded-full flex items-center justify-center mb-6">
-          <CheckCircle2 size={40} className="text-[#ef8733]" />
-        </div>
-        <h1 className="font-display font-800 text-3xl text-[#111111] mb-3">Order Placed!</h1>
-        <p className="text-[#6b7280] text-lg max-w-md mb-8">
-          Thanks for your order. You'll receive a confirmation email shortly with your order details and production timeline.
-        </p>
-        <Link href="/shop">
-          <Button>Continue Shopping</Button>
-        </Link>
-      </div>
-    );
+      if (!res.ok) {
+        const err = await res.json();
+        alert(err.error ?? "Something went wrong. Please try again.");
+        setLoading(false);
+        return;
+      }
+
+      const { url } = await res.json();
+      clearCart();
+      window.location.href = url;
+    } catch {
+      alert("Could not connect to payment service. Please try again.");
+      setLoading(false);
+    }
   }
 
   if (state.items.length === 0) {
@@ -81,10 +96,10 @@ export default function CheckoutPage() {
         <div className="lg:col-span-2">
           {/* Progress */}
           <div className="flex items-center gap-4 mb-8">
-            {["details", "payment"].map((s, i) => (
+            {(["details", "payment"] as Step[]).map((s, i) => (
               <div key={s} className="flex items-center gap-2">
                 <div className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold transition-colors ${
-                  step === s ? "bg-[#ef8733] text-white" : i < ["details", "payment"].indexOf(step) ? "bg-emerald-500 text-white" : "bg-[#e5e1d8] text-[#6b7280]"
+                  step === s ? "bg-[#ef8733] text-white" : i < (["details", "payment"] as Step[]).indexOf(step) ? "bg-emerald-500 text-white" : "bg-[#e5e1d8] text-[#6b7280]"
                 }`}>
                   {i + 1}
                 </div>
@@ -150,39 +165,21 @@ export default function CheckoutPage() {
             <form onSubmit={handlePayment} className="flex flex-col gap-6">
               <fieldset className="border border-[#e5e1d8] rounded-2xl p-6">
                 <legend className="font-display font-700 text-lg text-[#111111] px-2 flex items-center gap-2">
-                  <Lock size={16} className="text-[#ef8733]" /> Payment Details
+                  <Lock size={16} className="text-[#ef8733]" /> Secure Payment
                 </legend>
-                <p className="text-sm text-[#6b7280] mt-2 mb-4">
-                  Your payment is secured by Stripe. We never store your card details.
+                <p className="text-sm text-[#6b7280] mt-3 mb-2">
+                  You'll be taken to Stripe's secure checkout to enter your card details. We never see or store your payment information.
                 </p>
-                <div className="flex flex-col gap-4">
-                  <div>
-                    <label className={labelClass}>Name on Card *</label>
-                    <input required className={inputClass} value={form.cardName} onChange={(e) => update("cardName", e.target.value)} placeholder="Jane Smith" />
-                  </div>
-                  <div>
-                    <label className={labelClass}>Card Number *</label>
-                    <div className="relative">
-                      <input required className={`${inputClass} pr-12`} value={form.cardNumber} onChange={(e) => update("cardNumber", e.target.value)} placeholder="1234 5678 9012 3456" maxLength={19} />
-                      <CreditCard size={18} className="absolute right-4 top-1/2 -translate-y-1/2 text-[#6b7280]" />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className={labelClass}>Expiry *</label>
-                      <input required className={inputClass} value={form.expiry} onChange={(e) => update("expiry", e.target.value)} placeholder="MM / YY" maxLength={7} />
-                    </div>
-                    <div>
-                      <label className={labelClass}>CVV *</label>
-                      <input required className={inputClass} value={form.cvv} onChange={(e) => update("cvv", e.target.value)} placeholder="123" maxLength={4} type="password" />
-                    </div>
-                  </div>
+                <div className="mt-4 p-4 bg-[#f9f7f4] rounded-xl border border-[#e5e1d8] text-sm">
+                  <p className="font-semibold text-[#111111] mb-1">Delivering to</p>
+                  <p className="text-[#6b7280]">{form.firstName} {form.lastName}</p>
+                  <p className="text-[#6b7280]">{form.address1}{form.address2 ? `, ${form.address2}` : ""}, {form.city}, {form.postcode}</p>
                 </div>
               </fieldset>
 
               <div className="flex flex-col gap-3">
                 <Button type="submit" size="lg" fullWidth loading={loading}>
-                  <Lock size={16} /> Pay {formatPrice(total)}
+                  <Lock size={16} /> Pay {formatPrice(total)} with Stripe
                 </Button>
                 <button type="button" onClick={() => setStep("details")} className="text-sm text-[#6b7280] hover:text-[#111111] cursor-pointer transition-colors">
                   ← Back to details
@@ -212,7 +209,8 @@ export default function CheckoutPage() {
                 <span>Subtotal</span><span>{formatPrice(subtotal)}</span>
               </div>
               <div className="flex justify-between text-[#6b7280]">
-                <span>Shipping</span><span>{shipping === 0 ? "Free" : formatPrice(shipping)}</span>
+                <span>Postage</span>
+                <span>{shippingCost === 0 ? "Free" : formatPrice(shippingCost)}</span>
               </div>
               <div className="flex justify-between font-display font-700 text-lg text-[#111111] mt-2 pt-2 border-t border-[#e5e1d8]">
                 <span>Total</span><span>{formatPrice(total)}</span>

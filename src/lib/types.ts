@@ -72,6 +72,11 @@ export interface CartState {
   isOpen: boolean;
 }
 
+export interface PostageSettings {
+  flatRate: number;       // pounds, e.g. 3.95
+  freeThreshold: number;  // pounds, e.g. 50.00 (0 = disabled)
+}
+
 export interface QuoteFormData {
   productSlug: string;
   quantity: number;
