@@ -8,7 +8,10 @@
       "Bash(npm install *)",
       "Bash(node -e \"require\\('@vercel/blob'\\); console.log\\('ok'\\)\")",
       "Bash(npx vercel *)",
-      "Bash(git mv *)"
+      "Bash(git mv *)",
+      "Bash(node -e \"const s = require\\('stripe'\\); console.log\\(s.LATEST_API_VERSION\\)\")",
+      "Bash(node -e \"const Stripe = require\\('stripe'\\); const s = new Stripe\\('sk_test_x'\\); console.log\\(s.LAST_RESPONSE\\)\")",
+      "Bash(npm run *)"
     ]
   }
 }

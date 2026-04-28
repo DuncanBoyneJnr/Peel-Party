@@ -19,7 +19,7 @@ const faqs = [
   },
   {
     q: "What is your minimum order quantity?",
-    a: "Many of our products have no minimum order — you can order just 1. Bulk-only products (like branded mugs) typically start at 24 units. Check each product page for details.",
+    a: "Many of our products have no minimum order — you can order just 1. Bulk-only products (like branded mugs) typically start at 24 units. Check each product page for details.\n\nSamples available on request – just pay postage.",
   },
   {
     q: "Do you ship outside the UK?",
@@ -51,8 +51,10 @@ function FAQItem({ q, a }: { q: string; a: string }) {
         />
       </button>
       {open && (
-        <div className="pb-5 -mt-1">
-          <p className="text-sm text-[#6b7280] leading-relaxed">{a}</p>
+        <div className="pb-5 -mt-1 flex flex-col gap-2">
+          {a.split("\n\n").map((para, i) => (
+            <p key={i} className="text-sm text-[#6b7280] leading-relaxed">{para}</p>
+          ))}
         </div>
       )}
     </div>

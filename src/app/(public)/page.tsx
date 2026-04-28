@@ -7,7 +7,6 @@ import CustomOrderBanner from "@/components/home/CustomOrderBanner";
 import FeaturedBundles from "@/components/home/FeaturedBundles";
 import BundlesSection from "@/components/home/BundlesSection";
 import AlsoViewed from "@/components/home/AlsoViewed";
-import TrustSignals from "@/components/home/TrustSignals";
 import FAQ from "@/components/home/FAQ";
 
 const jsonLd = {
@@ -37,7 +36,6 @@ export default function HomePage() {
       <BundlesSection />
       <AlsoViewed />
       <CustomOrderBanner />
-      <TrustSignals />
       <FAQ />
     </>
   );

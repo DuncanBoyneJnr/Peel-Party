@@ -33,7 +33,7 @@ const categories = [
   {
     slug: "keyrings",
     title: "Keyrings",
-    description: "Acrylic, epoxy-dome, and woven fabric keyrings. Cut to any shape, bulk-friendly.",
+    description: "Available in acrylic or MDF only. Cut to any shape, bulk-friendly.",
     colour: "#ef8733",
     lightColour: "#fff7ed",
     icon: (
@@ -63,7 +63,7 @@ const categories = [
   {
     slug: "magnets",
     title: "Magnets",
-    description: "Custom printed magnets in any shape or size. Great for fridges, lockers, and marketing.",
+    description: "Custom printed magnets. Great for fridges, lockers, and promotional use.",
     colour: "#10b981",
     lightColour: "#ecfdf5",
     icon: (

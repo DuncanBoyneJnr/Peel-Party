@@ -6,7 +6,6 @@ import Link from "next/link";
 import { getProductBySlug, getCostSettings } from "@/lib/server-data";
 import ProductActions from "./ProductActions";
 import ProductGallery from "./ProductGallery";
-import Rating from "@/components/ui/Rating";
 import Badge from "@/components/ui/Badge";
 import { CheckCircle2, Truck, Shield } from "lucide-react";
 
@@ -59,7 +58,6 @@ export default async function ProductPage({ params }: PageProps) {
               {product.category}
             </Link>
             <h1 className="font-display font-800 text-3xl sm:text-4xl text-[#111111] mt-1 mb-3">{product.name}</h1>
-            <Rating value={product.rating} count={product.reviewCount} />
           </div>
 
           {isQuote && (

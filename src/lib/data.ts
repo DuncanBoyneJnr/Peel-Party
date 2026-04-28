@@ -254,7 +254,7 @@ export const categoryMeta = {
   },
   keyrings: {
     title: "Keyrings",
-    description: "Acrylic, epoxy, and woven keyrings. Custom shapes and bulk orders welcome.",
+    description: "Available in acrylic or MDF only. Custom shapes and bulk orders welcome.",
     heroImage: "/images/cat-keyrings.jpg",
     colour: "#ef8733",
   },
@@ -266,7 +266,7 @@ export const categoryMeta = {
   },
   magnets: {
     title: "Magnets",
-    description: "Custom printed magnets in any shape or size. Great for fridges, lockers, and marketing.",
+    description: "Custom printed magnets. Great for fridges, lockers, and promotional use.",
     heroImage: "/images/cat-magnets.jpg",
     colour: "#ef8733",
   },
