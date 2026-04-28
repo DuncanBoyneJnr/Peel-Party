@@ -1,6 +1,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { Mail, Phone } from "lucide-react";
+import { getSettings } from "@/lib/server-data";
 
 const links = {
   Shop: [
@@ -25,7 +26,14 @@ const links = {
   ],
 };
 
-export default function Footer() {
+export default async function Footer() {
+  const settings = await getSettings();
+  const email = settings.email || "hello@peelpartyco.co.uk";
+  const phone = settings.phone || null;
+  const businessName = settings.businessName || "Peel & Party Co.";
+  const instagram = settings.socialInstagram || null;
+  const facebook = settings.socialFacebook || null;
+
   return (
     <footer className="bg-[#111111] text-white mt-24">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-16">
@@ -33,34 +41,42 @@ export default function Footer() {
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center mb-4">
-              <Image src="/logo.png" alt="Peel & Party Co." width={120} height={120} className="h-16 w-auto brightness-0 invert" />
+              <Image src="/logo.png" alt={businessName} width={120} height={120} className="h-16 w-auto brightness-0 invert" />
             </Link>
             <p className="text-sm text-gray-400 leading-relaxed max-w-xs">
               Custom merchandise made with love. Stickers, mugs, keyrings, coasters and magnets for businesses, events, and gifts — all printed to order.
             </p>
             <div className="flex items-center gap-3 mt-6">
+              {instagram && (
+                <a
+                  href={instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center hover:bg-[#ef8733] transition-colors"
+                  aria-label="Instagram"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                    <rect x="2" y="2" width="20" height="20" rx="5"/>
+                    <circle cx="12" cy="12" r="4"/>
+                    <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
+                  </svg>
+                </a>
+              )}
+              {facebook && (
+                <a
+                  href={facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center hover:bg-[#ef8733] transition-colors"
+                  aria-label="Facebook"
+                >
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
+                  </svg>
+                </a>
+              )}
               <a
-                href="#"
-                className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center hover:bg-[#ef8733] transition-colors"
-                aria-label="Instagram"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                  <rect x="2" y="2" width="20" height="20" rx="5"/>
-                  <circle cx="12" cy="12" r="4"/>
-                  <circle cx="17.5" cy="6.5" r="1" fill="currentColor" stroke="none"/>
-                </svg>
-              </a>
-              <a
-                href="#"
-                className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center hover:bg-[#ef8733] transition-colors"
-                aria-label="Facebook"
-              >
-                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M18 2h-3a5 5 0 0 0-5 5v3H7v4h3v8h4v-8h3l1-4h-4V7a1 1 0 0 1 1-1h3z"/>
-                </svg>
-              </a>
-              <a
-                href="mailto:hello@el4designs.co.uk"
+                href={`mailto:${email}`}
                 className="w-9 h-9 bg-white/10 rounded-full flex items-center justify-center hover:bg-[#ef8733] transition-colors"
                 aria-label="Email"
               >
@@ -68,12 +84,14 @@ export default function Footer() {
               </a>
             </div>
             <div className="mt-4 flex flex-col gap-2 text-sm text-gray-400">
-              <a href="mailto:hello@el4designs.co.uk" className="flex items-center gap-2 hover:text-[#ef8733] transition-colors">
-                <Mail size={14} /> hello@el4designs.co.uk
+              <a href={`mailto:${email}`} className="flex items-center gap-2 hover:text-[#ef8733] transition-colors">
+                <Mail size={14} /> {email}
               </a>
-              <a href="tel:+441234567890" className="flex items-center gap-2 hover:text-[#ef8733] transition-colors">
-                <Phone size={14} /> 01234 567 890
-              </a>
+              {phone && (
+                <a href={`tel:${phone.replace(/\s/g, "")}`} className="flex items-center gap-2 hover:text-[#ef8733] transition-colors">
+                  <Phone size={14} /> {phone}
+                </a>
+              )}
             </div>
           </div>
 
@@ -96,7 +114,7 @@ export default function Footer() {
 
         {/* Bottom bar */}
         <div className="mt-14 pt-8 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-4 text-sm text-gray-500">
-          <p>© {new Date().getFullYear()} Peel & Party Co. All rights reserved.</p>
+          <p>© {new Date().getFullYear()} {businessName}. All rights reserved.</p>
           <p>Made with ♥ in the UK</p>
         </div>
       </div>
