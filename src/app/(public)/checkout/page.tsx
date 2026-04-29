@@ -178,7 +178,7 @@ export default function CheckoutPage() {
                   <Lock size={16} className="text-[#ef8733]" /> Secure Payment
                 </legend>
                 <p className="text-sm text-[#6b7280] mt-3 mb-2">
-                  You'll be taken to Stripe's secure checkout to enter your card details. We never see or store your payment information.
+                  You&apos;ll be taken to a secure payment page to complete your order. We never see or store your card details.
                 </p>
                 <div className="mt-4 p-4 bg-[#f9f7f4] rounded-xl border border-[#e5e1d8] text-sm">
                   <p className="font-semibold text-[#111111] mb-1">Delivering to</p>
@@ -189,7 +189,7 @@ export default function CheckoutPage() {
 
               <div className="flex flex-col gap-3">
                 <Button type="submit" size="lg" fullWidth loading={loading}>
-                  <Lock size={16} /> Pay {formatPrice(total)} with Stripe
+                  <Lock size={16} /> Pay {formatPrice(total)} Securely
                 </Button>
                 <button type="button" onClick={() => setStep("details")} className="text-sm text-[#6b7280] hover:text-[#111111] cursor-pointer transition-colors">
                   ← Back to details

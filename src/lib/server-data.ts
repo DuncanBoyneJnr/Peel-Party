@@ -265,6 +265,37 @@ export async function saveOrders(orders: Order[]): Promise<void> {
   await rset("orders", orders);
 }
 
+// Pending orders (PayPal: stored between checkout creation and success-page capture)
+export interface PendingOrderData {
+  customer: Order["customer"];
+  items: Order["items"];
+  subtotalPence: number;
+  postagePence: number;
+  totalPence: number;
+  createdAt: string;
+}
+
+export async function getPendingOrders(): Promise<Record<string, PendingOrderData>> {
+  return (await rget<Record<string, PendingOrderData>>("pendingOrders")) ?? {};
+}
+
+export async function setPendingOrder(paypalOrderId: string, data: PendingOrderData): Promise<void> {
+  const all = await getPendingOrders();
+  all[paypalOrderId] = data;
+  // Prune entries older than 24 hours to avoid unbounded growth
+  const cutoff = Date.now() - 24 * 60 * 60 * 1000;
+  for (const [k, v] of Object.entries(all)) {
+    if (new Date(v.createdAt).getTime() < cutoff) delete all[k];
+  }
+  await rset("pendingOrders", all);
+}
+
+export async function deletePendingOrder(paypalOrderId: string): Promise<void> {
+  const all = await getPendingOrders();
+  delete all[paypalOrderId];
+  await rset("pendingOrders", all);
+}
+
 // Postage
 const defaultPostageSettings: PostageSettings = {
   flatRate: 3.95,
