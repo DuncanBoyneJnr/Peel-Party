@@ -16,6 +16,7 @@ interface Props {
   sheetHeightCm?: number;
   maxOrderQty?: number;
   materials?: MaterialType[];
+  defaultProfitPercent?: number;
 }
 
 const emptyProduct: Partial<Product> = {
@@ -60,6 +61,7 @@ export default function ProductForm({
   sheetHeightCm = 23.67,
   maxOrderQty = 1000,
   materials = [],
+  defaultProfitPercent = 40,
 }: Props) {
   const router = useRouter();
   const [form, setForm] = useState<Partial<Product>>(product ?? emptyProduct);
@@ -614,6 +616,18 @@ export default function ProductForm({
               value={costCfg.postagePence !== undefined ? (costCfg.postagePence / 100).toFixed(2) : ""}
               onChange={(e) =>
                 updateCostConfig("postagePence", e.target.value !== "" ? Math.round(parseFloat(e.target.value) * 100) : undefined)
+              }
+            />
+          </div>
+
+          <div>
+            <label className={labelClass}>Profit % <span className="text-[#6b7280] font-normal">(blank = global default: {defaultProfitPercent}%)</span></label>
+            <input
+              type="number" step="1" min="0" max="99" placeholder={`${defaultProfitPercent}`}
+              className={inputClass}
+              value={costCfg.profitPercent !== undefined ? costCfg.profitPercent : ""}
+              onChange={(e) =>
+                updateCostConfig("profitPercent", e.target.value !== "" ? parseFloat(e.target.value) : undefined)
               }
             />
           </div>

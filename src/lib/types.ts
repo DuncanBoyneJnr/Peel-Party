@@ -12,6 +12,7 @@ export interface ProductCostConfig {
   batchMinutes: number;
   inkCostPence?: number;
   postagePence?: number;
+  profitPercent?: number; // overrides global targetProfitPercent when set
 }
 
 export interface PriceTier {

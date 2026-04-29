@@ -111,13 +111,14 @@ export function buildPriceMatrix(
 ): { [sizeName: string]: PriceTier[] } {
   if (!product.costConfig) return {};
   const { targetProfitPercent, maxOrderQty } = costSettings;
+  const profitPct = product.costConfig.profitPercent ?? targetProfitPercent;
 
   if (product.sizeVariants?.length) {
     const matrix: { [sizeName: string]: PriceTier[] } = {};
     for (const variant of product.sizeVariants) {
       const qtys = getQuantityTiers(variant.stickersPerSheet, maxOrderQty);
       matrix[variant.name] = qtys.map((qty) => {
-        const r = calcRunCosts(product.costConfig!, costSettings, qty, targetProfitPercent, variant);
+        const r = calcRunCosts(product.costConfig!, costSettings, qty, profitPct, variant);
         return { qty, totalPence: r.suggestedPrice, unitPence: r.pricePerUnit };
       });
     }
@@ -131,7 +132,7 @@ export function buildPriceMatrix(
     : UNIT_QTY_TIERS.filter((q) => q <= maxOrderQty);
   return {
     "": qtys.map((qty) => {
-      const r = calcRunCosts(product.costConfig!, costSettings, qty, targetProfitPercent);
+      const r = calcRunCosts(product.costConfig!, costSettings, qty, profitPct);
       return { qty, totalPence: r.suggestedPrice, unitPence: r.pricePerUnit };
     }),
   };

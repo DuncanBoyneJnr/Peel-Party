@@ -23,6 +23,7 @@ export default async function NewProductPage() {
         sheetHeightCm={costSettings.sheetHeightCm}
         maxOrderQty={costSettings.maxOrderQty}
         materials={costSettings.materials}
+        defaultProfitPercent={costSettings.targetProfitPercent}
       />
     </div>
   );

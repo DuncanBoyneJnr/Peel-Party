@@ -30,6 +30,7 @@ export default async function EditProductPage({ params }: Props) {
         sheetHeightCm={costSettings.sheetHeightCm}
         maxOrderQty={costSettings.maxOrderQty}
         materials={costSettings.materials}
+        defaultProfitPercent={costSettings.targetProfitPercent}
       />
     </div>
   );
