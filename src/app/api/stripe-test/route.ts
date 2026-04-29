@@ -12,6 +12,8 @@ export async function GET() {
   return NextResponse.json({
     rawLen: raw.length,
     cleanedLen: cleaned.length,
+    prefix: cleaned.slice(0, 12),
+    middle8: cleaned.slice(50, 58),
     tail: cleaned.slice(-8),
     stripeStatus: res.status,
     stripeBody: body,
