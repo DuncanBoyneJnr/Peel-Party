@@ -176,17 +176,18 @@ export async function POST(req: NextRequest) {
 
     if (!stripeRes.ok || stripeBody.error) {
       console.error("[checkout] Stripe error:", stripeBody.error ?? stripeRes.status);
-      return NextResponse.json({ error: "Payment service error. Please try again." }, { status: 500 });
+      return NextResponse.json({ error: "Payment service error. Please try again.", _d: { t: stripeBody.error?.type, c: stripeBody.error?.code, p: stripeBody.error?.param, m: stripeBody.error?.message?.slice(0, 120), s: stripeRes.status } }, { status: 500 });
     }
 
     if (!stripeBody.url) {
       console.error("[checkout] No URL in Stripe response");
-      return NextResponse.json({ error: "Payment service error. Please try again." }, { status: 500 });
+      return NextResponse.json({ error: "Payment service error. Please try again.", _d: { b: "no-url" } }, { status: 500 });
     }
 
     return NextResponse.json({ url: stripeBody.url });
   } catch (err) {
-    console.error("[checkout] fetch to Stripe failed:", err instanceof Error ? err.message : String(err));
-    return NextResponse.json({ error: "Payment service error. Please try again." }, { status: 500 });
+    const msg = err instanceof Error ? err.message : String(err);
+    console.error("[checkout] fetch to Stripe failed:", msg);
+    return NextResponse.json({ error: "Payment service error. Please try again.", _d: { b: "fetch-threw", e: msg.slice(0, 200) } }, { status: 500 });
   }
 }
