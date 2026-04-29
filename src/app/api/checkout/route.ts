@@ -171,6 +171,7 @@ export async function POST(req: NextRequest) {
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: flattenParams(sessionParams),
+      cache: "no-store",
     });
 
     const stripeBody = await stripeRes.json() as { url?: string; id?: string; error?: { message: string; type: string; code?: string; param?: string } };

@@ -6,6 +6,7 @@ export async function GET() {
 
   const res = await fetch("https://api.stripe.com/v1/customers?limit=1", {
     headers: { Authorization: `Bearer ${cleaned}` },
+    cache: "no-store",
   });
   const body = await res.json();
 
