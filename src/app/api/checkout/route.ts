@@ -62,11 +62,18 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "Customer email is required." }, { status: 400 });
   }
 
-  // Re-fetch all prices from Redis — never trust client-supplied amounts
-  const [products, postageSettings] = await Promise.all([
-    getProducts(),
-    getPostageSettings(),
-  ]);
+  // Re-fetch all prices server-side — never trust client-supplied amounts
+  let products: Awaited<ReturnType<typeof getProducts>>;
+  let postageSettings: Awaited<ReturnType<typeof getPostageSettings>>;
+  try {
+    [products, postageSettings] = await Promise.all([
+      getProducts(),
+      getPostageSettings(),
+    ]);
+  } catch (err) {
+    console.error("[checkout] Failed to fetch data store:", err instanceof Error ? err.message : String(err));
+    return NextResponse.json({ error: "Service temporarily unavailable. Please try again later." }, { status: 503 });
+  }
 
   const lineItems: { price_data: { currency: string; product_data: { name: string }; unit_amount: number }; quantity: number }[] = [];
   let subtotalPounds = 0;
@@ -169,7 +176,10 @@ export async function POST(req: NextRequest) {
 
     if (!stripeRes.ok || stripeBody.error) {
       console.error("[checkout] Stripe error:", stripeBody.error ?? stripeRes.status);
-      return NextResponse.json({ error: "Payment service error. Please try again." }, { status: 500 });
+      return NextResponse.json({
+        error: "Payment service error. Please try again.",
+        _debug: { type: stripeBody.error?.type, code: stripeBody.error?.code, param: stripeBody.error?.param, status: stripeRes.status },
+      }, { status: 500 });
     }
 
     if (!stripeBody.url) {

@@ -42,3 +42,9 @@ next-env.d.ts
 
 .vercel
 .env*.local
+
+# local dev data store (used when UPSTASH_REDIS_REST_REDIS_URL is not set)
+/data/
+
+.vercel
+.env*.local

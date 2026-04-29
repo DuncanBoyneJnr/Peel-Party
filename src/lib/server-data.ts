@@ -1,6 +1,10 @@
 import Redis from "ioredis";
+import fs from "fs";
+import path from "path";
 import { Product, ProductType, ProductCostConfig, PostageSettings } from "./types";
 export type { ProductType, ProductCostConfig, PostageSettings };
+
+// --- Redis (production) ---
 
 let _redis: Redis | null = null;
 function getRedis(): Redis {
@@ -13,13 +17,37 @@ function getRedis(): Redis {
   return _redis;
 }
 
+// --- File-based fallback (local dev when Redis URL is not configured) ---
+
+const DATA_DIR = path.join(process.cwd(), "data");
+
+function fileGet<T>(key: string): T | null {
+  try {
+    const raw = fs.readFileSync(path.join(DATA_DIR, `${key}.json`), "utf-8");
+    return JSON.parse(raw) as T;
+  } catch {
+    return null;
+  }
+}
+
+function fileSet(key: string, value: unknown): void {
+  fs.mkdirSync(DATA_DIR, { recursive: true });
+  fs.writeFileSync(path.join(DATA_DIR, `${key}.json`), JSON.stringify(value, null, 2), "utf-8");
+}
+
+const useFileStore = !process.env.UPSTASH_REDIS_REST_REDIS_URL;
+
+// --- Unified read/write ---
+
 async function rget<T>(key: string): Promise<T | null> {
+  if (useFileStore) return fileGet<T>(key);
   const raw = await getRedis().get(key);
   if (!raw) return null;
   return JSON.parse(raw) as T;
 }
 
 async function rset(key: string, value: unknown): Promise<void> {
+  if (useFileStore) { fileSet(key, value); return; }
   await getRedis().set(key, JSON.stringify(value));
 }
 
