@@ -10,6 +10,9 @@ export async function GET() {
   });
   const body = await res.json();
 
+  const headers: Record<string, string> = {};
+  res.headers.forEach((v, k) => { headers[k] = v; });
+
   return NextResponse.json({
     rawLen: raw.length,
     cleanedLen: cleaned.length,
@@ -18,6 +21,7 @@ export async function GET() {
     tail: cleaned.slice(-8),
     requestId: res.headers.get("request-id"),
     stripeStatus: res.status,
+    responseHeaders: headers,
     stripeBody: body,
   });
 }
