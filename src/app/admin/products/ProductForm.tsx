@@ -265,7 +265,12 @@ export default function ProductForm({
             </select>
           </div>
           <div>
-            <label className={labelClass}>Price (£) <span className="text-[#6b7280] font-normal">— use 0 for "on request"</span></label>
+            <label className={labelClass}>
+              Price (£){" "}
+              <span className="text-[#6b7280] font-normal">
+                {form.costConfig ? "— auto-calculated from Cost Setup on save" : '— use 0 for "on request"'}
+              </span>
+            </label>
             <input type="number" min={0} step="0.01" className={inputClass} value={form.price ?? 0} onChange={(e) => update("price", e.target.value)} placeholder="14.99" />
           </div>
           <div>

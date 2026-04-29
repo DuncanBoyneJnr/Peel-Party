@@ -21,6 +21,11 @@ export async function PUT(req: NextRequest, { params }: Params) {
   if (idx === -1) return NextResponse.json({ error: "Not found" }, { status: 404 });
   const updated = { ...products[idx], ...body };
   updated.priceMatrix = buildPriceMatrix(updated, costSettings);
+  // Keep product.price in sync with the base tier so admin and frontend always show the same price
+  const baseTiers = updated.priceMatrix?.[""] ?? Object.values(updated.priceMatrix ?? {})[0];
+  if (baseTiers?.length) {
+    updated.price = baseTiers[0].totalPence / 100;
+  }
   products[idx] = updated;
   await saveProducts(products);
   revalidatePath("/", "layout");

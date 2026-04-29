@@ -17,6 +17,11 @@ export async function POST(req: NextRequest) {
     slug: body.slug || body.name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, ""),
   };
   newProduct.priceMatrix = buildPriceMatrix(newProduct, costSettings);
+  // Keep product.price in sync with the base tier so admin and frontend always show the same price
+  const baseTiers = newProduct.priceMatrix?.[""] ?? Object.values(newProduct.priceMatrix ?? {})[0];
+  if (baseTiers?.length) {
+    newProduct.price = baseTiers[0].totalPence / 100;
+  }
   products.push(newProduct);
   await saveProducts(products);
   revalidatePath("/", "layout");
