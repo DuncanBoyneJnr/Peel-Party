@@ -5,13 +5,14 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Package, Images, MessageSquare,
-  Settings, LogOut, ExternalLink, Menu, X, Gift, TrendingUp, Layers, Truck,
+  Settings, LogOut, ExternalLink, Menu, X, Gift, TrendingUp, Layers, Truck, ShoppingBag,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
 
 const nav = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard, exact: true },
+  { label: "Orders", href: "/admin/orders", icon: ShoppingBag },
   { label: "Products", href: "/admin/products", icon: Package },
   { label: "Bundles", href: "/admin/bundles", icon: Gift },
   { label: "Gallery", href: "/admin/gallery", icon: Images },

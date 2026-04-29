@@ -1,6 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getProducts, getPostageSettings } from "@/lib/server-data";
+import { getStripeSecretKey, stripeFetch } from "@/lib/stripe";
 import { PriceTier } from "@/lib/types";
+
+export const runtime = "nodejs";
 
 interface CheckoutItem {
   productId: string;
@@ -40,12 +43,15 @@ function flattenParams(obj: unknown, prefix = ""): string {
 }
 
 export async function POST(req: NextRequest) {
-  if (!process.env.STRIPE_SECRET_KEY) {
+  const { cleaned: stripeKey, fingerprint } = getStripeSecretKey();
+
+  if (!stripeKey) {
     return NextResponse.json({ error: "Stripe is not configured." }, { status: 503 });
   }
   // Keep only printable ASCII — strips newlines, zero-width spaces, BOM, and any other invisible Unicode
-  const stripeKey = process.env.STRIPE_SECRET_KEY.replace(/[^\x20-\x7E]/g, "");
-  console.log(`[checkout] stripeKey len=${stripeKey.length} tail=${stripeKey.slice(-4)}`);
+  console.log(
+    `[checkout] stripeKey len=${stripeKey.length} tail=${stripeKey.slice(-4)} fp=${fingerprint}`,
+  );
 
   let body: { items: CheckoutItem[]; customer: CustomerDetails };
   try {
@@ -159,26 +165,55 @@ export async function POST(req: NextRequest) {
       address2: customer.address2 ?? "",
       city: customer.city,
       postcode: customer.postcode,
+      items_json: JSON.stringify(
+        lineItems.map((li) => ({
+          n: li.price_data.product_data.name,
+          p: li.price_data.unit_amount,
+          q: li.quantity,
+        }))
+      ).slice(0, 490),
     },
     line_items: lineItems,
   };
 
   try {
-    const stripeRes = await fetch("https://api.stripe.com/v1/checkout/sessions", {
+    const stripe = await stripeFetch("/v1/checkout/sessions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${stripeKey}`,
         "Content-Type": "application/x-www-form-urlencoded",
       },
       body: flattenParams(sessionParams),
-      cache: "no-store",
     });
 
-    const stripeBody = await stripeRes.json() as { url?: string; id?: string; error?: { message: string; type: string; code?: string; param?: string } };
+    const stripeBody = stripe.body as {
+      url?: string;
+      id?: string;
+      error?: { message: string; type: string; code?: string; param?: string };
+    };
 
-    if (!stripeRes.ok || stripeBody.error) {
-      console.error("[checkout] Stripe error:", stripeBody.error ?? stripeRes.status);
-      return NextResponse.json({ error: "Payment service error. Please try again.", _d: { t: stripeBody.error?.type, c: stripeBody.error?.code, m: stripeBody.error?.message?.slice(0, 150), s: stripeRes.status } }, { status: 500 });
+    if (!stripe.ok || stripeBody.error) {
+      console.error("[checkout] Stripe error:", {
+        status: stripe.status,
+        requestId: stripe.requestId,
+        xwc: stripe.responseHeaders["x-wc"] ?? null,
+        error: stripeBody.error ?? null,
+      });
+      return NextResponse.json(
+        {
+          error: "Payment service error. Please try again.",
+          _d: {
+            t: stripeBody.error?.type,
+            c: stripeBody.error?.code,
+            m: stripeBody.error?.message?.slice(0, 150),
+            s: stripe.status,
+            r: stripe.requestId,
+            xwc: stripe.responseHeaders["x-wc"] ?? null,
+            vr: process.env.VERCEL_REGION ?? null,
+          },
+        },
+        { status: 500 },
+      );
     }
 
     if (!stripeBody.url) {

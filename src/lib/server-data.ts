@@ -1,8 +1,8 @@
 import Redis from "ioredis";
 import fs from "fs";
 import path from "path";
-import { Product, ProductType, ProductCostConfig, PostageSettings } from "./types";
-export type { ProductType, ProductCostConfig, PostageSettings };
+import { Product, ProductType, ProductCostConfig, PostageSettings, Order } from "./types";
+export type { ProductType, ProductCostConfig, PostageSettings, Order };
 
 // --- Redis (production) ---
 
@@ -254,6 +254,15 @@ export async function getCostSettings(): Promise<CostSettings> {
 
 export async function saveCostSettings(settings: CostSettings): Promise<void> {
   await rset("costSettings", settings);
+}
+
+// Orders
+export async function getOrders(): Promise<Order[]> {
+  return (await rget<Order[]>("orders")) ?? [];
+}
+
+export async function saveOrders(orders: Order[]): Promise<void> {
+  await rset("orders", orders);
 }
 
 // Postage

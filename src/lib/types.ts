@@ -59,6 +59,34 @@ export interface Product {
   priceMatrix?: { [sizeName: string]: PriceTier[] };
 }
 
+export interface OrderItem {
+  name: string;
+  unitAmountPence: number;
+  quantity: number;
+}
+
+export type OrderStatus = "paid" | "processing" | "dispatched";
+
+export interface Order {
+  id: string;           // Stripe checkout session ID
+  createdAt: string;    // ISO timestamp
+  status: OrderStatus;
+  customer: {
+    email: string;
+    firstName: string;
+    lastName: string;
+    phone: string;
+    address1: string;
+    address2: string;
+    city: string;
+    postcode: string;
+  };
+  items: OrderItem[];
+  subtotalPence: number;
+  postagePence: number;
+  totalPence: number;
+}
+
 export interface CartItem {
   id: string;
   product: Product;
