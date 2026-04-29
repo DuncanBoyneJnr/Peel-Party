@@ -15,6 +15,7 @@ export async function GET() {
     prefix: cleaned.slice(0, 12),
     middle8: cleaned.slice(50, 58),
     tail: cleaned.slice(-8),
+    requestId: res.headers.get("request-id"),
     stripeStatus: res.status,
     stripeBody: body,
   });
