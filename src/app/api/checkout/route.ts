@@ -43,8 +43,9 @@ export async function POST(req: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY) {
     return NextResponse.json({ error: "Stripe is not configured." }, { status: 503 });
   }
-  // Strip all whitespace — Vercel can embed newlines mid-string when a key is pasted across lines
-  const stripeKey = process.env.STRIPE_SECRET_KEY.replace(/\s+/g, "");
+  // Keep only printable ASCII — strips newlines, zero-width spaces, BOM, and any other invisible Unicode
+  const stripeKey = process.env.STRIPE_SECRET_KEY.replace(/[^\x20-\x7E]/g, "");
+  console.log(`[checkout] stripeKey len=${stripeKey.length} tail=${stripeKey.slice(-4)}`);
 
   let body: { items: CheckoutItem[]; customer: CustomerDetails };
   try {
