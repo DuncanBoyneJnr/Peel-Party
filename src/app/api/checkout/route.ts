@@ -43,8 +43,8 @@ export async function POST(req: NextRequest) {
   if (!process.env.STRIPE_SECRET_KEY) {
     return NextResponse.json({ error: "Stripe is not configured." }, { status: 503 });
   }
-  // Trim to defend against keys pasted with accidental newlines/whitespace
-  const stripeKey = process.env.STRIPE_SECRET_KEY.trim();
+  // Strip all whitespace — Vercel can embed newlines mid-string when a key is pasted across lines
+  const stripeKey = process.env.STRIPE_SECRET_KEY.replace(/\s+/g, "");
 
   let body: { items: CheckoutItem[]; customer: CustomerDetails };
   try {
@@ -176,21 +176,17 @@ export async function POST(req: NextRequest) {
 
     if (!stripeRes.ok || stripeBody.error) {
       console.error("[checkout] Stripe error:", stripeBody.error ?? stripeRes.status);
-      return NextResponse.json({
-        error: "Payment service error. Please try again.",
-        _debug: { type: stripeBody.error?.type, code: stripeBody.error?.code, param: stripeBody.error?.param, status: stripeRes.status },
-      }, { status: 500 });
+      return NextResponse.json({ error: "Payment service error. Please try again." }, { status: 500 });
     }
 
     if (!stripeBody.url) {
       console.error("[checkout] No URL in Stripe response");
-      return NextResponse.json({ error: "Payment service error. Please try again.", _debug: { branch: "no-url", body: stripeBody } }, { status: 500 });
+      return NextResponse.json({ error: "Payment service error. Please try again." }, { status: 500 });
     }
 
     return NextResponse.json({ url: stripeBody.url });
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    console.error("[checkout] fetch to Stripe failed:", msg);
-    return NextResponse.json({ error: "Payment service error. Please try again.", _debug: { branch: "fetch-threw", err: msg } }, { status: 500 });
+    console.error("[checkout] fetch to Stripe failed:", err instanceof Error ? err.message : String(err));
+    return NextResponse.json({ error: "Payment service error. Please try again." }, { status: 500 });
   }
 }
