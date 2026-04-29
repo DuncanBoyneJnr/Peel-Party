@@ -172,7 +172,7 @@ export async function POST(req: NextRequest) {
       body: flattenParams(sessionParams),
     });
 
-    const stripeBody = await stripeRes.json() as { url?: string; id?: string; error?: { message: string; type: string } };
+    const stripeBody = await stripeRes.json() as { url?: string; id?: string; error?: { message: string; type: string; code?: string; param?: string } };
 
     if (!stripeRes.ok || stripeBody.error) {
       console.error("[checkout] Stripe error:", stripeBody.error ?? stripeRes.status);
