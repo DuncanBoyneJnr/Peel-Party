@@ -21,6 +21,8 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
   );
   const [customText, setCustomText] = useState("");
   const [artworkFile, setArtworkFile] = useState<File | null>(null);
+  const [artworkUrl, setArtworkUrl] = useState<string | null>(null);
+  const [artworkUploading, setArtworkUploading] = useState(false);
   const [quantity, setQuantity] = useState<number | null>(null);
   const [added, setAdded] = useState(false);
 
@@ -112,6 +114,23 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
     ? customQtyData.unitPence / 100
     : (currentTier && effectiveQty > 1 ? currentTier.unitPence / 100 : null);
 
+  async function handleFileSelect(file: File | null) {
+    setArtworkFile(file);
+    setArtworkUrl(null);
+    if (!file) return;
+    setArtworkUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/artwork-upload", { method: "POST", body: fd });
+      const data = await res.json();
+      if (res.ok && data.url) setArtworkUrl(data.url);
+    } catch {
+      // non-fatal — order proceeds without artwork URL
+    }
+    setArtworkUploading(false);
+  }
+
   function handleOptionChange(optName: string, val: string) {
     setSelectedOptions((prev) => ({ ...prev, [optName]: val }));
     setQuantity(null);
@@ -120,12 +139,13 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
   }
 
   function handleAddToCart() {
+    const artwork = artworkUrl ?? undefined;
     if (isCustomQty) {
       if (!customQtyData || customQtyData.overMax) return;
-      addItem(product, selectedOptions, customQtyData.pricedQty, customText || undefined, artworkFile?.name, customQtyData.totalPence / 100);
+      addItem(product, selectedOptions, customQtyData.pricedQty, customText || undefined, artwork, customQtyData.totalPence / 100);
     } else {
       const linePrice = currentTier ? currentTier.totalPence / 100 : product.price * effectiveQty;
-      addItem(product, selectedOptions, effectiveQty, customText || undefined, artworkFile?.name, linePrice);
+      addItem(product, selectedOptions, effectiveQty, customText || undefined, artwork, linePrice);
     }
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
@@ -203,7 +223,13 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
 
       {/* File upload */}
       {product.supportsFileUpload && (
-        <FileUpload onFile={setArtworkFile} label="Upload Artwork (optional)" />
+        <FileUpload onFile={handleFileSelect} label="Upload Artwork (optional)" />
+      )}
+      {artworkUploading && (
+        <p className="text-xs text-[#6b7280]">Uploading artwork…</p>
+      )}
+      {artworkFile && !artworkUploading && artworkUrl && (
+        <p className="text-xs text-emerald-600">Artwork uploaded ✓</p>
       )}
 
       {/* Quantity */}

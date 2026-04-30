@@ -138,8 +138,8 @@ export default function CartDrawer() {
                     {item.customText && (
                       <p className="text-xs text-[#6b7280] truncate">Text: &ldquo;{item.customText}&rdquo;</p>
                     )}
-                    {item.artworkFileName && (
-                      <p className="text-xs text-[#ef8733]">Artwork: {item.artworkFileName}</p>
+                    {item.artworkUrl && (
+                      <p className="text-xs text-[#ef8733]">Artwork attached ✓</p>
                     )}
 
                     <div className="flex items-center justify-between mt-2">

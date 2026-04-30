@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { Resend } from "resend";
-import { getOrders, saveOrders, getSettings } from "@/lib/server-data";
+import { getOrders, saveOrders, getSettings, getPendingStripeData, deletePendingStripeData } from "@/lib/server-data";
 import { Order, OrderItem } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -123,9 +123,17 @@ export async function POST(req: NextRequest) {
 
   const POSTAGE_NAME = "Postage & Packaging";
   const postageItem = rawItems.find((i) => i.n === POSTAGE_NAME);
-  const productItems: OrderItem[] = rawItems
+  const fallbackItems: OrderItem[] = rawItems
     .filter((i) => i.n !== POSTAGE_NAME)
     .map((i) => ({ name: i.n, unitAmountPence: i.p, quantity: i.q }));
+
+  // Try to load full items (with customText/artworkUrl) stored at checkout time
+  let productItems: OrderItem[] = fallbackItems;
+  try {
+    const pendingData = await getPendingStripeData(session.id);
+    if (pendingData?.items?.length) productItems = pendingData.items;
+    await deletePendingStripeData(session.id).catch(() => {});
+  } catch { /* non-fatal — use fallback */ }
 
   const postagePence = postageItem ? postageItem.p : 0;
   const subtotalPence = productItems.reduce((s, i) => s + i.unitAmountPence * i.quantity, 0);

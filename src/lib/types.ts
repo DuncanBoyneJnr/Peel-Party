@@ -63,6 +63,8 @@ export interface OrderItem {
   name: string;
   unitAmountPence: number;
   quantity: number;
+  customText?: string;
+  artworkUrl?: string;
 }
 
 export type OrderStatus = "paid" | "processing" | "dispatched";
@@ -94,7 +96,7 @@ export interface CartItem {
   linePrice: number; // total for this line as shown at time of adding
   selectedOptions: Record<string, string>;
   customText?: string;
-  artworkFileName?: string;
+  artworkUrl?: string;
 }
 
 export interface PromoCode {

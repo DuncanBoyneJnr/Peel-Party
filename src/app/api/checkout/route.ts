@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getProducts, getPostageSettings, setPendingOrder, getPromoCodes, savePromoCodes } from "@/lib/server-data";
+import { getProducts, getPostageSettings, setPendingOrder, getPromoCodes, savePromoCodes, setPendingStripeData } from "@/lib/server-data";
 import { getStripeSecretKey, stripeFetch } from "@/lib/stripe";
 import { createPayPalOrder } from "@/lib/paypal";
 import { PriceTier, OrderItem } from "@/lib/types";
@@ -10,6 +10,8 @@ interface CheckoutItem {
   productId: string;
   quantity: number;
   selectedOptions?: Record<string, string>;
+  customText?: string;
+  artworkUrl?: string;
 }
 
 interface CustomerDetails {
@@ -78,6 +80,7 @@ export async function POST(req: NextRequest) {
 
   // Build line items + totals (shared by both providers)
   const lineItems: { name: string; unitAmountPence: number; quantity: number }[] = [];
+  const fullOrderItems: OrderItem[] = [];
   let subtotalPounds = 0;
 
   for (const item of items) {
@@ -113,6 +116,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Invalid price for: ${product.name}` }, { status: 400 });
 
     lineItems.push({ name: displayName, unitAmountPence, quantity: qty });
+    fullOrderItems.push({ name: displayName, unitAmountPence, quantity: qty, customText: item.customText, artworkUrl: item.artworkUrl });
   }
 
   // Calculate discount (applied per-provider below — Stripe uses a coupon, PayPal subtracts from total)
@@ -151,9 +155,7 @@ export async function POST(req: NextRequest) {
     }
     try {
       const subtotalPence = Math.round(subtotalPounds * 100);
-      const productItems: OrderItem[] = lineItems
-        .filter((l) => l.name !== "Postage & Packaging")
-        .map((l) => ({ name: l.name, unitAmountPence: l.unitAmountPence, quantity: l.quantity }));
+      const productItems: OrderItem[] = fullOrderItems;
 
       const { id: paypalOrderId, approvalUrl } = await createPayPalOrder({
         totalGBP: totalPounds.toFixed(2),
@@ -248,12 +250,15 @@ export async function POST(req: NextRequest) {
       headers: { Authorization: `Bearer ${stripeKey}`, "Content-Type": "application/x-www-form-urlencoded" },
       body: flattenParams(sessionParams),
     });
-    const stripeBody = stripe.body as { url?: string; error?: { message: string; type: string; code?: string } };
+    const stripeBody = stripe.body as { url?: string; id?: string; error?: { message: string; type: string; code?: string } };
     if (!stripe.ok || stripeBody.error) {
       console.error("[checkout/stripe] error:", stripeBody.error ?? stripe.status);
       return NextResponse.json({ error: "Payment service error. Please try again." }, { status: 500 });
     }
     if (!stripeBody.url) return NextResponse.json({ error: "Payment service error. Please try again." }, { status: 500 });
+    if (stripeBody.id) {
+      await setPendingStripeData(stripeBody.id, { items: fullOrderItems }).catch(() => {/* non-fatal */});
+    }
     await incrementPromoUsage();
     return NextResponse.json({ url: stripeBody.url });
   } catch (err) {

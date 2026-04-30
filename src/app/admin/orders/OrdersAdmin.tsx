@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Order, OrderStatus } from "@/lib/types";
-import { ShoppingBag, ChevronDown, ChevronUp, Trash2, Clock, CheckCircle, Truck, CreditCard } from "lucide-react";
+import { ShoppingBag, ChevronDown, ChevronUp, Trash2, Clock, CheckCircle, Truck, CreditCard, Printer, Paperclip } from "lucide-react";
 
 interface Props { initialOrders: Order[] }
 
@@ -27,6 +27,13 @@ export default function OrdersAdmin({ initialOrders }: Props) {
       body: JSON.stringify({ status }),
     });
     setOrders((prev) => prev.map((o) => (o.id === id ? { ...o, status } : o)));
+  }
+
+  function printLabel(order: Order) {
+    const { firstName, lastName, address1, address2, city, postcode } = order.customer;
+    const html = `<!DOCTYPE html><html><head><title>Postage Label</title><style>body{font-family:sans-serif;font-size:20px;padding:40px;line-height:1.6}@media print{@page{margin:15mm}}</style></head><body><strong>${firstName} ${lastName}</strong><br>${address1}${address2 ? `<br>${address2}` : ""}<br>${city}<br>${postcode.toUpperCase()}<script>window.onload=function(){window.print();}<\/script></body></html>`;
+    const win = window.open("", "_blank");
+    if (win) { win.document.write(html); win.document.close(); }
   }
 
   async function deleteOrder(id: string) {
@@ -129,9 +136,19 @@ export default function OrdersAdmin({ initialOrders }: Props) {
                       <p className="text-xs text-[#6b7280] font-semibold uppercase tracking-wide mb-3">Order Items</p>
                       <div className="flex flex-col gap-2">
                         {order.items.map((item, i) => (
-                          <div key={i} className="flex justify-between text-sm">
-                            <span className="text-[#111111]">{item.name}</span>
-                            <span className="text-[#111111] font-medium">{fmt(item.unitAmountPence * item.quantity)}</span>
+                          <div key={i} className="text-sm">
+                            <div className="flex justify-between">
+                              <span className="text-[#111111]">{item.name}</span>
+                              <span className="text-[#111111] font-medium">{fmt(item.unitAmountPence * item.quantity)}</span>
+                            </div>
+                            {item.customText && (
+                              <p className="text-xs text-[#6b7280] mt-0.5">Text: <span className="text-[#111111] font-medium">{item.customText}</span></p>
+                            )}
+                            {item.artworkUrl && (
+                              <a href={item.artworkUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-[#ef8733] hover:underline mt-0.5">
+                                <Paperclip size={11} /> View artwork
+                              </a>
+                            )}
                           </div>
                         ))}
                         {order.postagePence > 0 && (
@@ -182,6 +199,12 @@ export default function OrdersAdmin({ initialOrders }: Props) {
                     >
                       Email Customer
                     </a>
+                    <button
+                      onClick={() => printLabel(order)}
+                      className="flex items-center gap-1.5 px-3 py-1.5 bg-[#f9f7f4] text-[#111111] border border-[#e5e1d8] rounded-full text-xs font-semibold hover:bg-[#f0ede8] transition-colors cursor-pointer"
+                    >
+                      <Printer size={11} /> Print Label
+                    </button>
                     <button
                       onClick={() => deleteOrder(order.id)}
                       className="ml-auto flex items-center gap-1.5 px-3 py-1.5 bg-red-50 text-red-600 rounded-full text-xs font-semibold hover:bg-red-100 transition-colors cursor-pointer"

@@ -96,7 +96,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
       const resolvedLinePrice = linePrice ?? product.price * qty;
       dispatch({
         type: "ADD_ITEM",
-        payload: { id, product, quantity: qty, linePrice: resolvedLinePrice, selectedOptions: options, customText: text, artworkFileName: artwork },
+        payload: { id, product, quantity: qty, linePrice: resolvedLinePrice, selectedOptions: options, customText: text, artworkUrl: artwork },
       });
     },
     []

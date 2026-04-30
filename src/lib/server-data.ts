@@ -310,6 +310,28 @@ export async function deletePendingOrder(paypalOrderId: string): Promise<void> {
   await rset("pendingOrders", all);
 }
 
+// Pending Stripe sessions (stores full order items including customText/artworkUrl)
+export interface PendingStripeData {
+  items: Order["items"];
+}
+
+export async function getPendingStripeData(sessionId: string): Promise<PendingStripeData | null> {
+  const all = (await rget<Record<string, PendingStripeData>>("pendingStripeData")) ?? {};
+  return all[sessionId] ?? null;
+}
+
+export async function setPendingStripeData(sessionId: string, data: PendingStripeData): Promise<void> {
+  const all = (await rget<Record<string, PendingStripeData>>("pendingStripeData")) ?? {};
+  all[sessionId] = data;
+  await rset("pendingStripeData", all);
+}
+
+export async function deletePendingStripeData(sessionId: string): Promise<void> {
+  const all = (await rget<Record<string, PendingStripeData>>("pendingStripeData")) ?? {};
+  delete all[sessionId];
+  await rset("pendingStripeData", all);
+}
+
 // Postage
 const defaultPostageSettings: PostageSettings = {
   flatRate: 3.95,
