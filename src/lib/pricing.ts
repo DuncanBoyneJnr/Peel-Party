@@ -36,11 +36,15 @@ export function calcRunCosts(
   sizeVariant?: SizeVariant
 ): RunCostResult {
   const isSticker = !config.productType || config.productType === "sticker";
+  const isStickerSheet = config.productType === "sticker-sheet";
 
-  // Determine items-per-sheet: explicit override takes priority, then sticker sheet calc
+  // Determine items-per-sheet: explicit override takes priority, then type-specific logic
   let perSheet = 0;
   if (config.itemsPerSheet && config.itemsPerSheet > 0) {
     perSheet = config.itemsPerSheet;
+  } else if (isStickerSheet) {
+    // For predefined sticker sheet products, batchSize = how many copies fit per printable page
+    perSheet = config.batchSize;
   } else if (isSticker) {
     perSheet = sizeVariant?.stickersPerSheet ??
       calcStickersPerSheet(config.widthCm, config.heightCm, settings.sheetWidthCm, settings.sheetHeightCm);
@@ -77,7 +81,7 @@ export function calcRunCosts(
   const pricePerUnit = quantity > 0 ? Math.round(suggestedPrice / quantity) : 0;
 
   return {
-    isSticker,
+    isSticker: isSticker || isStickerSheet,
     perSheet,
     sheetsNeeded,
     materialCost,
@@ -114,6 +118,7 @@ export function buildPriceMatrix(
   const { targetProfitPercent, maxOrderQty } = costSettings;
   const profitPct = config.profitPercent ?? targetProfitPercent;
   const isSticker = !config.productType || config.productType === "sticker";
+  const isStickerSheet = config.productType === "sticker-sheet";
 
   if (product.sizeVariants?.length) {
     const matrix: { [sizeName: string]: PriceTier[] } = {};
@@ -129,11 +134,11 @@ export function buildPriceMatrix(
 
   // No size variants — determine the quantity step:
   // 1. itemsPerSheet if explicitly set
-  // 2. For sticker-type products, batchSize (= units per printable page for predefined sheets)
+  // 2. For sticker-sheet products, batchSize (= copies per printable page)
   // 3. Otherwise standard unit tiers
   const ips = config.itemsPerSheet && config.itemsPerSheet > 0
     ? config.itemsPerSheet
-    : (isSticker && config.batchSize > 1 ? config.batchSize : 0);
+    : (isStickerSheet ? config.batchSize : 0);
   const qtys = ips > 0
     ? getQuantityTiers(ips, maxOrderQty)
     : UNIT_QTY_TIERS.filter((q) => q <= maxOrderQty);

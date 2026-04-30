@@ -32,7 +32,8 @@ const labelClass = "block text-sm font-semibold text-[#111111] mb-1.5";
 const CM_PER_INCH = 2.54;
 
 const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
-  sticker: "Sticker Sheet",
+  sticker: "Individual Stickers",
+  "sticker-sheet": "Sticker Sheet (predefined)",
   cup: "Cup / Mug",
   tshirt: "T-Shirt",
   other: "Other (per unit)",
@@ -89,6 +90,7 @@ export default function ProductForm({
 
   const costCfg: ProductCostConfig = form.costConfig ?? DEFAULT_COST_CONFIG;
   const isSticker = costCfg.productType === "sticker";
+  const isStickerSheet = costCfg.productType === "sticker-sheet";
   const perSheet = isSticker ? calcPerSheet(costCfg.widthCm ?? 0, costCfg.heightCm ?? 0, sheetWidthCm, sheetHeightCm) : 0;
 
   function updateCostConfig(field: keyof ProductCostConfig, value: string | number | string[] | undefined) {
@@ -504,7 +506,16 @@ export default function ProductForm({
             )}
           </div>
 
-          {!isSticker && (
+          {isStickerSheet && (
+            <div className="flex items-start gap-3 px-4 py-3 bg-[#f0fdf4] rounded-xl border border-emerald-100 sm:col-span-2">
+              <span className="text-sm text-[#6b7280]">
+                Quantity tiers step in multiples of <span className="font-semibold text-emerald-700">{costCfg.batchSize}</span> (sheets per page).
+                Set <strong>Sheets per page</strong> below to control the step size.
+              </span>
+            </div>
+          )}
+
+          {!isSticker && !isStickerSheet && (
             <div>
               <label className={labelClass}>Items per sheet <span className="text-[#6b7280] font-normal">(how many fit on one sheet of material)</span></label>
               <input
@@ -602,7 +613,7 @@ export default function ProductForm({
           )}
 
           <div>
-            <label className={labelClass}>Batch Size <span className="text-[#6b7280] font-normal">({isSticker || costCfg.itemsPerSheet ? "sheets per run" : "units per run"})</span></label>
+            <label className={labelClass}>{isStickerSheet ? "Sheets per page" : "Batch Size"} <span className="text-[#6b7280] font-normal">({isStickerSheet ? "copies per printable page" : isSticker || costCfg.itemsPerSheet ? "sheets per run" : "units per run"})</span></label>
             <input
               type="number" step="1" min="1"
               className={inputClass}

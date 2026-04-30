@@ -6,7 +6,8 @@ import { MaterialType, ProductCostConfig } from "@/lib/server-data";
 import { ProductType } from "@/lib/types";
 
 const PRODUCT_TYPE_LABELS: Record<ProductType, string> = {
-  sticker: "Sticker Sheet",
+  sticker: "Individual Stickers",
+  "sticker-sheet": "Sticker Sheet (predefined)",
   cup: "Cup / Mug",
   tshirt: "T-Shirt",
   other: "Other (per unit)",

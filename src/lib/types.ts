@@ -1,6 +1,6 @@
 export type Category = "stickers" | "mugs" | "keyrings" | "coasters" | "magnets";
 
-export type ProductType = "sticker" | "cup" | "tshirt" | "other";
+export type ProductType = "sticker" | "sticker-sheet" | "cup" | "tshirt" | "other";
 
 export interface ProductCostConfig {
   productType: ProductType;

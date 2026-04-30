@@ -439,13 +439,18 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
               <div className="mt-2 p-3 bg-white rounded-lg border border-[#e5e1d8]">
                 {calcResult.isSticker && calcResult.perSheet > 0 && (
                   <p className="text-xs text-[#6b7280]">
-                    Sheet layout: <span className="font-medium text-[#111111]">{calcResult.perSheet} stickers/sheet</span>
-                    {" · "}
-                    <span className="font-medium text-[#111111]">{calcResult.sheetsNeeded} sheet{calcResult.sheetsNeeded !== 1 ? "s" : ""}</span> needed
+                    {calcProduct?.costConfig?.productType === "sticker-sheet"
+                      ? <><span className="font-medium text-[#111111]">{calcResult.perSheet} sheets/page</span>{" · "}<span className="font-medium text-[#111111]">{calcResult.sheetsNeeded} page{calcResult.sheetsNeeded !== 1 ? "s" : ""}</span> needed</>
+                      : <><span className="font-medium text-[#111111]">{calcResult.perSheet} stickers/sheet</span>{" · "}<span className="font-medium text-[#111111]">{calcResult.sheetsNeeded} sheet{calcResult.sheetsNeeded !== 1 ? "s" : ""}</span> needed</>
+                    }
                   </p>
                 )}
                 {calcResult.isSticker && calcResult.perSheet === 0 && (
-                  <p className="text-xs text-[#6b7280]">Set sticker dimensions in the product&apos;s Cost Setup, or select a size above.</p>
+                  <p className="text-xs text-[#6b7280]">
+                    {calcProduct?.costConfig?.productType === "sticker-sheet"
+                      ? "Set Sheets per page in the product’s Cost Setup."
+                      : "Set sticker dimensions in the product’s Cost Setup, or select a size above."}
+                  </p>
                 )}
                 <p className="text-xs text-[#6b7280] mt-1">
                   Labour: <span className="font-medium text-[#111111]">{fmtTime(calcResult.labourMinutes)}</span> at £{fmt(settings.hourlyRatePence)}/hr = <span className="font-medium text-[#111111]">£{fmt(calcResult.labourCost)}</span>
