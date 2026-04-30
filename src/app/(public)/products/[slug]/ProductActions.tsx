@@ -24,6 +24,9 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
   const [quantity, setQuantity] = useState<number | null>(null);
   const [added, setAdded] = useState(false);
 
+  const [isCustomQty, setIsCustomQty] = useState(false);
+  const [customQtyInput, setCustomQtyInput] = useState("");
+
   const isQuote = product.orderType === "request-quote";
 
   const selectedSizeVariant = useMemo(() => {
@@ -31,20 +34,18 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
     return product.sizeVariants.find((v) => v.name === selectedOptions["Size"]) ?? null;
   }, [product.sizeVariants, selectedOptions]);
 
-  // Price matrix tiers for the selected size (or "" for no-size products)
   const sizeKey = selectedSizeVariant?.name ?? "";
   const matrixTiers = product.priceMatrix?.[sizeKey] ?? [];
   const hasMatrix = matrixTiers.length > 0;
 
-  // Derive the effective quantity — snap to first valid tier on size change
   const validQtys = hasMatrix ? matrixTiers.map((t) => t.qty) : null;
   const defaultQty = validQtys?.[0] ?? 1;
   const effectiveQty = quantity !== null && (!validQtys || validQtys.includes(quantity))
     ? quantity
     : defaultQty;
 
-  // Fall back to stickersPerSheet-based tiers when no matrix (legacy path)
   const stickersPerSheet = selectedSizeVariant?.stickersPerSheet ?? 0;
+
   const legacyTiers = useMemo(() => {
     if (hasMatrix || !stickersPerSheet) return null;
     const multipliers = [1, 2, 3, 5, 10, 15, 25, 50, 100, 150, 250, 500, 1000];
@@ -58,20 +59,81 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
     : (legacyTiers ?? []);
   const showTierButtons = tierQtys.length > 1;
 
-  // Price from matrix (or fallback to product.price)
+  // Custom qty is available for matrix sticker products with a known stickersPerSheet
+  const canCustomQty = showTierButtons && stickersPerSheet > 0 && hasMatrix;
+
+  // Compute custom quantity pricing whenever the input changes
+  const customQtyData = useMemo(() => {
+    if (!isCustomQty || !stickersPerSheet || !customQtyInput.trim()) return null;
+    const raw = parseInt(customQtyInput, 10);
+    if (isNaN(raw) || raw < 1) return null;
+
+    const sheetsNeeded = Math.ceil(raw / stickersPerSheet);
+    const pricedQty = sheetsNeeded * stickersPerSheet;
+
+    if (pricedQty > maxOrderQty) {
+      return { overMax: true as const, raw, sheetsNeeded, pricedQty };
+    }
+
+    // Exact match in price matrix
+    const exact = matrixTiers.find((t) => t.qty === pricedQty);
+    if (exact) {
+      return { overMax: false as const, raw, sheetsNeeded, pricedQty, totalPence: exact.totalPence, unitPence: exact.unitPence };
+    }
+
+    // No exact match — extrapolate from the highest tier ≤ pricedQty
+    const floorTier = [...matrixTiers].reverse().find((t) => t.qty <= pricedQty);
+    if (floorTier) {
+      const unitPence = Math.round(floorTier.totalPence / floorTier.qty);
+      return { overMax: false as const, raw, sheetsNeeded, pricedQty, totalPence: unitPence * pricedQty, unitPence };
+    }
+
+    // Below the minimum tier — enforce the first (minimum) tier price
+    const first = matrixTiers[0];
+    if (first) {
+      return { overMax: false as const, raw, sheetsNeeded: first.qty / stickersPerSheet, pricedQty: first.qty, totalPence: first.totalPence, unitPence: first.unitPence };
+    }
+
+    return null;
+  }, [isCustomQty, customQtyInput, stickersPerSheet, matrixTiers, maxOrderQty]);
+
+  // Resolve price and display qty (custom takes priority)
   const currentTier = hasMatrix
     ? (matrixTiers.find((t) => t.qty === effectiveQty) ?? matrixTiers[0])
     : null;
-  const displayPrice = currentTier ? currentTier.totalPence / 100 : product.price;
-  const displayUnit = (currentTier && effectiveQty > 1) ? currentTier.unitPence / 100 : null;
+
+  const displayPrice = isCustomQty && customQtyData && !customQtyData.overMax
+    ? customQtyData.totalPence / 100
+    : (currentTier ? currentTier.totalPence / 100 : product.price);
+
+  const displayQtyLabel = isCustomQty && customQtyData && !customQtyData.overMax
+    ? customQtyData.pricedQty
+    : (currentTier ? effectiveQty : null);
+
+  const displayUnit = isCustomQty && customQtyData && !customQtyData.overMax && customQtyData.pricedQty > 1
+    ? customQtyData.unitPence / 100
+    : (currentTier && effectiveQty > 1 ? currentTier.unitPence / 100 : null);
+
+  function handleOptionChange(optName: string, val: string) {
+    setSelectedOptions((prev) => ({ ...prev, [optName]: val }));
+    setQuantity(null);
+    setIsCustomQty(false);
+    setCustomQtyInput("");
+  }
 
   function handleAddToCart() {
-    // For matrix products, displayPrice is already the tier total; for flat-price products multiply by qty.
-    const linePrice = currentTier ? currentTier.totalPence / 100 : product.price * effectiveQty;
-    addItem(product, selectedOptions, effectiveQty, customText || undefined, artworkFile?.name, linePrice);
+    if (isCustomQty) {
+      if (!customQtyData || customQtyData.overMax) return;
+      addItem(product, selectedOptions, customQtyData.pricedQty, customText || undefined, artworkFile?.name, customQtyData.totalPence / 100);
+    } else {
+      const linePrice = currentTier ? currentTier.totalPence / 100 : product.price * effectiveQty;
+      addItem(product, selectedOptions, effectiveQty, customText || undefined, artworkFile?.name, linePrice);
+    }
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   }
+
+  const addToCartDisabled = isCustomQty && (!customQtyData || customQtyData.overMax || !customQtyInput.trim());
 
   return (
     <div className="flex flex-col gap-5">
@@ -79,17 +141,22 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
       {!isQuote && (
         <div className="flex items-baseline gap-3 flex-wrap">
           <span className="font-display font-700 text-3xl text-[#111111]">
-            {formatPrice(displayPrice)}
+            {isCustomQty && customQtyData && !customQtyData.overMax
+              ? formatPrice(displayPrice)
+              : isCustomQty
+                ? "—"
+                : formatPrice(displayPrice)
+            }
           </span>
-          {displayUnit && effectiveQty > 1 && (
+          {displayUnit && (
             <span className="text-sm text-[#6b7280]">{formatPrice(displayUnit)} each</span>
           )}
-          {!currentTier && product.originalPrice && (
+          {!currentTier && product.originalPrice && !isCustomQty && (
             <span className="text-lg text-[#6b7280] line-through">{formatPrice(product.originalPrice)}</span>
           )}
-          {currentTier && (
+          {displayQtyLabel && (
             <span className="text-xs text-[#6b7280] bg-[#f0ede8] px-2 py-1 rounded-lg">
-              for {effectiveQty}
+              for {displayQtyLabel}
             </span>
           )}
         </div>
@@ -105,10 +172,7 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
             {opt.values.map((val) => (
               <button
                 key={val}
-                onClick={() => {
-                  setSelectedOptions((prev) => ({ ...prev, [opt.name]: val }));
-                  setQuantity(null); // reset to default tier for new size
-                }}
+                onClick={() => handleOptionChange(opt.name, val)}
                 className={`px-4 py-2 text-sm rounded-full border-2 transition-all cursor-pointer ${
                   selectedOptions[opt.name] === val
                     ? "border-[#ef8733] bg-[#fff7ed] text-[#ef8733] font-semibold"
@@ -155,9 +219,9 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
                 {tierQtys.map((q) => (
                   <button
                     key={q}
-                    onClick={() => setQuantity(q)}
+                    onClick={() => { setQuantity(q); setIsCustomQty(false); setCustomQtyInput(""); }}
                     className={`px-4 py-2 text-sm rounded-full border-2 transition-all cursor-pointer ${
-                      effectiveQty === q
+                      !isCustomQty && effectiveQty === q
                         ? "border-[#ef8733] bg-[#fff7ed] text-[#ef8733] font-semibold"
                         : "border-[#e5e1d8] text-[#111111] hover:border-[#ef8733]"
                     }`}
@@ -165,8 +229,63 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
                     {q}
                   </button>
                 ))}
+                {canCustomQty && (
+                  <button
+                    onClick={() => { setIsCustomQty(true); setQuantity(null); }}
+                    className={`px-4 py-2 text-sm rounded-full border-2 transition-all cursor-pointer ${
+                      isCustomQty
+                        ? "border-[#ef8733] bg-[#fff7ed] text-[#ef8733] font-semibold"
+                        : "border-[#e5e1d8] text-[#111111] hover:border-[#ef8733]"
+                    }`}
+                  >
+                    Custom
+                  </button>
+                )}
               </div>
-              {selectedSizeVariant && (
+
+              {isCustomQty && (
+                <div className="mt-3 flex flex-col gap-1.5">
+                  <div className="flex items-center gap-3">
+                    <input
+                      type="number"
+                      min="1"
+                      value={customQtyInput}
+                      onChange={(e) => setCustomQtyInput(e.target.value)}
+                      placeholder={`e.g. 30`}
+                      className="w-28 h-10 px-3 rounded-xl border-2 border-[#e5e1d8] text-sm focus:outline-none focus:border-[#ef8733] transition-colors"
+                      autoFocus
+                    />
+                    {customQtyData && (
+                      <span className="text-sm text-[#6b7280]">
+                        {customQtyData.overMax ? (
+                          <span className="text-amber-600">
+                            Exceeds max —{" "}
+                            <Link href={`/custom-order?product=${product.slug}`} className="text-[#ef8733] hover:underline font-medium">
+                              request a quote
+                            </Link>
+                          </span>
+                        ) : (
+                          <>
+                            <span className="font-semibold text-[#111111]">
+                              {customQtyData.sheetsNeeded} sheet{customQtyData.sheetsNeeded !== 1 ? "s" : ""}
+                            </span>
+                            {customQtyData.pricedQty !== customQtyData.raw && (
+                              <> · priced for {customQtyData.pricedQty}</>
+                            )}
+                          </>
+                        )}
+                      </span>
+                    )}
+                  </div>
+                  {customQtyData && !customQtyData.overMax && customQtyData.pricedQty !== customQtyData.raw && (
+                    <p className="text-xs text-[#6b7280]">
+                      {stickersPerSheet} stickers per sheet — we print full sheets, so {customQtyData.raw} rounds up to {customQtyData.pricedQty}.
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {!isCustomQty && selectedSizeVariant && (
                 <p className="text-xs text-[#6b7280] mt-2">
                   Quantities in multiples of {selectedSizeVariant.stickersPerSheet} (full sheets).{" "}
                   <Link href={`/custom-order?product=${product.slug}`} className="text-[#ef8733] hover:underline font-medium">
@@ -206,11 +325,11 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
           <p className="text-xs text-[#6b7280] text-center">We respond within 24 hours with a full quote.</p>
         </div>
       ) : (
-        <Button size="lg" fullWidth onClick={handleAddToCart}>
+        <Button size="lg" fullWidth onClick={handleAddToCart} disabled={addToCartDisabled}>
           {added ? (
             "✓ Added to cart!"
           ) : (
-            <><ShoppingCart size={18} /> Add to Cart — {formatPrice(displayPrice)}</>
+            <><ShoppingCart size={18} /> Add to Cart{!addToCartDisabled && ` — ${formatPrice(displayPrice)}`}</>
           )}
         </Button>
       )}
