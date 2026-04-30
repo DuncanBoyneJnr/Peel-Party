@@ -214,36 +214,50 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
         </div>
 
         <div className="mt-4 pt-4 border-t border-[#e5e1d8]">
-          <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider mb-3">Printable Sheet Size</p>
-          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div>
-              <Label>Sheet Width (cm)</Label>
-              <input type="number" step="0.01" min="0" className={inputCls}
-                value={settings.sheetWidthCm.toFixed(2)}
-                onChange={(e) => updateGlobal("sheetWidthCm", parseFloat(e.target.value || "0"))}
-              />
-            </div>
-            <div>
-              <Label>Sheet Height (cm)</Label>
-              <input type="number" step="0.01" min="0" className={inputCls}
-                value={settings.sheetHeightCm.toFixed(2)}
-                onChange={(e) => updateGlobal("sheetHeightCm", parseFloat(e.target.value || "0"))}
-              />
-            </div>
-            <div>
-              <Label>Sheet Width (in)</Label>
-              <input type="number" step="0.001" min="0" className={inputCls}
-                value={(settings.sheetWidthCm / CM_PER_INCH).toFixed(3)}
-                onChange={(e) => updateGlobal("sheetWidthCm", parseFloat(e.target.value || "0") * CM_PER_INCH)}
-              />
-            </div>
-            <div>
-              <Label>Sheet Height (in)</Label>
-              <input type="number" step="0.001" min="0" className={inputCls}
-                value={(settings.sheetHeightCm / CM_PER_INCH).toFixed(3)}
-                onChange={(e) => updateGlobal("sheetHeightCm", parseFloat(e.target.value || "0") * CM_PER_INCH)}
-              />
-            </div>
+          <p className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider mb-3">Printable Sheet / Roll Sizes</p>
+          <div className="flex flex-col gap-4">
+            {(
+              [
+                { label: "Sticker Sheet",    wKey: "sheetWidthCm",        hKey: "sheetHeightCm"        },
+                { label: "Permanent Vinyl",  wKey: "vinylWidthCm",        hKey: "vinylHeightCm"        },
+                { label: "Heat Vinyl",       wKey: "heatVinylWidthCm",    hKey: "heatVinylHeightCm"    },
+                { label: "Heat Transfers",   wKey: "heatTransferWidthCm", hKey: "heatTransferHeightCm" },
+              ] as const
+            ).map(({ label, wKey, hKey }) => (
+              <div key={label}>
+                <p className="text-xs font-medium text-[#111111] mb-2">{label}</p>
+                <div className="grid sm:grid-cols-4 gap-3">
+                  <div>
+                    <Label>Width (cm)</Label>
+                    <input type="number" step="0.01" min="0" className={inputCls}
+                      value={settings[wKey].toFixed(2)}
+                      onChange={(e) => updateGlobal(wKey, parseFloat(e.target.value || "0"))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Height (cm)</Label>
+                    <input type="number" step="0.01" min="0" className={inputCls}
+                      value={settings[hKey].toFixed(2)}
+                      onChange={(e) => updateGlobal(hKey, parseFloat(e.target.value || "0"))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Width (in)</Label>
+                    <input type="number" step="0.001" min="0" className={inputCls}
+                      value={(settings[wKey] / CM_PER_INCH).toFixed(3)}
+                      onChange={(e) => updateGlobal(wKey, parseFloat(e.target.value || "0") * CM_PER_INCH)}
+                    />
+                  </div>
+                  <div>
+                    <Label>Height (in)</Label>
+                    <input type="number" step="0.001" min="0" className={inputCls}
+                      value={(settings[hKey] / CM_PER_INCH).toFixed(3)}
+                      onChange={(e) => updateGlobal(hKey, parseFloat(e.target.value || "0") * CM_PER_INCH)}
+                    />
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </SectionCard>
@@ -275,19 +289,25 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
           </p>
         ) : (
           <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-[1fr_90px_90px_90px_90px_70px_40px] gap-2 px-1 mb-1">
+            <div className="grid grid-cols-[1fr_80px_80px_80px_80px_58px_58px_58px_58px_40px] gap-2 px-1 mb-1">
               <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">Name</span>
               <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">H (cm)</span>
               <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">W (cm)</span>
               <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">H (in)</span>
               <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">W (in)</span>
-              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">/sheet</span>
+              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider text-center leading-tight">Sticker<br/>/sheet</span>
+              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider text-center leading-tight">Vinyl<br/>/roll</span>
+              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider text-center leading-tight">H.Vinyl<br/>/roll</span>
+              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider text-center leading-tight">H.Xfer<br/>/sheet</span>
               <span />
             </div>
             {settings.standardSizes.map((size) => {
-              const perSheet = calcStickersPerSheet(size.widthCm, size.heightCm, settings.sheetWidthCm, settings.sheetHeightCm);
+              const perSticker  = calcStickersPerSheet(size.widthCm, size.heightCm, settings.sheetWidthCm,        settings.sheetHeightCm);
+              const perVinyl    = calcStickersPerSheet(size.widthCm, size.heightCm, settings.vinylWidthCm,        settings.vinylHeightCm);
+              const perHVinyl   = calcStickersPerSheet(size.widthCm, size.heightCm, settings.heatVinylWidthCm,    settings.heatVinylHeightCm);
+              const perHXfer    = calcStickersPerSheet(size.widthCm, size.heightCm, settings.heatTransferWidthCm, settings.heatTransferHeightCm);
               return (
-                <div key={size.id} className="grid grid-cols-[1fr_90px_90px_90px_90px_70px_40px] gap-2 items-center">
+                <div key={size.id} className="grid grid-cols-[1fr_80px_80px_80px_80px_58px_58px_58px_58px_40px] gap-2 items-center">
                   <input type="text" placeholder="e.g. 3×3 cm, A6, Small" className={cellInputCls}
                     value={size.name}
                     onChange={(e) => updateStandardSize(size.id, "name", e.target.value)}
@@ -308,9 +328,11 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                     value={size.widthCm ? (size.widthCm / CM_PER_INCH).toFixed(3) : ""}
                     onChange={(e) => updateStandardSize(size.id, "widthCm", parseFloat(e.target.value || "0") * CM_PER_INCH)}
                   />
-                  <span className={`text-sm font-semibold text-center ${perSheet > 0 ? "text-[#111111]" : "text-[#d1d5db]"}`}>
-                    {perSheet > 0 ? perSheet : "—"}
-                  </span>
+                  {[perSticker, perVinyl, perHVinyl, perHXfer].map((n, i) => (
+                    <span key={i} className={`text-sm font-semibold text-center ${n > 0 ? "text-[#111111]" : "text-[#d1d5db]"}`}>
+                      {n > 0 ? n : "—"}
+                    </span>
+                  ))}
                   <button type="button" onClick={() => deleteStandardSize(size.id)}
                     className="h-9 w-9 flex items-center justify-center rounded-lg text-[#6b7280] hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer">
                     <Trash2 size={15} />

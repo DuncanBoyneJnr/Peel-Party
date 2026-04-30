@@ -4,22 +4,37 @@
     "slug": "custom-die-cut-stickers",
     "name": "Custom Die-Cut Stickers",
     "category": "stickers",
-    "price": 15.00,
+    "price": 15,
     "description": "Precision-cut to any shape. Perfect for branding, events, or personal use.",
     "longDescription": "Our custom die-cut stickers are printed on premium vinyl with a UV-resistant laminate, making them waterproof and durable indoors or out. Choose your shape, size, and finish — we cut to any contour.",
     "images": [],
     "options": [
       {
         "name": "Size",
-        "values": ["50mm", "75mm", "100mm", "Custom"]
+        "values": [
+          "50mm",
+          "75mm",
+          "100mm",
+          "Custom"
+        ]
       },
       {
         "name": "Finish",
-        "values": ["Gloss", "Matte", "Holographic"]
+        "values": [
+          "Gloss",
+          "Matte",
+          "Holographic"
+        ]
       },
       {
         "name": "Quantity",
-        "values": ["25", "50", "100", "250", "500+"]
+        "values": [
+          "25",
+          "50",
+          "100",
+          "250",
+          "500+"
+        ]
       }
     ],
     "supportsTextInput": true,
@@ -44,11 +59,19 @@
     "options": [
       {
         "name": "Finish",
-        "values": ["Gloss", "Matte"]
+        "values": [
+          "Gloss",
+          "Matte"
+        ]
       },
       {
         "name": "Quantity",
-        "values": ["10", "25", "50", "100"]
+        "values": [
+          "10",
+          "25",
+          "50",
+          "100"
+        ]
       }
     ],
     "supportsTextInput": false,
@@ -72,7 +95,11 @@
     "options": [
       {
         "name": "Pack Size",
-        "values": ["10 stickers", "25 stickers", "50 stickers"]
+        "values": [
+          "10 stickers",
+          "25 stickers",
+          "50 stickers"
+        ]
       }
     ],
     "supportsTextInput": false,
@@ -89,22 +116,34 @@
     "slug": "kiss-cut-stickers",
     "name": "Kiss-Cut Stickers",
     "category": "stickers",
-    "price": 12.00,
+    "price": 12,
     "description": "Cut to shape on a square backing. Easy to peel and apply.",
     "longDescription": "Kiss-cut stickers are cut around the shape of your design but leave the backing intact, making them easy to peel. Ideal for product packaging and event giveaways.",
     "images": [],
     "options": [
       {
         "name": "Size",
-        "values": ["50mm", "75mm", "100mm"]
+        "values": [
+          "50mm",
+          "75mm",
+          "100mm"
+        ]
       },
       {
         "name": "Finish",
-        "values": ["Gloss", "Matte"]
+        "values": [
+          "Gloss",
+          "Matte"
+        ]
       },
       {
         "name": "Quantity",
-        "values": ["50", "100", "250", "500+"]
+        "values": [
+          "50",
+          "100",
+          "250",
+          "500+"
+        ]
       }
     ],
     "supportsTextInput": false,
@@ -127,11 +166,19 @@
     "options": [
       {
         "name": "Size",
-        "values": ["11oz", "15oz"]
+        "values": [
+          "11oz",
+          "15oz"
+        ]
       },
       {
         "name": "Handle Colour",
-        "values": ["White", "Black", "Red", "Papaya"]
+        "values": [
+          "White",
+          "Black",
+          "Red",
+          "Papaya"
+        ]
       }
     ],
     "supportsTextInput": true,
@@ -155,11 +202,19 @@
     "options": [
       {
         "name": "Size",
-        "values": ["11oz", "15oz"]
+        "values": [
+          "11oz",
+          "15oz"
+        ]
       },
       {
         "name": "Quantity",
-        "values": ["24", "48", "100", "250+"]
+        "values": [
+          "24",
+          "48",
+          "100",
+          "250+"
+        ]
       }
     ],
     "supportsTextInput": true,
@@ -183,7 +238,9 @@
     "options": [
       {
         "name": "Size",
-        "values": ["11oz"]
+        "values": [
+          "11oz"
+        ]
       }
     ],
     "supportsTextInput": true,
@@ -206,15 +263,29 @@
     "options": [
       {
         "name": "Shape",
-        "values": ["Circle", "Square", "Heart", "Custom"]
+        "values": [
+          "Circle",
+          "Square",
+          "Heart",
+          "Custom"
+        ]
       },
       {
         "name": "Size",
-        "values": ["40mm", "55mm", "70mm"]
+        "values": [
+          "40mm",
+          "55mm",
+          "70mm"
+        ]
       },
       {
         "name": "Quantity",
-        "values": ["10", "25", "50", "100"]
+        "values": [
+          "10",
+          "25",
+          "50",
+          "100"
+        ]
       }
     ],
     "supportsTextInput": true,
@@ -238,11 +309,20 @@
     "options": [
       {
         "name": "Shape",
-        "values": ["Round 38mm", "Rectangle 30x50mm", "Square 38mm"]
+        "values": [
+          "Round 38mm",
+          "Rectangle 30x50mm",
+          "Square 38mm"
+        ]
       },
       {
         "name": "Quantity",
-        "values": ["10", "25", "50", "100+"]
+        "values": [
+          "10",
+          "25",
+          "50",
+          "100+"
+        ]
       }
     ],
     "supportsTextInput": false,
@@ -266,11 +346,20 @@
     "options": [
       {
         "name": "Colour",
-        "values": ["Black/White", "Full Colour", "Team Colours"]
+        "values": [
+          "Black/White",
+          "Full Colour",
+          "Team Colours"
+        ]
       },
       {
         "name": "Quantity",
-        "values": ["25", "50", "100", "250"]
+        "values": [
+          "25",
+          "50",
+          "100",
+          "250"
+        ]
       }
     ],
     "supportsTextInput": true,
@@ -281,5 +370,24 @@
     "inStock": true,
     "reviewCount": 34,
     "rating": 4.6
+  },
+  {
+    "name": "Test Sticker Pack",
+    "slug": "test-sticker-pack",
+    "category": "stickers",
+    "price": 9.99,
+    "description": "Test product for checkout",
+    "longDescription": "A test product",
+    "images": [],
+    "options": [],
+    "supportsTextInput": false,
+    "supportsFileUpload": false,
+    "orderType": "buy-now",
+    "inStock": true,
+    "reviewCount": 0,
+    "rating": 5,
+    "featured": false,
+    "id": "p1777448699306",
+    "priceMatrix": {}
   }
 ]

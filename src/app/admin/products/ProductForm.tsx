@@ -53,6 +53,12 @@ const DEFAULT_COST_CONFIG: ProductCostConfig = {
   batchMinutes: 5,
 };
 
+const MATERIAL_PRESETS = [
+  { label: "Permanent Vinyl", widthIn: 12, heightIn: 48 },
+  { label: "Heat Vinyl", widthIn: 12, heightIn: 60 },
+  { label: "Heat Transfers", widthIn: 8, heightIn: 12 },
+] as const;
+
 export default function ProductForm({
   product,
   isNew,
@@ -519,6 +525,25 @@ export default function ProductForm({
 
           {isSticker && (
             <>
+              <div className="sm:col-span-2">
+                <label className={labelClass}>Material Presets</label>
+                <div className="flex flex-wrap gap-2">
+                  {MATERIAL_PRESETS.map((preset) => (
+                    <button
+                      key={preset.label}
+                      type="button"
+                      onClick={() => {
+                        handleWidthInChange(String(preset.widthIn));
+                        handleHeightInChange(String(preset.heightIn));
+                      }}
+                      className="inline-flex items-center h-9 px-3 rounded-xl border-2 border-[#e5e1d8] text-sm text-[#111111] hover:border-[#ef8733] hover:bg-[#fff7ed] transition-colors cursor-pointer"
+                    >
+                      {preset.label} — {preset.widthIn}″×{preset.heightIn}″
+                    </button>
+                  ))}
+                </div>
+              </div>
+
               <div>
                 <label className={labelClass}>Height</label>
                 <div className="flex gap-2">

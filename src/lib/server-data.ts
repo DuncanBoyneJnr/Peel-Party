@@ -220,11 +220,19 @@ export interface CostSettings {
   defaultInkCostPence: number;
   sheetWidthCm: number;
   sheetHeightCm: number;
+  vinylWidthCm: number;
+  vinylHeightCm: number;
+  heatVinylWidthCm: number;
+  heatVinylHeightCm: number;
+  heatTransferWidthCm: number;
+  heatTransferHeightCm: number;
   standardSizes: StandardSize[];
   maxOrderQty: number;
   materials: MaterialType[];
   productConfigs: Record<string, ProductCostConfig>;
 }
+
+const IN_TO_CM = 2.54;
 
 const defaultCostSettings: CostSettings = {
   hourlyRatePence: 1500,
@@ -233,6 +241,12 @@ const defaultCostSettings: CostSettings = {
   defaultInkCostPence: 10,
   sheetWidthCm: 17.32,
   sheetHeightCm: 23.67,
+  vinylWidthCm: 12 * IN_TO_CM,
+  vinylHeightCm: 48 * IN_TO_CM,
+  heatVinylWidthCm: 12 * IN_TO_CM,
+  heatVinylHeightCm: 60 * IN_TO_CM,
+  heatTransferWidthCm: 8 * IN_TO_CM,
+  heatTransferHeightCm: 12 * IN_TO_CM,
   standardSizes: [],
   maxOrderQty: 1000,
   materials: [],
