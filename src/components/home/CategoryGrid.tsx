@@ -18,7 +18,7 @@ const categories = [
   {
     slug: "mugs",
     title: "Mugs",
-    description: "Personalised photo mugs, branded business mugs, and magic colour-change mugs.",
+    description: "Personalised photo mugs and branded business mugs, printed to order.",
     colour: "#111111",
     lightColour: "#f9f7f4",
     icon: (
