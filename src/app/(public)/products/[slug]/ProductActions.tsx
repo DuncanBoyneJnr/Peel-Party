@@ -61,17 +61,18 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
     : (legacyTiers ?? []);
   const showTierButtons = tierQtys.length > 1;
 
-  // Custom qty is available for matrix sticker products with a known stickersPerSheet
-  const canCustomQty = showTierButtons && stickersPerSheet > 0 && hasMatrix;
+  // Custom qty is available for any product that shows tier buttons
+  const canCustomQty = showTierButtons;
 
   // Compute custom quantity pricing whenever the input changes
   const customQtyData = useMemo(() => {
-    if (!isCustomQty || !stickersPerSheet || !customQtyInput.trim()) return null;
+    if (!isCustomQty || !customQtyInput.trim()) return null;
     const raw = parseInt(customQtyInput, 10);
     if (isNaN(raw) || raw < 1) return null;
 
-    const sheetsNeeded = Math.ceil(raw / stickersPerSheet);
-    const pricedQty = sheetsNeeded * stickersPerSheet;
+    // For sheet-based products round up to the next full sheet; otherwise use the raw qty directly
+    const pricedQty = stickersPerSheet > 0 ? Math.ceil(raw / stickersPerSheet) * stickersPerSheet : raw;
+    const sheetsNeeded = stickersPerSheet > 0 ? Math.ceil(raw / stickersPerSheet) : 1;
 
     if (pricedQty > maxOrderQty) {
       return { overMax: true as const, raw, sheetsNeeded, pricedQty };
@@ -93,7 +94,8 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
     // Below the minimum tier — enforce the first (minimum) tier price
     const first = matrixTiers[0];
     if (first) {
-      return { overMax: false as const, raw, sheetsNeeded: first.qty / stickersPerSheet, pricedQty: first.qty, totalPence: first.totalPence, unitPence: first.unitPence };
+      const minSheets = stickersPerSheet > 0 ? first.qty / stickersPerSheet : 1;
+      return { overMax: false as const, raw, sheetsNeeded: minSheets, pricedQty: first.qty, totalPence: first.totalPence, unitPence: first.unitPence };
     }
 
     return null;
