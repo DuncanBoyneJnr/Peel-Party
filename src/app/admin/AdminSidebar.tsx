@@ -5,7 +5,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard, Package, Images, MessageSquare,
-  Settings, LogOut, ExternalLink, Menu, X, Gift, TrendingUp, Layers, Truck, ShoppingBag,
+  Settings, LogOut, ExternalLink, Menu, X, Gift, TrendingUp, Layers, Truck, ShoppingBag, Tag,
 } from "lucide-react";
 import { useState } from "react";
 import { cn } from "@/lib/utils";
@@ -20,6 +20,7 @@ const nav = [
   { label: "Costs & Profit", href: "/admin/costs", icon: TrendingUp },
   { label: "Materials", href: "/admin/materials", icon: Layers },
   { label: "Postage", href: "/admin/postage", icon: Truck },
+  { label: "Promo Codes", href: "/admin/promo-codes", icon: Tag },
   { label: "Settings", href: "/admin/settings", icon: Settings },
 ];
 

@@ -13,7 +13,7 @@ type Step = "details" | "payment";
 const defaultPostage: PostageSettings = { flatRate: 3.95, freeThreshold: 50 };
 
 export default function CheckoutPage() {
-  const { state, subtotal, clearCart } = useCart();
+  const { state, subtotal, discountAmount, clearCart } = useCart();
   const [step, setStep] = useState<Step>("details");
   const [loading, setLoading] = useState(false);
   const [postage, setPostage] = useState<PostageSettings>(defaultPostage);
@@ -34,11 +34,12 @@ export default function CheckoutPage() {
     setForm((prev) => ({ ...prev, [field]: value }));
   }
 
+  const discountedSubtotal = subtotal - discountAmount;
   const shippingCost =
-    postage.freeThreshold > 0 && subtotal >= postage.freeThreshold
+    postage.freeThreshold > 0 && discountedSubtotal >= postage.freeThreshold
       ? 0
       : postage.flatRate;
-  const total = subtotal + shippingCost;
+  const total = discountedSubtotal + shippingCost;
 
   async function handlePayment(e: React.FormEvent) {
     e.preventDefault();
@@ -54,6 +55,7 @@ export default function CheckoutPage() {
             selectedOptions: i.selectedOptions,
           })),
           customer: { ...form },
+          promoCode: state.appliedPromo?.code,
         }),
       });
 
@@ -218,6 +220,12 @@ export default function CheckoutPage() {
               <div className="flex justify-between text-[#6b7280]">
                 <span>Subtotal</span><span>{formatPrice(subtotal)}</span>
               </div>
+              {discountAmount > 0 && (
+                <div className="flex justify-between text-emerald-600 font-medium">
+                  <span>Discount ({state.appliedPromo?.code})</span>
+                  <span>−{formatPrice(discountAmount)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-[#6b7280]">
                 <span>Postage</span>
                 <span>{shippingCost === 0 ? "Free" : formatPrice(shippingCost)}</span>

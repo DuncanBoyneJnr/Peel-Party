@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getProducts, getPostageSettings, setPendingOrder } from "@/lib/server-data";
+import { getProducts, getPostageSettings, setPendingOrder, getPromoCodes, savePromoCodes } from "@/lib/server-data";
 import { getStripeSecretKey, stripeFetch } from "@/lib/stripe";
 import { createPayPalOrder } from "@/lib/paypal";
 import { PriceTier, OrderItem } from "@/lib/types";
@@ -39,14 +39,14 @@ function flattenParams(obj: unknown, prefix = ""): string {
 }
 
 export async function POST(req: NextRequest) {
-  let body: { items: CheckoutItem[]; customer: CustomerDetails };
+  let body: { items: CheckoutItem[]; customer: CustomerDetails; promoCode?: string };
   try {
     body = await req.json();
   } catch {
     return NextResponse.json({ error: "Invalid request body." }, { status: 400 });
   }
 
-  const { items, customer } = body;
+  const { items, customer, promoCode } = body;
   if (!items?.length) return NextResponse.json({ error: "Cart is empty." }, { status: 400 });
   if (!customer?.email) return NextResponse.json({ error: "Customer email is required." }, { status: 400 });
 
@@ -57,6 +57,23 @@ export async function POST(req: NextRequest) {
   } catch (err) {
     console.error("[checkout] Failed to fetch data store:", err instanceof Error ? err.message : String(err));
     return NextResponse.json({ error: "Service temporarily unavailable. Please try again later." }, { status: 503 });
+  }
+
+  // Validate promo code server-side
+  let discountPounds = 0;
+  let validatedPromoId: string | null = null;
+  if (promoCode) {
+    const codes = await getPromoCodes();
+    const promo = codes.find((c) => c.code.toUpperCase() === promoCode.toUpperCase().trim());
+    const now = new Date();
+    if (
+      promo &&
+      promo.active &&
+      (!promo.expiresAt || new Date(promo.expiresAt) >= now) &&
+      (!promo.usageLimit || promo.usageCount < promo.usageLimit)
+    ) {
+      validatedPromoId = promo.id;
+    }
   }
 
   // Build line items + totals (shared by both providers)
@@ -98,18 +115,35 @@ export async function POST(req: NextRequest) {
     lineItems.push({ name: displayName, unitAmountPence, quantity: qty });
   }
 
+  // Calculate discount (applied per-provider below — Stripe uses a coupon, PayPal subtracts from total)
+  if (validatedPromoId) {
+    const codes = await getPromoCodes();
+    const promo = codes.find((c) => c.id === validatedPromoId)!;
+    discountPounds = promo.discountType === "percent"
+      ? Math.round(subtotalPounds * promo.discountValue) / 100
+      : Math.min(promo.discountValue / 100, subtotalPounds);
+  }
+
+  const discountedSubtotal = subtotalPounds - discountPounds;
   const shippingCost =
-    postageSettings.freeThreshold > 0 && subtotalPounds >= postageSettings.freeThreshold
+    postageSettings.freeThreshold > 0 && discountedSubtotal >= postageSettings.freeThreshold
       ? 0
       : postageSettings.flatRate;
   const shippingPence = Math.round(shippingCost * 100);
   if (shippingPence > 0) lineItems.push({ name: "Postage & Packaging", unitAmountPence: shippingPence, quantity: 1 });
 
-  const totalPounds = subtotalPounds + shippingCost;
+  const totalPounds = discountedSubtotal + shippingCost;
   const origin = req.headers.get("origin") ?? process.env.NEXT_PUBLIC_SITE_URL ?? "https://peelpartyco.co.uk";
 
   // Route to PayPal or Stripe based on env var (default: paypal)
   const provider = process.env.PAYMENT_PROVIDER ?? "paypal";
+
+  async function incrementPromoUsage() {
+    if (!validatedPromoId) return;
+    const codes = await getPromoCodes();
+    const idx = codes.findIndex((c) => c.id === validatedPromoId);
+    if (idx !== -1) { codes[idx] = { ...codes[idx], usageCount: codes[idx].usageCount + 1 }; await savePromoCodes(codes); }
+  }
 
   if (provider === "paypal") {
     if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) {
@@ -129,7 +163,6 @@ export async function POST(req: NextRequest) {
         cancelUrl: `${origin}/checkout`,
       });
 
-      // Store pending order so success page can reconstruct it
       await setPendingOrder(paypalOrderId, {
         customer: {
           email: customer.email,
@@ -148,6 +181,7 @@ export async function POST(req: NextRequest) {
         createdAt: new Date().toISOString(),
       });
 
+      await incrementPromoUsage();
       return NextResponse.json({ url: approvalUrl });
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
@@ -166,7 +200,28 @@ export async function POST(req: NextRequest) {
     quantity: l.quantity,
   }));
 
-  const sessionParams = {
+  // For Stripe, apply the discount as a one-time coupon (negative line amounts aren't supported)
+  let stripeCouponId: string | null = null;
+  if (validatedPromoId && discountPounds > 0) {
+    const codes = await getPromoCodes();
+    const promo = codes.find((c) => c.id === validatedPromoId)!;
+    const couponParams = promo.discountType === "percent"
+      ? { duration: "once", percent_off: promo.discountValue }
+      : { duration: "once", amount_off: Math.round(discountPounds * 100), currency: "gbp" };
+    try {
+      const couponRes = await stripeFetch("/v1/coupons", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${stripeKey}`, "Content-Type": "application/x-www-form-urlencoded" },
+        body: flattenParams(couponParams),
+      });
+      const couponBody = couponRes.body as { id?: string };
+      if (couponBody.id) stripeCouponId = couponBody.id;
+    } catch {
+      // Non-fatal: proceed without coupon if creation fails
+    }
+  }
+
+  const sessionParams: Record<string, unknown> = {
     mode: "payment",
     customer_email: customer.email,
     success_url: `${origin}/checkout/success?session_id={CHECKOUT_SESSION_ID}`,
@@ -185,6 +240,7 @@ export async function POST(req: NextRequest) {
     },
     line_items: stripeLineItems,
   };
+  if (stripeCouponId) sessionParams.discounts = [{ coupon: stripeCouponId }];
 
   try {
     const stripe = await stripeFetch("/v1/checkout/sessions", {
@@ -198,6 +254,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: "Payment service error. Please try again." }, { status: 500 });
     }
     if (!stripeBody.url) return NextResponse.json({ error: "Payment service error. Please try again." }, { status: 500 });
+    await incrementPromoUsage();
     return NextResponse.json({ url: stripeBody.url });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

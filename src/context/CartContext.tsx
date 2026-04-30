@@ -7,7 +7,7 @@ import {
   useCallback,
   ReactNode,
 } from "react";
-import { CartItem, CartState, Product } from "@/lib/types";
+import { CartItem, CartState, Product, AppliedPromo } from "@/lib/types";
 
 type CartAction =
   | { type: "ADD_ITEM"; payload: CartItem }
@@ -15,12 +15,14 @@ type CartAction =
   | { type: "UPDATE_QTY"; payload: { id: string; quantity: number } }
   | { type: "CLEAR" }
   | { type: "OPEN" }
-  | { type: "CLOSE" };
-
+  | { type: "CLOSE" }
+  | { type: "APPLY_PROMO"; payload: AppliedPromo }
+  | { type: "REMOVE_PROMO" };
 
 const initialState: CartState = {
   items: [],
   isOpen: false,
+  appliedPromo: null,
 };
 
 function cartReducer(state: CartState, action: CartAction): CartState {
@@ -48,18 +50,21 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         items: state.items.map((i) => {
           if (i.id !== action.payload.id) return i;
           const newQty = action.payload.quantity;
-          // Recalculate linePrice using per-unit product.price (flat-price products).
           // For matrix-priced products product.price is 0, so keep the original linePrice.
           const newLinePrice = i.product.price > 0 ? i.product.price * newQty : i.linePrice;
           return { ...i, quantity: newQty, linePrice: newLinePrice };
         }),
       };
     case "CLEAR":
-      return { ...state, items: [] };
+      return { ...state, items: [], appliedPromo: null };
     case "OPEN":
       return { ...state, isOpen: true };
     case "CLOSE":
       return { ...state, isOpen: false };
+    case "APPLY_PROMO":
+      return { ...state, appliedPromo: action.payload };
+    case "REMOVE_PROMO":
+      return { ...state, appliedPromo: null };
     default:
       return state;
   }
@@ -73,8 +78,11 @@ interface CartContextValue {
   clearCart: () => void;
   openCart: () => void;
   closeCart: () => void;
+  applyPromo: (promo: AppliedPromo) => void;
+  removePromo: () => void;
   totalItems: number;
   subtotal: number;
+  discountAmount: number;
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
@@ -99,12 +107,20 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const clearCart = useCallback(() => dispatch({ type: "CLEAR" }), []);
   const openCart = useCallback(() => dispatch({ type: "OPEN" }), []);
   const closeCart = useCallback(() => dispatch({ type: "CLOSE" }), []);
+  const applyPromo = useCallback((promo: AppliedPromo) => dispatch({ type: "APPLY_PROMO", payload: promo }), []);
+  const removePromo = useCallback(() => dispatch({ type: "REMOVE_PROMO" }), []);
 
   const totalItems = state.items.reduce((sum, i) => sum + i.quantity, 0);
   const subtotal = state.items.reduce((sum, i) => sum + i.linePrice, 0);
 
+  const discountAmount = state.appliedPromo
+    ? state.appliedPromo.discountType === "percent"
+      ? Math.round(subtotal * state.appliedPromo.discountValue) / 100
+      : Math.min(state.appliedPromo.discountValue / 100, subtotal)
+    : 0;
+
   return (
-    <CartContext.Provider value={{ state, addItem, removeItem, updateQty, clearCart, openCart, closeCart, totalItems, subtotal }}>
+    <CartContext.Provider value={{ state, addItem, removeItem, updateQty, clearCart, openCart, closeCart, applyPromo, removePromo, totalItems, subtotal, discountAmount }}>
       {children}
     </CartContext.Provider>
   );

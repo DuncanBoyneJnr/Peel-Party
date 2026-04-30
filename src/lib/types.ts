@@ -97,9 +97,29 @@ export interface CartItem {
   artworkFileName?: string;
 }
 
+export interface PromoCode {
+  id: string;
+  code: string;
+  discountType: "percent" | "fixed";
+  discountValue: number; // percent: 0–100, fixed: pence
+  active: boolean;
+  expiresAt?: string;      // ISO date string
+  usageLimit?: number;     // undefined = unlimited
+  usageCount: number;
+  minOrderPence?: number;  // undefined = no minimum
+}
+
+export interface AppliedPromo {
+  code: string;
+  discountType: "percent" | "fixed";
+  discountValue: number;
+  description: string;
+}
+
 export interface CartState {
   items: CartItem[];
   isOpen: boolean;
+  appliedPromo: AppliedPromo | null;
 }
 
 export interface PostageSettings {
