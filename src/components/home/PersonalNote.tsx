@@ -10,17 +10,10 @@ export default function PersonalNote() {
           A note from Emma
         </div>
 
-        <div className="flex flex-col gap-5 text-[#444444] text-lg leading-relaxed">
-          <p>
-            You&rsquo;re welcome to upload your own logos and designs, but if you&rsquo;d like any
-            support or creative input, feel free to reach out — I&rsquo;m always happy to help.
-          </p>
-          <p>
-            If you&rsquo;re planning a party or event, don&rsquo;t hesitate to get in touch with
-            details like your theme, colour scheme, age group, or any ideas you have in mind.
-            I can assist with designs and make sure everything fits together perfectly.
-          </p>
-        </div>
+        <p className="text-[#444444] text-lg leading-relaxed">
+          You&rsquo;re welcome to upload your own logos and designs, or I can help with ideas
+          and tweaks — just send your theme, colours, and what you&rsquo;ve got in mind.
+        </p>
 
         <div className="mt-8 flex flex-wrap justify-center gap-3">
           <Link
