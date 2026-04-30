@@ -8,6 +8,7 @@ import FeaturedBundles from "@/components/home/FeaturedBundles";
 import BundlesSection from "@/components/home/BundlesSection";
 import AlsoViewed from "@/components/home/AlsoViewed";
 import FAQ from "@/components/home/FAQ";
+import PersonalNote from "@/components/home/PersonalNote";
 
 const jsonLd = {
   "@context": "https://schema.org",
@@ -36,6 +37,7 @@ export default function HomePage() {
       <BundlesSection />
       <AlsoViewed />
       <CustomOrderBanner />
+      <PersonalNote />
       <FAQ />
     </>
   );
