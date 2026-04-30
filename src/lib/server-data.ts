@@ -106,6 +106,7 @@ export interface Quote {
   customText: string;
   notes: string;
   artworkFileName: string;
+  artworkUrl?: string;
   submittedAt: string;
   status: "new" | "in-progress" | "responded" | "closed";
 }

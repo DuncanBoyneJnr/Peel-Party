@@ -110,13 +110,24 @@ export default function QuotesAdmin({ initialQuotes }: Props) {
                     {[
                       ["Company", q.company], ["Phone", q.phone],
                       ["Deadline", q.deadline || "Not specified"], ["Custom Text", q.customText || "None"],
-                      ["Artwork", q.artworkFileName || "No file uploaded"],
                     ].map(([label, val]) => (
                       <div key={label}>
                         <p className="text-xs text-[#6b7280] mb-0.5">{label}</p>
                         <p className="text-[#111111]">{val || "—"}</p>
                       </div>
                     ))}
+                    <div>
+                      <p className="text-xs text-[#6b7280] mb-0.5">Artwork</p>
+                      {q.artworkUrl ? (
+                        <a href={q.artworkUrl} target="_blank" rel="noopener noreferrer" className="text-[#ef8733] underline text-sm font-medium">
+                          {q.artworkFileName || "View file"}
+                        </a>
+                      ) : q.artworkFileName ? (
+                        <p className="text-[#111111] text-sm">{q.artworkFileName} <span className="text-[#9ca3af]">(not uploaded)</span></p>
+                      ) : (
+                        <p className="text-[#6b7280]">No file uploaded</p>
+                      )}
+                    </div>
                     {q.notes && (
                       <div className="sm:col-span-2">
                         <p className="text-xs text-[#6b7280] mb-0.5">Notes</p>

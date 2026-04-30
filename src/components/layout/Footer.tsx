@@ -43,7 +43,7 @@ export default async function Footer() {
           {/* Brand */}
           <div className="lg:col-span-2">
             <Link href="/" className="flex items-center mb-4">
-              <Image src="/logo.png" alt={businessName} width={120} height={120} className="h-16 w-auto brightness-0 invert" />
+              <Image src="/logo.png" alt={businessName} width={160} height={160} className="h-16 w-auto" />
             </Link>
             <p className="text-sm text-gray-400 leading-relaxed max-w-xs">
               Custom merchandise made with love. Stickers, mugs, keyrings, coasters and magnets for businesses, events, and gifts — all printed to order.

@@ -32,10 +32,26 @@ export default function CustomOrderPage() {
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setLoading(true);
+
+    let artworkUrl = "";
+    let artworkFileName = "";
+    if (artworkFile) {
+      artworkFileName = artworkFile.name;
+      const fd = new FormData();
+      fd.append("file", artworkFile);
+      try {
+        const res = await fetch("/api/artwork-upload", { method: "POST", body: fd });
+        const data = await res.json();
+        if (data.url) artworkUrl = data.url;
+      } catch {
+        // file upload failed — proceed without artwork URL
+      }
+    }
+
     await fetch("/api/admin/quotes", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, artworkFileName: artworkFile?.name ?? "" }),
+      body: JSON.stringify({ ...form, artworkFileName, artworkUrl }),
     });
     setLoading(false);
     setSubmitted(true);

@@ -42,10 +42,10 @@ export default function Header() {
             : "bg-white border-b border-[#e5e1d8]"
         )}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center h-16 gap-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center h-20 gap-6">
           {/* Logo */}
           <Link href="/" className="flex items-center shrink-0">
-            <Image src="/logo.png" alt="Peel & Party Co." width={120} height={120} className="h-10 w-auto max-w-[100px]" priority />
+            <Image src="/logo.png" alt="Peel & Party Co." width={160} height={160} className="h-14 w-auto max-w-[140px]" priority />
           </Link>
 
           {/* Desktop nav */}
@@ -136,7 +136,7 @@ export default function Header() {
         )}
       </header>
       {/* Spacer for fixed header */}
-      <div className="h-16" />
+      <div className="h-20" />
     </>
   );
 }
