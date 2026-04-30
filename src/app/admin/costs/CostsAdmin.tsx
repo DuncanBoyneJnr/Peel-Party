@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { Save, CheckCircle2, Plus, Trash2, Calculator } from "lucide-react";
-import { Product } from "@/lib/types";
+import { Product, VolumeDiscountTier } from "@/lib/types";
 import { CostSettings, ProductCostConfig, StandardSize } from "@/lib/server-data";
 import { calcRunCosts, calcStickersPerSheet } from "@/lib/pricing";
 
@@ -134,6 +134,28 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
 
   function deleteStandardSize(id: string) {
     setSettings((prev) => ({ ...prev, standardSizes: prev.standardSizes.filter((s) => s.id !== id) }));
+  }
+
+  // ── Volume discounts ──────────────────────────────────────────────────────
+
+  function addVolumeDiscount() {
+    const tier: VolumeDiscountTier = { minQty: 2, discountPercent: 5 };
+    setSettings((prev) => ({ ...prev, volumeDiscounts: [...(prev.volumeDiscounts ?? []), tier] }));
+  }
+
+  function updateVolumeDiscount(index: number, field: keyof VolumeDiscountTier, value: number) {
+    setSettings((prev) => {
+      const updated = [...(prev.volumeDiscounts ?? [])];
+      updated[index] = { ...updated[index], [field]: value };
+      return { ...prev, volumeDiscounts: updated };
+    });
+  }
+
+  function deleteVolumeDiscount(index: number) {
+    setSettings((prev) => ({
+      ...prev,
+      volumeDiscounts: (prev.volumeDiscounts ?? []).filter((_, i) => i !== index),
+    }));
   }
 
   // ── Product configs ───────────────────────────────────────────────────────
@@ -441,6 +463,59 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
             {calcProductId
               ? "Configure batch size and batch time on the product's edit page, then return here."
               : "Select a product and enter a quantity to see the full breakdown."}
+          </div>
+        )}
+      </SectionCard>
+
+      {/* Volume Discounts */}
+      <SectionCard
+        title="Volume Discounts"
+        subtitle="Automatic % discount when customers buy more of the same product. Applies to products without sheet-based tiered pricing."
+        action={
+          <button
+            type="button"
+            onClick={addVolumeDiscount}
+            className="inline-flex items-center gap-1.5 h-8 px-3 bg-[#111111] text-white rounded-xl text-xs font-semibold hover:bg-[#222] transition-colors cursor-pointer"
+          >
+            <Plus size={13} /> Add Tier
+          </button>
+        }
+      >
+        {(settings.volumeDiscounts ?? []).length === 0 ? (
+          <p className="text-sm text-[#6b7280] py-4 text-center border-2 border-dashed border-[#e5e1d8] rounded-xl">
+            No volume discounts set. Click &ldquo;Add Tier&rdquo; to create one.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {(settings.volumeDiscounts ?? [])
+              .slice()
+              .sort((a, b) => a.minQty - b.minQty)
+              .map((tier, i) => (
+                <div key={i} className="flex items-center gap-3 p-3 bg-[#f9f7f4] rounded-xl">
+                  <span className="text-sm text-[#6b7280] shrink-0">Buy</span>
+                  <input
+                    type="number" min="2" step="1"
+                    value={tier.minQty}
+                    onChange={(e) => updateVolumeDiscount(i, "minQty", parseInt(e.target.value || "2"))}
+                    className={`${dimInputCls} w-20`}
+                  />
+                  <span className="text-sm text-[#6b7280] shrink-0">or more →</span>
+                  <input
+                    type="number" min="1" step="1" max="99"
+                    value={tier.discountPercent}
+                    onChange={(e) => updateVolumeDiscount(i, "discountPercent", parseFloat(e.target.value || "0"))}
+                    className={`${dimInputCls} w-20`}
+                  />
+                  <span className="text-sm text-[#6b7280] shrink-0">% off</span>
+                  <button
+                    type="button"
+                    onClick={() => deleteVolumeDiscount(i)}
+                    className="ml-auto w-7 h-7 flex items-center justify-center rounded-lg text-[#d1c8bc] hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer"
+                  >
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))}
           </div>
         )}
       </SectionCard>

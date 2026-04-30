@@ -124,6 +124,11 @@ export interface CartState {
   appliedPromo: AppliedPromo | null;
 }
 
+export interface VolumeDiscountTier {
+  minQty: number;
+  discountPercent: number;
+}
+
 export interface PostageSettings {
   flatRate: number;       // pounds, e.g. 3.95
   freeThreshold: number;  // pounds, e.g. 50.00 (0 = disabled)

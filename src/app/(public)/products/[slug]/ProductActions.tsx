@@ -15,7 +15,7 @@ interface ProductActionsProps {
 }
 
 export default function ProductActions({ product, maxOrderQty = 1000 }: ProductActionsProps) {
-  const { addItem } = useCart();
+  const { addItem, volumeDiscounts } = useCart();
   const [selectedOptions, setSelectedOptions] = useState<Record<string, string>>(
     Object.fromEntries(product.options.map((o) => [o.name, o.values[0]]))
   );
@@ -104,9 +104,17 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
     ? (matrixTiers.find((t) => t.qty === effectiveQty) ?? matrixTiers[0])
     : null;
 
+  // Volume discount — only applies to non-matrix products with a unit price
+  const activeVolumeTier = !hasMatrix && product.price > 0 && volumeDiscounts.length > 0
+    ? [...volumeDiscounts].sort((a, b) => b.minQty - a.minQty).find((t) => effectiveQty >= t.minQty) ?? null
+    : null;
+  const volumeDiscountPct = activeVolumeTier?.discountPercent ?? 0;
+
   const displayPrice = isCustomQty && customQtyData && !customQtyData.overMax
     ? customQtyData.totalPence / 100
-    : (currentTier ? currentTier.totalPence / 100 : product.price);
+    : currentTier
+      ? currentTier.totalPence / 100
+      : product.price * effectiveQty * (1 - volumeDiscountPct / 100);
 
   const displayQtyLabel = !isCustomQty && currentTier ? effectiveQty : null;
 
@@ -144,7 +152,9 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
       if (!customQtyData || customQtyData.overMax) return;
       addItem(product, selectedOptions, customQtyData.pricedQty, customText || undefined, artwork, customQtyData.totalPence / 100);
     } else {
-      const linePrice = currentTier ? currentTier.totalPence / 100 : product.price * effectiveQty;
+      const linePrice = currentTier
+        ? currentTier.totalPence / 100
+        : product.price * effectiveQty * (1 - volumeDiscountPct / 100);
       addItem(product, selectedOptions, effectiveQty, customText || undefined, artwork, linePrice);
     }
     setAdded(true);
@@ -157,25 +167,43 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
     <div className="flex flex-col gap-5">
       {/* Price */}
       {!isQuote && (
-        <div className="flex items-baseline gap-3 flex-wrap">
-          <span className="font-display font-700 text-3xl text-[#111111]">
-            {isCustomQty && customQtyData && !customQtyData.overMax
-              ? formatPrice(displayPrice)
-              : isCustomQty
-                ? "—"
-                : formatPrice(displayPrice)
-            }
-          </span>
-          {displayUnit && (
-            <span className="text-sm text-[#6b7280]">{formatPrice(displayUnit)} each</span>
-          )}
-          {!currentTier && product.originalPrice && !isCustomQty && (
-            <span className="text-lg text-[#6b7280] line-through">{formatPrice(product.originalPrice)}</span>
-          )}
-          {displayQtyLabel && (
-            <span className="text-xs text-[#6b7280] bg-[#f0ede8] px-2 py-1 rounded-lg">
-              for {displayQtyLabel}
+        <div className="flex flex-col gap-1.5">
+          <div className="flex items-baseline gap-3 flex-wrap">
+            <span className="font-display font-700 text-3xl text-[#111111]">
+              {isCustomQty && customQtyData && !customQtyData.overMax
+                ? formatPrice(displayPrice)
+                : isCustomQty
+                  ? "—"
+                  : formatPrice(displayPrice)
+              }
             </span>
+            {displayUnit && (
+              <span className="text-sm text-[#6b7280]">{formatPrice(displayUnit)} each</span>
+            )}
+            {!currentTier && !isCustomQty && volumeDiscountPct > 0 && (
+              <span className="text-lg text-[#6b7280] line-through">{formatPrice(product.price * effectiveQty)}</span>
+            )}
+            {!currentTier && product.originalPrice && !isCustomQty && !activeVolumeTier && (
+              <span className="text-lg text-[#6b7280] line-through">{formatPrice(product.originalPrice)}</span>
+            )}
+            {displayQtyLabel && (
+              <span className="text-xs text-[#6b7280] bg-[#f0ede8] px-2 py-1 rounded-lg">
+                for {displayQtyLabel}
+              </span>
+            )}
+            {!currentTier && !isCustomQty && activeVolumeTier && (
+              <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">
+                {activeVolumeTier.discountPercent}% off
+              </span>
+            )}
+          </div>
+          {!hasMatrix && volumeDiscounts.length > 0 && (
+            <p className="text-xs text-[#6b7280]">
+              {[...volumeDiscounts]
+                .sort((a, b) => a.minQty - b.minQty)
+                .map((t) => `${t.minQty}+: ${t.discountPercent}% off`)
+                .join(" · ")}
+            </p>
           )}
         </div>
       )}

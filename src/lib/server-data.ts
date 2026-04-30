@@ -1,7 +1,7 @@
 import Redis from "ioredis";
 import fs from "fs";
 import path from "path";
-import { Product, ProductType, ProductCostConfig, PostageSettings, Order, PromoCode } from "./types";
+import { Product, ProductType, ProductCostConfig, PostageSettings, Order, PromoCode, VolumeDiscountTier } from "./types";
 export type { ProductType, ProductCostConfig, PostageSettings, Order, PromoCode };
 
 // --- Redis (production) ---
@@ -230,6 +230,7 @@ export interface CostSettings {
   maxOrderQty: number;
   materials: MaterialType[];
   productConfigs: Record<string, ProductCostConfig>;
+  volumeDiscounts: VolumeDiscountTier[];
 }
 
 const IN_TO_CM = 2.54;
@@ -251,6 +252,7 @@ const defaultCostSettings: CostSettings = {
   maxOrderQty: 1000,
   materials: [],
   productConfigs: {},
+  volumeDiscounts: [],
 };
 
 export async function getCostSettings(): Promise<CostSettings> {
@@ -263,6 +265,7 @@ export async function getCostSettings(): Promise<CostSettings> {
     maxOrderQty: stored.maxOrderQty ?? 1000,
     materials: stored.materials ?? [],
     productConfigs: stored.productConfigs ?? {},
+    volumeDiscounts: stored.volumeDiscounts ?? [],
   };
 }
 

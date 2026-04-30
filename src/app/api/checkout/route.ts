@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getProducts, getPostageSettings, setPendingOrder, getPromoCodes, savePromoCodes, setPendingStripeData } from "@/lib/server-data";
+import { getProducts, getPostageSettings, setPendingOrder, getPromoCodes, savePromoCodes, setPendingStripeData, getCostSettings } from "@/lib/server-data";
 import { getStripeSecretKey, stripeFetch } from "@/lib/stripe";
 import { createPayPalOrder } from "@/lib/paypal";
-import { PriceTier, OrderItem } from "@/lib/types";
+import { PriceTier, OrderItem, VolumeDiscountTier } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -52,10 +52,19 @@ export async function POST(req: NextRequest) {
   if (!items?.length) return NextResponse.json({ error: "Cart is empty." }, { status: 400 });
   if (!customer?.email) return NextResponse.json({ error: "Customer email is required." }, { status: 400 });
 
+  function getVolumeDiscountedTotal(tiers: VolumeDiscountTier[], unitPricePounds: number, qty: number): number {
+    const tier = [...tiers].sort((a, b) => b.minQty - a.minQty).find((t) => qty >= t.minQty);
+    return unitPricePounds * qty * (1 - (tier?.discountPercent ?? 0) / 100);
+  }
+
   let products: Awaited<ReturnType<typeof getProducts>>;
   let postageSettings: Awaited<ReturnType<typeof getPostageSettings>>;
+  let volumeDiscounts: VolumeDiscountTier[] = [];
   try {
-    [products, postageSettings] = await Promise.all([getProducts(), getPostageSettings()]);
+    const [p, ps, cs] = await Promise.all([getProducts(), getPostageSettings(), getCostSettings()]);
+    products = p;
+    postageSettings = ps;
+    volumeDiscounts = cs.volumeDiscounts ?? [];
   } catch (err) {
     console.error("[checkout] Failed to fetch data store:", err instanceof Error ? err.message : String(err));
     return NextResponse.json({ error: "Service temporarily unavailable. Please try again later." }, { status: 503 });
@@ -106,9 +115,10 @@ export async function POST(req: NextRequest) {
     } else {
       if (!product.price || product.price <= 0)
         return NextResponse.json({ error: `Invalid price for: ${product.name}` }, { status: 400 });
-      unitAmountPence = Math.round(product.price * 100);
-      qty = item.quantity;
-      subtotalPounds += product.price * item.quantity;
+      const lineTotalPounds = getVolumeDiscountedTotal(volumeDiscounts, product.price, item.quantity);
+      unitAmountPence = Math.round(lineTotalPounds * 100);
+      qty = 1;
+      subtotalPounds += lineTotalPounds;
       displayName = product.name;
     }
 

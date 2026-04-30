@@ -5,14 +5,16 @@ import {
   useContext,
   useReducer,
   useCallback,
+  useState,
+  useEffect,
   ReactNode,
 } from "react";
-import { CartItem, CartState, Product, AppliedPromo } from "@/lib/types";
+import { CartItem, CartState, Product, AppliedPromo, VolumeDiscountTier } from "@/lib/types";
 
 type CartAction =
   | { type: "ADD_ITEM"; payload: CartItem }
   | { type: "REMOVE_ITEM"; payload: string }
-  | { type: "UPDATE_QTY"; payload: { id: string; quantity: number } }
+  | { type: "UPDATE_QTY"; payload: { id: string; quantity: number; newLinePrice?: number } }
   | { type: "CLEAR" }
   | { type: "OPEN" }
   | { type: "CLOSE" }
@@ -50,8 +52,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
         items: state.items.map((i) => {
           if (i.id !== action.payload.id) return i;
           const newQty = action.payload.quantity;
-          // For matrix-priced products product.price is 0, so keep the original linePrice.
-          const newLinePrice = i.product.price > 0 ? i.product.price * newQty : i.linePrice;
+          const newLinePrice = action.payload.newLinePrice ?? (i.product.price > 0 ? i.product.price * newQty : i.linePrice);
           return { ...i, quantity: newQty, linePrice: newLinePrice };
         }),
       };
@@ -83,12 +84,27 @@ interface CartContextValue {
   totalItems: number;
   subtotal: number;
   discountAmount: number;
+  volumeDiscounts: VolumeDiscountTier[];
 }
 
 const CartContext = createContext<CartContextValue | null>(null);
 
+function applyVolumeDiscount(tiers: VolumeDiscountTier[], unitPrice: number, qty: number): number {
+  if (!tiers.length || unitPrice <= 0) return unitPrice * qty;
+  const tier = [...tiers].sort((a, b) => b.minQty - a.minQty).find((t) => qty >= t.minQty);
+  return unitPrice * qty * (1 - (tier?.discountPercent ?? 0) / 100);
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(cartReducer, initialState);
+  const [volumeDiscounts, setVolumeDiscounts] = useState<VolumeDiscountTier[]>([]);
+
+  useEffect(() => {
+    fetch("/api/volume-discounts")
+      .then((r) => r.json())
+      .then((d: VolumeDiscountTier[]) => setVolumeDiscounts(d))
+      .catch(() => {});
+  }, []);
 
   const addItem = useCallback(
     (product: Product, options: Record<string, string>, qty = 1, text?: string, artwork?: string, linePrice?: number) => {
@@ -103,7 +119,14 @@ export function CartProvider({ children }: { children: ReactNode }) {
   );
 
   const removeItem = useCallback((id: string) => dispatch({ type: "REMOVE_ITEM", payload: id }), []);
-  const updateQty = useCallback((id: string, quantity: number) => dispatch({ type: "UPDATE_QTY", payload: { id, quantity } }), []);
+  const updateQty = useCallback((id: string, quantity: number) => {
+    const item = state.items.find((i) => i.id === id);
+    let newLinePrice: number | undefined;
+    if (item && item.product.price > 0) {
+      newLinePrice = applyVolumeDiscount(volumeDiscounts, item.product.price, quantity);
+    }
+    dispatch({ type: "UPDATE_QTY", payload: { id, quantity, newLinePrice } });
+  }, [state.items, volumeDiscounts]);
   const clearCart = useCallback(() => dispatch({ type: "CLEAR" }), []);
   const openCart = useCallback(() => dispatch({ type: "OPEN" }), []);
   const closeCart = useCallback(() => dispatch({ type: "CLOSE" }), []);
@@ -120,7 +143,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
     : 0;
 
   return (
-    <CartContext.Provider value={{ state, addItem, removeItem, updateQty, clearCart, openCart, closeCart, applyPromo, removePromo, totalItems, subtotal, discountAmount }}>
+    <CartContext.Provider value={{ state, addItem, removeItem, updateQty, clearCart, openCart, closeCart, applyPromo, removePromo, totalItems, subtotal, discountAmount, volumeDiscounts }}>
       {children}
     </CartContext.Provider>
   );
