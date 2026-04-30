@@ -106,9 +106,7 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
     ? customQtyData.totalPence / 100
     : (currentTier ? currentTier.totalPence / 100 : product.price);
 
-  const displayQtyLabel = isCustomQty && customQtyData && !customQtyData.overMax
-    ? customQtyData.pricedQty
-    : (currentTier ? effectiveQty : null);
+  const displayQtyLabel = !isCustomQty && currentTier ? effectiveQty : null;
 
   const displayUnit = isCustomQty && customQtyData && !customQtyData.overMax && customQtyData.pricedQty > 1
     ? customQtyData.unitPence / 100
@@ -255,33 +253,15 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
                       className="w-28 h-10 px-3 rounded-xl border-2 border-[#e5e1d8] text-sm focus:outline-none focus:border-[#ef8733] transition-colors"
                       autoFocus
                     />
-                    {customQtyData && (
-                      <span className="text-sm text-[#6b7280]">
-                        {customQtyData.overMax ? (
-                          <span className="text-amber-600">
-                            Exceeds max —{" "}
-                            <Link href={`/custom-order?product=${product.slug}`} className="text-[#ef8733] hover:underline font-medium">
-                              request a quote
-                            </Link>
-                          </span>
-                        ) : (
-                          <>
-                            <span className="font-semibold text-[#111111]">
-                              {customQtyData.sheetsNeeded} sheet{customQtyData.sheetsNeeded !== 1 ? "s" : ""}
-                            </span>
-                            {customQtyData.pricedQty !== customQtyData.raw && (
-                              <> · priced for {customQtyData.pricedQty}</>
-                            )}
-                          </>
-                        )}
+                    {customQtyData?.overMax && (
+                      <span className="text-sm text-amber-600">
+                        Exceeds max —{" "}
+                        <Link href={`/custom-order?product=${product.slug}`} className="text-[#ef8733] hover:underline font-medium">
+                          request a quote
+                        </Link>
                       </span>
                     )}
                   </div>
-                  {customQtyData && !customQtyData.overMax && customQtyData.pricedQty !== customQtyData.raw && (
-                    <p className="text-xs text-[#6b7280]">
-                      {stickersPerSheet} stickers per sheet — we print full sheets, so {customQtyData.raw} rounds up to {customQtyData.pricedQty}.
-                    </p>
-                  )}
                 </div>
               )}
 
