@@ -110,29 +110,36 @@ export function buildPriceMatrix(
   costSettings: CostSettings
 ): { [sizeName: string]: PriceTier[] } {
   if (!product.costConfig) return {};
+  const config = product.costConfig;
   const { targetProfitPercent, maxOrderQty } = costSettings;
-  const profitPct = product.costConfig.profitPercent ?? targetProfitPercent;
+  const profitPct = config.profitPercent ?? targetProfitPercent;
+  const isSticker = !config.productType || config.productType === "sticker";
 
   if (product.sizeVariants?.length) {
     const matrix: { [sizeName: string]: PriceTier[] } = {};
     for (const variant of product.sizeVariants) {
       const qtys = getQuantityTiers(variant.stickersPerSheet, maxOrderQty);
       matrix[variant.name] = qtys.map((qty) => {
-        const r = calcRunCosts(product.costConfig!, costSettings, qty, profitPct, variant);
+        const r = calcRunCosts(config, costSettings, qty, profitPct, variant);
         return { qty, totalPence: r.suggestedPrice, unitPence: r.pricePerUnit };
       });
     }
     return matrix;
   }
 
-  // No size variants — use sheet-snapped tiers if itemsPerSheet is set, else standard unit tiers
-  const ips = product.costConfig.itemsPerSheet;
-  const qtys = ips && ips > 0
+  // No size variants — determine the quantity step:
+  // 1. itemsPerSheet if explicitly set
+  // 2. For sticker-type products, batchSize (= units per printable page for predefined sheets)
+  // 3. Otherwise standard unit tiers
+  const ips = config.itemsPerSheet && config.itemsPerSheet > 0
+    ? config.itemsPerSheet
+    : (isSticker && config.batchSize > 1 ? config.batchSize : 0);
+  const qtys = ips > 0
     ? getQuantityTiers(ips, maxOrderQty)
     : UNIT_QTY_TIERS.filter((q) => q <= maxOrderQty);
   return {
     "": qtys.map((qty) => {
-      const r = calcRunCosts(product.costConfig!, costSettings, qty, profitPct);
+      const r = calcRunCosts(config, costSettings, qty, profitPct);
       return { qty, totalPence: r.suggestedPrice, unitPence: r.pricePerUnit };
     }),
   };
