@@ -95,9 +95,33 @@ function applyVolumeDiscount(tiers: VolumeDiscountTier[], unitPrice: number, qty
   return unitPrice * qty * (1 - (tier?.discountPercent ?? 0) / 100);
 }
 
+const CART_STORAGE_KEY = "emma_cart";
+
+function loadCartFromStorage(): Pick<CartState, "items" | "appliedPromo"> {
+  if (typeof window === "undefined") return { items: [], appliedPromo: null };
+  try {
+    const raw = localStorage.getItem(CART_STORAGE_KEY);
+    if (!raw) return { items: [], appliedPromo: null };
+    const parsed = JSON.parse(raw);
+    return { items: parsed.items ?? [], appliedPromo: parsed.appliedPromo ?? null };
+  } catch {
+    return { items: [], appliedPromo: null };
+  }
+}
+
 export function CartProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(cartReducer, initialState);
+  const [state, dispatch] = useReducer(cartReducer, initialState, (init) => ({
+    ...init,
+    ...loadCartFromStorage(),
+  }));
   const [volumeDiscounts, setVolumeDiscounts] = useState<VolumeDiscountTier[]>([]);
+
+  // Persist cart to localStorage whenever items or promo change
+  useEffect(() => {
+    try {
+      localStorage.setItem(CART_STORAGE_KEY, JSON.stringify({ items: state.items, appliedPromo: state.appliedPromo }));
+    } catch { /* quota exceeded or private browsing — fail silently */ }
+  }, [state.items, state.appliedPromo]);
 
   useEffect(() => {
     fetch("/api/volume-discounts")

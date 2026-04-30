@@ -13,7 +13,7 @@ type Step = "details" | "payment";
 const defaultPostage: PostageSettings = { flatRate: 3.95, freeThreshold: 50 };
 
 export default function CheckoutPage() {
-  const { state, subtotal, discountAmount, clearCart } = useCart();
+  const { state, subtotal, discountAmount } = useCart();
   const [step, setStep] = useState<Step>("details");
   const [loading, setLoading] = useState(false);
   const [postage, setPostage] = useState<PostageSettings>(defaultPostage);
@@ -75,7 +75,6 @@ export default function CheckoutPage() {
         return;
       }
 
-      clearCart();
       window.location.href = data.url;
     } catch {
       alert("Could not connect to payment service. Please try again.");

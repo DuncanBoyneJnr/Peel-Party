@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { CheckCircle2, XCircle } from "lucide-react";
+import ClearCart from "./ClearCart";
 import { Resend } from "resend";
 import { capturePayPalOrder } from "@/lib/paypal";
 import {
@@ -125,6 +126,7 @@ export default async function CheckoutSuccessPage({
   // Stripe flow (session_id present) or PayPal success / already_done
   return (
     <div className="min-h-[60vh] flex flex-col items-center justify-center px-4 text-center py-20">
+      <ClearCart />
       <div className="w-20 h-20 bg-[#fff7ed] rounded-full flex items-center justify-center mb-6">
         <CheckCircle2 size={40} className="text-[#ef8733]" />
       </div>
