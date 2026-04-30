@@ -667,6 +667,19 @@ export default function ProductForm({
               }
             />
           </div>
+
+          <div>
+            <label className={labelClass}>Max Order Qty <span className="text-[#6b7280] font-normal">(blank = global default: {maxOrderQty})</span></label>
+            <input
+              type="number" step="1" min="1" placeholder={`${maxOrderQty}`}
+              className={inputClass}
+              value={costCfg.maxOrderQty !== undefined ? costCfg.maxOrderQty : ""}
+              onChange={(e) =>
+                updateCostConfig("maxOrderQty", e.target.value !== "" ? parseInt(e.target.value) : undefined)
+              }
+            />
+            <p className="text-xs text-[#6b7280] mt-1">Orders above this quantity are sent to a quote. Price tiers are built up to this limit.</p>
+          </div>
         </div>
       </div>
 

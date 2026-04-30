@@ -83,7 +83,7 @@ export default async function ProductPage({ params }: PageProps) {
             ))}
           </ul>
 
-          <ProductActions product={product} maxOrderQty={costSettings.maxOrderQty} />
+          <ProductActions product={product} maxOrderQty={product.costConfig?.maxOrderQty ?? costSettings.maxOrderQty} />
 
           <div className="flex flex-wrap gap-4 pt-4 border-t border-[#e5e1d8]">
             <div className="flex items-center gap-1.5 text-xs text-[#6b7280]">

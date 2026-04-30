@@ -13,6 +13,7 @@ export interface ProductCostConfig {
   inkCostPence?: number;
   postagePence?: number;
   profitPercent?: number; // overrides global targetProfitPercent when set
+  maxOrderQty?: number;   // overrides global maxOrderQty when set; undefined = no cap beyond global
 }
 
 export interface PriceTier {

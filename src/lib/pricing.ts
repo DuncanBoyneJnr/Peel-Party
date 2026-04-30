@@ -115,7 +115,8 @@ export function buildPriceMatrix(
 ): { [sizeName: string]: PriceTier[] } {
   if (!product.costConfig) return {};
   const config = product.costConfig;
-  const { targetProfitPercent, maxOrderQty } = costSettings;
+  const { targetProfitPercent } = costSettings;
+  const maxOrderQty = config.maxOrderQty ?? costSettings.maxOrderQty;
   const profitPct = config.profitPercent ?? targetProfitPercent;
   const isSticker = !config.productType || config.productType === "sticker";
   const isStickerSheet = config.productType === "sticker-sheet";
