@@ -648,7 +648,7 @@ export default function ProductForm({
           <div>
             <label className={labelClass}>Profit % <span className="text-[#6b7280] font-normal">(blank = global default: {defaultProfitPercent}%)</span></label>
             <input
-              type="number" step="1" min="0" max="99" placeholder={`${defaultProfitPercent}`}
+              type="number" step="1" min="0" max="999" placeholder={`${defaultProfitPercent}`}
               className={inputClass}
               value={costCfg.profitPercent !== undefined ? costCfg.profitPercent : ""}
               onChange={(e) =>

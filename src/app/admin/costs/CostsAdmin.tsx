@@ -192,7 +192,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
           </div>
           <div>
             <Label>Target Profit %</Label>
-            <input type="number" step="1" min="0" max="99" className={inputCls}
+            <input type="number" step="1" min="0" max="999" className={inputCls}
               value={settings.targetProfitPercent}
               onChange={(e) => { const v = parseFloat(e.target.value || "0"); updateGlobal("targetProfitPercent", v); setCalcProfitPct(v); }}
             />
@@ -379,7 +379,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
           </div>
           <div>
             <Label>Profit %</Label>
-            <input type="number" step="1" min="0" max="99" className={inputCls}
+            <input type="number" step="1" min="0" max="999" className={inputCls}
               value={calcProfitPct}
               onChange={(e) => setCalcProfitPct(parseFloat(e.target.value || "0"))}
             />
