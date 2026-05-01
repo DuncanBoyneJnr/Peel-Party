@@ -65,7 +65,12 @@ export function calcRunCosts(
     }
   }
 
-  const inkCost = quantity * (config.inkCostPence ?? settings.defaultInkCostPence);
+  // Sheet-based products: ink is per sheet (a full sheet costs the same to print
+  // regardless of how many stickers fit). Unit-based: ink is per item.
+  const inkCostRate = config.inkCostPence ?? settings.defaultInkCostPence;
+  const inkCost = (isSticker || isStickerSheet) && sheetsNeeded > 0
+    ? sheetsNeeded * inkCostRate
+    : quantity * inkCostRate;
   // Sheet-based products batch by sheets; unit-based batch by units
   const batchDivisor = sheetsNeeded > 0 ? sheetsNeeded : quantity;
   const batches = config.batchSize > 0 ? Math.ceil(batchDivisor / config.batchSize) : 0;

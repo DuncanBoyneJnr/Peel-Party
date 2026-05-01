@@ -227,7 +227,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
             />
           </div>
           <div>
-            <Label>Default Ink / unit (£)</Label>
+            <Label>Default Ink / sheet — stickers (£)</Label>
             <input type="number" step="0.01" min="0" className={inputCls}
               value={fmt(settings.defaultInkCostPence)}
               onChange={(e) => updateGlobal("defaultInkCostPence", Math.round(parseFloat(e.target.value || "0") * 100))}

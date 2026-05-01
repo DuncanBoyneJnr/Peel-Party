@@ -633,7 +633,7 @@ export default function ProductForm({
           </div>
 
           <div>
-            <label className={labelClass}>Ink Cost / unit <span className="text-[#6b7280] font-normal">(£, blank = global default)</span></label>
+            <label className={labelClass}>Ink Cost <span className="text-[#6b7280] font-normal">({isSticker || isStickerSheet ? "£ per sheet" : "£ per unit"}, blank = global default)</span></label>
             <input
               type="number" step="0.01" min="0" placeholder="default"
               className={inputClass}
