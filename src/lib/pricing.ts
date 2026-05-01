@@ -136,10 +136,15 @@ export function buildPriceMatrix(
   // No size variants — determine the quantity step:
   // 1. itemsPerSheet if explicitly set
   // 2. For sticker-sheet products, batchSize (= copies per printable page)
-  // 3. Otherwise standard unit tiers
+  // 3. For individual stickers, calculate from dimensions vs sheet size
+  // 4. Otherwise standard unit tiers
   const ips = config.itemsPerSheet && config.itemsPerSheet > 0
     ? config.itemsPerSheet
-    : (isStickerSheet ? config.batchSize : 0);
+    : isStickerSheet
+      ? config.batchSize
+      : isSticker
+        ? calcStickersPerSheet(config.widthCm ?? 0, config.heightCm ?? 0, costSettings.sheetWidthCm, costSettings.sheetHeightCm)
+        : 0;
   const qtys = ips > 0
     ? getQuantityTiers(ips, maxOrderQty)
     : UNIT_QTY_TIERS.filter((q) => q <= maxOrderQty);
