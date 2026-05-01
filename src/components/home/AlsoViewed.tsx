@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import Image from "next/image";
+import { ArrowRight, ImageOff } from "lucide-react";
 import { getProducts } from "@/lib/server-data";
 import { formatPrice } from "@/lib/utils";
 
@@ -29,12 +30,18 @@ export default async function AlsoViewed() {
                 href={`/products/${product.slug}`}
                 className="group flex-none w-52 snap-start bg-white rounded-2xl border border-[#e5e1d8] hover:border-[#ef8733] hover:shadow-md transition-all duration-200 overflow-hidden"
               >
-                <div className="bg-[#f0ede8] aspect-square flex items-center justify-center relative">
-                  <svg width="48" height="48" viewBox="0 0 64 64" fill="none">
-                    <rect width="64" height="64" rx="8" fill="#e5e1d8"/>
-                    <path d="M20 44L28 32L36 40L42 34L52 44H20Z" fill="#d1c8bc"/>
-                    <circle cx="26" cy="26" r="4" fill="#d1c8bc"/>
-                  </svg>
+                <div className="bg-[#f0ede8] aspect-square flex items-center justify-center relative overflow-hidden">
+                  {product.images?.[0] ? (
+                    <Image
+                      src={product.images[0]}
+                      alt={product.name}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      sizes="208px"
+                    />
+                  ) : (
+                    <ImageOff size={32} className="text-[#d1c8bc]" />
+                  )}
                   {product.badge && (
                     <span className="absolute top-2 left-2 text-xs font-bold px-2 py-0.5 bg-[#ef8733] text-white rounded-full">
                       {product.badge}
