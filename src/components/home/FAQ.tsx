@@ -23,7 +23,7 @@ const faqs = [
   },
   {
     q: "Do you ship outside the UK?",
-    a: "Currently we ship to the UK and Ireland. International shipping for large orders can be arranged — contact us to discuss.",
+    a: "We currently ship within the UK only.",
   },
   {
     q: "What is your returns policy?",
