@@ -1,14 +1,14 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X, ShoppingCart, Search } from "lucide-react";
+import { Menu, X, ShoppingCart, Search, ChevronDown } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { cn } from "@/lib/utils";
 
-const nav = [
-  { label: "Shop All", href: "/shop" },
+const shopCategories = [
+  { label: "All Products", href: "/shop" },
   { label: "Stickers", href: "/shop/stickers" },
   { label: "Mugs", href: "/shop/mugs" },
   { label: "Keyrings", href: "/shop/keyrings" },
@@ -16,6 +16,9 @@ const nav = [
   { label: "Magnets", href: "/shop/magnets" },
   { label: "T-Shirts", href: "/shop/tshirts" },
   { label: "Bookmarks", href: "/shop/bookmarks" },
+];
+
+const topNav = [
   { label: "Our Work", href: "/gallery" },
   { label: "Custom Order", href: "/custom-order" },
   { label: "About", href: "/about" },
@@ -24,14 +27,25 @@ const nav = [
 export default function Header() {
   const { totalItems, openCart } = useCart();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [shopOpen, setShopOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const shopRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function onScroll() {
-      setScrolled(window.scrollY > 10);
-    }
+    function onScroll() { setScrolled(window.scrollY > 10); }
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function onClickOutside(e: MouseEvent) {
+      if (shopRef.current && !shopRef.current.contains(e.target as Node)) {
+        setShopOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", onClickOutside);
+    return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
   return (
@@ -44,7 +58,7 @@ export default function Header() {
             : "bg-white border-b border-[#e5e1d8]"
         )}
       >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center h-20 gap-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 flex items-center h-20 gap-4">
           {/* Logo */}
           <Link href="/" className="flex items-center shrink-0">
             <Image src="/logo.png" alt="Peel & Party Co." width={160} height={160} className="h-14 w-auto max-w-[140px]" priority />
@@ -52,12 +66,41 @@ export default function Header() {
 
           {/* Desktop nav */}
           <nav className="hidden xl:flex items-center gap-1 flex-1">
-            {nav.map((item) => (
+            {/* Shop dropdown */}
+            <div ref={shopRef} className="relative">
+              <button
+                onClick={() => setShopOpen((v) => !v)}
+                className={cn(
+                  "flex items-center gap-1 px-3 py-2 text-sm font-medium rounded-lg transition-colors cursor-pointer",
+                  shopOpen ? "bg-[#f0ede8] text-[#ef8733]" : "text-[#111111] hover:bg-[#f0ede8] hover:text-[#ef8733]"
+                )}
+              >
+                Shop
+                <ChevronDown size={14} className={cn("transition-transform duration-200", shopOpen && "rotate-180")} />
+              </button>
+
+              {shopOpen && (
+                <div className="absolute top-full left-0 mt-1 w-44 bg-white rounded-xl border border-[#e5e1d8] shadow-lg py-1 z-50">
+                  {shopCategories.map((item) => (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setShopOpen(false)}
+                      className="block px-4 py-2 text-sm text-[#111111] hover:bg-[#f0ede8] hover:text-[#ef8733] transition-colors"
+                    >
+                      {item.label}
+                    </Link>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {topNav.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 className={cn(
-                  "px-3 py-2 text-sm font-medium rounded-lg transition-colors",
+                  "px-3 py-2 text-sm font-medium rounded-lg transition-colors whitespace-nowrap",
                   item.label === "Custom Order"
                     ? "text-[#ef8733] font-semibold hover:bg-[#fff7ed]"
                     : "text-[#111111] hover:bg-[#f0ede8] hover:text-[#ef8733]"
@@ -111,13 +154,25 @@ export default function Header() {
         {mobileOpen && (
           <div className="xl:hidden border-t border-[#e5e1d8] bg-white px-4 pb-4">
             <nav className="flex flex-col pt-2 gap-1">
-              {nav.map((item) => (
+              <p className="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-[#9ca3af]">Shop</p>
+              {shopCategories.map((item) => (
+                <Link
+                  key={item.href}
+                  href={item.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="px-3 py-2.5 text-sm font-medium rounded-lg text-[#111111] hover:bg-[#f0ede8] transition-colors"
+                >
+                  {item.label}
+                </Link>
+              ))}
+              <div className="my-1 border-t border-[#f0ede8]" />
+              {topNav.map((item) => (
                 <Link
                   key={item.href}
                   href={item.href}
                   onClick={() => setMobileOpen(false)}
                   className={cn(
-                    "px-3 py-3 text-sm font-medium rounded-lg transition-colors",
+                    "px-3 py-2.5 text-sm font-medium rounded-lg transition-colors",
                     item.label === "Custom Order"
                       ? "text-[#ef8733] font-semibold hover:bg-[#fff7ed]"
                       : "text-[#111111] hover:bg-[#f0ede8]"
