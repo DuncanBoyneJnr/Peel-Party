@@ -202,8 +202,9 @@ export async function saveBundles(bundles: Bundle[]): Promise<void> {
 export interface StandardSize {
   id: string;
   name: string;
-  widthCm: number;
-  heightCm: number;
+  category: string;  // product category this size applies to
+  widthCm?: number;  // sheet-based categories only
+  heightCm?: number;
 }
 
 export interface MaterialType {
@@ -262,7 +263,7 @@ export async function getCostSettings(): Promise<CostSettings> {
   return {
     ...defaultCostSettings,
     ...stored,
-    standardSizes: stored.standardSizes ?? [],
+    standardSizes: (stored.standardSizes ?? []).map((s) => ({ ...s, category: s.category ?? "stickers" })),
     maxOrderQty: stored.maxOrderQty ?? 1000,
     materials: stored.materials ?? [],
     productConfigs: stored.productConfigs ?? {},

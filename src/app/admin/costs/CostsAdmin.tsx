@@ -104,6 +104,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
   const [loading, setLoading] = useState(false);
   const [saved, setSaved] = useState(false);
 
+  const [sizeCategory, setSizeCategory] = useState("stickers");
   const [calcProductId, setCalcProductId] = useState("");
   const [calcSizeName, setCalcSizeName] = useState("");
   const [calcQty, setCalcQty] = useState(100);
@@ -120,8 +121,19 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
 
   // ── Standard sizes ────────────────────────────────────────────────────────
 
+  const SHEET_CATEGORIES = ["stickers", "coasters", "magnets", "bookmarks"];
+  const SIZE_CATEGORY_LABELS: Record<string, string> = {
+    stickers: "Stickers", mugs: "Mugs", keyrings: "Keyrings",
+    coasters: "Coasters", magnets: "Magnets", tshirts: "T-Shirts", bookmarks: "Bookmarks",
+  };
+  const isSheetCategory = SHEET_CATEGORIES.includes(sizeCategory);
+  const filteredSizes = settings.standardSizes.filter((s) => s.category === sizeCategory);
+
   function addStandardSize() {
-    const s: StandardSize = { id: `sz_${Date.now()}`, name: "", widthCm: 0, heightCm: 0 };
+    const s: StandardSize = {
+      id: `sz_${Date.now()}`, name: "", category: sizeCategory,
+      ...(isSheetCategory ? { widthCm: 0, heightCm: 0 } : {}),
+    };
     setSettings((prev) => ({ ...prev, standardSizes: [...prev.standardSizes, s] }));
   }
 
@@ -287,7 +299,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
       {/* 2. Standard Sizes */}
       <SectionCard
         title="Standard Sizes"
-        subtitle="Define the sizes you offer for sticker products. These auto-sync onto products in the Product admin."
+        subtitle="Define the sizes you offer per product type. Sheet-based products (stickers, coasters, etc.) store dimensions for cost calculations. Other products store named options that sync onto the product as a Size option."
         action={
           <button type="button" onClick={addStandardSize}
             className="inline-flex items-center gap-1.5 h-9 px-4 bg-[#111111] text-white rounded-xl text-sm font-semibold hover:bg-[#222] transition-colors cursor-pointer shrink-0">
@@ -305,11 +317,28 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
           <span className="text-xs text-[#6b7280]">Above this → customer sent to quote</span>
         </div>
 
-        {settings.standardSizes.length === 0 ? (
+        {/* Category tabs */}
+        <div className="flex flex-wrap gap-1.5 mb-5">
+          {Object.entries(SIZE_CATEGORY_LABELS).map(([val, label]) => {
+            const count = settings.standardSizes.filter((s) => s.category === val).length;
+            return (
+              <button key={val} type="button" onClick={() => setSizeCategory(val)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
+                  sizeCategory === val
+                    ? "bg-[#ef8733] text-white"
+                    : "bg-[#f0ede8] text-[#111111] hover:bg-[#e5e1d8]"
+                }`}>
+                {label} {count > 0 && <span className="opacity-70">({count})</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        {filteredSizes.length === 0 ? (
           <p className="text-sm text-[#6b7280] py-6 text-center border-2 border-dashed border-[#e5e1d8] rounded-xl">
-            No sizes yet. Click &ldquo;Add Size&rdquo; to get started.
+            No {SIZE_CATEGORY_LABELS[sizeCategory]} sizes yet. Click &ldquo;Add Size&rdquo; to get started.
           </p>
-        ) : (
+        ) : isSheetCategory ? (
           <div className="flex flex-col gap-2">
             <div className="grid grid-cols-[1fr_80px_80px_80px_80px_58px_58px_58px_58px_40px] gap-2 px-1 mb-1">
               <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">Name</span>
@@ -317,39 +346,33 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
               <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">W (cm)</span>
               <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">H (in)</span>
               <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">W (in)</span>
-              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider text-center leading-tight">Sticker<br/>/sheet</span>
-              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider text-center leading-tight">Vinyl<br/>/roll</span>
-              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider text-center leading-tight">H.Vinyl<br/>/roll</span>
-              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider text-center leading-tight">H.Xfer<br/>/sheet</span>
+              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider text-center leading-tight">/sheet</span>
+              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider text-center leading-tight">Vinyl</span>
+              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider text-center leading-tight">H.Vinyl</span>
+              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider text-center leading-tight">H.Xfer</span>
               <span />
             </div>
-            {settings.standardSizes.map((size) => {
-              const perSticker  = calcStickersPerSheet(size.widthCm, size.heightCm, settings.sheetWidthCm,        settings.sheetHeightCm);
-              const perVinyl    = calcStickersPerSheet(size.widthCm, size.heightCm, settings.vinylWidthCm,        settings.vinylHeightCm);
-              const perHVinyl   = calcStickersPerSheet(size.widthCm, size.heightCm, settings.heatVinylWidthCm,    settings.heatVinylHeightCm);
-              const perHXfer    = calcStickersPerSheet(size.widthCm, size.heightCm, settings.heatTransferWidthCm, settings.heatTransferHeightCm);
+            {filteredSizes.map((size) => {
+              const perSticker = calcStickersPerSheet(size.widthCm, size.heightCm, settings.sheetWidthCm, settings.sheetHeightCm);
+              const perVinyl   = calcStickersPerSheet(size.widthCm, size.heightCm, settings.vinylWidthCm, settings.vinylHeightCm);
+              const perHVinyl  = calcStickersPerSheet(size.widthCm, size.heightCm, settings.heatVinylWidthCm, settings.heatVinylHeightCm);
+              const perHXfer   = calcStickersPerSheet(size.widthCm, size.heightCm, settings.heatTransferWidthCm, settings.heatTransferHeightCm);
               return (
                 <div key={size.id} className="grid grid-cols-[1fr_80px_80px_80px_80px_58px_58px_58px_58px_40px] gap-2 items-center">
                   <input type="text" placeholder="e.g. 3×3 cm, A6, Small" className={cellInputCls}
-                    value={size.name}
-                    onChange={(e) => updateStandardSize(size.id, "name", e.target.value)}
-                  />
+                    value={size.name} onChange={(e) => updateStandardSize(size.id, "name", e.target.value)} />
                   <input type="number" step="0.01" min="0" placeholder="0.00" className={`${dimInputCls} w-full`}
                     value={size.heightCm || ""}
-                    onChange={(e) => updateStandardSize(size.id, "heightCm", parseFloat(e.target.value || "0"))}
-                  />
+                    onChange={(e) => updateStandardSize(size.id, "heightCm", parseFloat(e.target.value || "0"))} />
                   <input type="number" step="0.01" min="0" placeholder="0.00" className={`${dimInputCls} w-full`}
                     value={size.widthCm || ""}
-                    onChange={(e) => updateStandardSize(size.id, "widthCm", parseFloat(e.target.value || "0"))}
-                  />
+                    onChange={(e) => updateStandardSize(size.id, "widthCm", parseFloat(e.target.value || "0"))} />
                   <input type="number" step="0.001" min="0" placeholder="0.000" className={`${dimInputCls} w-full`}
                     value={size.heightCm ? (size.heightCm / CM_PER_INCH).toFixed(3) : ""}
-                    onChange={(e) => updateStandardSize(size.id, "heightCm", parseFloat(e.target.value || "0") * CM_PER_INCH)}
-                  />
+                    onChange={(e) => updateStandardSize(size.id, "heightCm", parseFloat(e.target.value || "0") * CM_PER_INCH)} />
                   <input type="number" step="0.001" min="0" placeholder="0.000" className={`${dimInputCls} w-full`}
                     value={size.widthCm ? (size.widthCm / CM_PER_INCH).toFixed(3) : ""}
-                    onChange={(e) => updateStandardSize(size.id, "widthCm", parseFloat(e.target.value || "0") * CM_PER_INCH)}
-                  />
+                    onChange={(e) => updateStandardSize(size.id, "widthCm", parseFloat(e.target.value || "0") * CM_PER_INCH)} />
                   {[perSticker, perVinyl, perHVinyl, perHXfer].map((n, i) => (
                     <span key={i} className={`text-sm font-semibold text-center ${n > 0 ? "text-[#111111]" : "text-[#d1d5db]"}`}>
                       {n > 0 ? n : "—"}
@@ -362,6 +385,23 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
                 </div>
               );
             })}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <p className="text-xs text-[#6b7280] mb-1">
+              These names will appear as the <strong>Size</strong> option on {SIZE_CATEGORY_LABELS[sizeCategory]} products when you click &ldquo;Sync Options&rdquo; in the product editor.
+            </p>
+            {filteredSizes.map((size) => (
+              <div key={size.id} className="grid grid-cols-[1fr_40px] gap-2 items-center">
+                <input type="text" placeholder={`e.g. ${sizeCategory === "tshirts" ? "S, M, L, XL" : sizeCategory === "mugs" ? "11oz, 15oz" : "Small, Medium, Large"}`}
+                  className={cellInputCls} value={size.name}
+                  onChange={(e) => updateStandardSize(size.id, "name", e.target.value)} />
+                <button type="button" onClick={() => deleteStandardSize(size.id)}
+                  className="h-9 w-9 flex items-center justify-center rounded-lg text-[#6b7280] hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer">
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
           </div>
         )}
       </SectionCard>

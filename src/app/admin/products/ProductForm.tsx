@@ -93,6 +93,11 @@ export default function ProductForm({
   const isStickerSheet = costCfg.productType === "sticker-sheet";
   const perSheet = isSticker ? calcPerSheet(costCfg.widthCm ?? 0, costCfg.heightCm ?? 0, sheetWidthCm, sheetHeightCm) : 0;
 
+  const SHEET_CATEGORIES = ["stickers", "coasters", "magnets", "bookmarks"];
+  const isSheetCategory = SHEET_CATEGORIES.includes(form.category ?? "");
+  const isNamedCategory = ["mugs", "tshirts", "keyrings"].includes(form.category ?? "");
+  const categorySizes = standardSizes.filter((s) => s.category === form.category);
+
   function updateCostConfig(field: keyof ProductCostConfig, value: string | number | string[] | undefined) {
     update("costConfig", { ...costCfg, [field]: value });
   }
@@ -180,20 +185,41 @@ export default function ProductForm({
   }
 
   function syncSizes() {
-    const validSizes: SizeVariant[] = standardSizes
+    const validSizes: SizeVariant[] = categorySizes
       .map((s) => ({
         name: s.name,
-        widthCm: s.widthCm,
-        heightCm: s.heightCm,
-        stickersPerSheet: calcPerSheet(s.widthCm, s.heightCm, sheetWidthCm, sheetHeightCm),
+        widthCm: s.widthCm ?? 0,
+        heightCm: s.heightCm ?? 0,
+        stickersPerSheet: calcPerSheet(s.widthCm ?? 0, s.heightCm ?? 0, sheetWidthCm, sheetHeightCm),
       }))
       .filter((s) => s.stickersPerSheet > 0 && s.name);
 
     const existingOptions = (form.options ?? []).filter((o) => o.name !== "Size");
-    const sizeOption = { name: "Size", values: validSizes.map((s) => s.name) };
+    const existingRaws = optionRaws.filter((_, i) => (form.options ?? [])[i]?.name !== "Size");
+    const sizeValues = validSizes.map((s) => s.name).join(", ");
 
     update("sizeVariants", validSizes);
-    update("options", validSizes.length > 0 ? [sizeOption, ...existingOptions] : existingOptions);
+    if (validSizes.length > 0) {
+      update("options", [{ name: "Size", values: validSizes.map((s) => s.name) }, ...existingOptions]);
+      setOptionRaws([sizeValues, ...existingRaws]);
+    } else {
+      update("options", existingOptions);
+      setOptionRaws(existingRaws);
+    }
+  }
+
+  function syncOptions() {
+    const names = categorySizes.map((s) => s.name).filter(Boolean);
+    const existingOptions = (form.options ?? []).filter((o) => o.name !== "Size");
+    const existingRaws = optionRaws.filter((_, i) => (form.options ?? [])[i]?.name !== "Size");
+
+    if (names.length > 0) {
+      update("options", [{ name: "Size", values: names }, ...existingOptions]);
+      setOptionRaws([names.join(", "), ...existingRaws]);
+    } else {
+      update("options", existingOptions);
+      setOptionRaws(existingRaws);
+    }
   }
 
   function moveImage(from: number, to: number) {
@@ -401,7 +427,7 @@ export default function ProductForm({
       </div>
 
       {/* Sizes — sheet-based products */}
-      {["stickers", "coasters", "magnets", "bookmarks"].includes(form.category ?? "") && (
+      {isSheetCategory && (
         <div className="bg-white rounded-2xl border border-[#e5e1d8] p-6">
           <div className="flex items-start justify-between gap-4 mb-1">
             <div>
@@ -419,20 +445,20 @@ export default function ProductForm({
             </button>
           </div>
 
-          {standardSizes.length === 0 ? (
+          {categorySizes.length === 0 ? (
             <p className="text-sm text-[#6b7280] mt-4 p-4 bg-[#f9f7f4] rounded-xl">
-              No standard sizes defined yet. Go to <strong>Admin → Costs &amp; Profit → Standard Sizes</strong> to add them first.
+              No standard sizes defined for this category yet. Go to <strong>Admin → Costs &amp; Profit → Standard Sizes</strong> to add them first.
             </p>
           ) : (
             <div className="mt-4 flex flex-col gap-2">
-              {standardSizes.map((s) => {
+              {categorySizes.map((s) => {
                 const synced = (form.sizeVariants ?? []).some((v) => v.name === s.name);
-                const perSh = calcPerSheet(s.widthCm, s.heightCm, sheetWidthCm, sheetHeightCm);
+                const perSh = calcPerSheet(s.widthCm ?? 0, s.heightCm ?? 0, sheetWidthCm, sheetHeightCm);
                 return (
                   <div key={s.id} className={`flex items-center justify-between px-4 py-2.5 rounded-xl border-2 ${synced ? "border-[#ef8733] bg-[#fff7ed]" : "border-[#e5e1d8]"}`}>
                     <div className="flex items-center gap-3">
                       <span className={`text-sm font-semibold ${synced ? "text-[#ef8733]" : "text-[#111111]"}`}>{s.name || "Unnamed"}</span>
-                      <span className="text-xs text-[#6b7280]">{s.widthCm}×{s.heightCm} cm · {(s.widthCm / CM_PER_INCH).toFixed(2)}″×{(s.heightCm / CM_PER_INCH).toFixed(2)}″</span>
+                      <span className="text-xs text-[#6b7280]">{s.widthCm}×{s.heightCm} cm · {((s.widthCm ?? 0) / CM_PER_INCH).toFixed(2)}″×{((s.heightCm ?? 0) / CM_PER_INCH).toFixed(2)}″</span>
                     </div>
                     <span className={`text-xs font-semibold px-2 py-1 rounded-lg ${perSh > 0 ? "bg-[#f0fdf4] text-emerald-700" : "bg-red-50 text-red-500"}`}>
                       {perSh > 0 ? `${perSh}/sheet` : "too large"}
@@ -443,6 +469,50 @@ export default function ProductForm({
               {(form.sizeVariants ?? []).length > 0 && (
                 <p className="text-xs text-[#6b7280] mt-1">
                   ✓ {form.sizeVariants!.length} size{form.sizeVariants!.length !== 1 ? "s" : ""} synced to this product. Quantities will step in multiples of each size&apos;s stickers/sheet.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Sizes — named option categories (mugs, tshirts, keyrings) */}
+      {isNamedCategory && (
+        <div className="bg-white rounded-2xl border border-[#e5e1d8] p-6">
+          <div className="flex items-start justify-between gap-4 mb-1">
+            <div>
+              <h2 className="font-display font-700 text-lg text-[#111111]">Standard Options</h2>
+              <p className="text-sm text-[#6b7280] mt-0.5">
+                Sync standard size/style names from Cost Settings as a &quot;Size&quot; product option.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={syncOptions}
+              className="inline-flex items-center gap-1.5 h-9 px-4 bg-[#ef8733] text-white rounded-xl text-sm font-semibold hover:bg-[#ea7316] transition-colors cursor-pointer shrink-0"
+            >
+              Sync Options
+            </button>
+          </div>
+
+          {categorySizes.length === 0 ? (
+            <p className="text-sm text-[#6b7280] mt-4 p-4 bg-[#f9f7f4] rounded-xl">
+              No standard sizes defined for this category yet. Go to <strong>Admin → Costs &amp; Profit → Standard Sizes</strong> to add them first.
+            </p>
+          ) : (
+            <div className="mt-4 flex flex-col gap-2">
+              {categorySizes.map((s) => {
+                const syncedValues = (form.options ?? []).find((o) => o.name === "Size")?.values ?? [];
+                const synced = syncedValues.includes(s.name);
+                return (
+                  <div key={s.id} className={`flex items-center px-4 py-2.5 rounded-xl border-2 ${synced ? "border-[#ef8733] bg-[#fff7ed]" : "border-[#e5e1d8]"}`}>
+                    <span className={`text-sm font-semibold ${synced ? "text-[#ef8733]" : "text-[#111111]"}`}>{s.name || "Unnamed"}</span>
+                  </div>
+                );
+              })}
+              {((form.options ?? []).find((o) => o.name === "Size")?.values ?? []).length > 0 && (
+                <p className="text-xs text-[#6b7280] mt-1">
+                  ✓ Size option synced with {(form.options ?? []).find((o) => o.name === "Size")!.values.length} value{(form.options ?? []).find((o) => o.name === "Size")!.values.length !== 1 ? "s" : ""}.
                 </p>
               )}
             </div>
