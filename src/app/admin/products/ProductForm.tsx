@@ -212,7 +212,7 @@ export default function ProductForm({
   }
 
   function syncColours() {
-    const names = standardColours.map((c) => c.name).filter(Boolean);
+    const names = standardColours.filter((c) => c.category === form.category).map((c) => c.name).filter(Boolean);
     const existingOptions = (form.options ?? []).filter((o) => o.name !== "Colour");
     const existingRaws = optionRaws.filter((_, i) => (form.options ?? [])[i]?.name !== "Colour");
     const existingColourOption = (form.options ?? []).find((o) => o.name === "Colour");

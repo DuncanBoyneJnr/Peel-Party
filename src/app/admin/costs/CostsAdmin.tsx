@@ -105,6 +105,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
   const [saved, setSaved] = useState(false);
 
   const [sizeCategory, setSizeCategory] = useState("stickers");
+  const [colourCategory, setColourCategory] = useState("tshirts");
   const [calcProductId, setCalcProductId] = useState("");
   const [calcSizeName, setCalcSizeName] = useState("");
   const [calcQty, setCalcQty] = useState(100);
@@ -150,8 +151,13 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
 
   // ── Standard colours ──────────────────────────────────────────────────────
 
+  const COLOUR_CATEGORY_LABELS: Record<string, string> = {
+    tshirts: "T-Shirts", vinyl: "Vinyl", mugs: "Mugs", keyrings: "Keyrings",
+  };
+  const filteredColours = (settings.standardColours ?? []).filter((c) => c.category === colourCategory);
+
   function addStandardColour() {
-    const c: StandardColour = { id: `col_${Date.now()}`, name: "" };
+    const c: StandardColour = { id: `col_${Date.now()}`, name: "", category: colourCategory };
     setSettings((prev) => ({ ...prev, standardColours: [...(prev.standardColours ?? []), c] }));
   }
 
@@ -427,7 +433,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
       {/* 3. Standard Colours */}
       <SectionCard
         title="Standard Colours"
-        subtitle="Define your available t-shirt and vinyl colour palette. Use 'Sync Colours' in the product editor to apply them."
+        subtitle="Define per-category colour palettes. Use 'Sync Colours' in the product editor to apply them."
         action={
           <button type="button" onClick={addStandardColour}
             className="inline-flex items-center gap-1.5 h-9 px-4 bg-[#ef8733] text-white rounded-xl text-sm font-semibold hover:bg-[#ea7316] transition-colors cursor-pointer">
@@ -435,13 +441,30 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
           </button>
         }
       >
-        {(settings.standardColours ?? []).length === 0 ? (
+        {/* Category tabs */}
+        <div className="flex flex-wrap gap-1.5 mb-5">
+          {Object.entries(COLOUR_CATEGORY_LABELS).map(([val, label]) => {
+            const count = (settings.standardColours ?? []).filter((c) => c.category === val).length;
+            return (
+              <button key={val} type="button" onClick={() => setColourCategory(val)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
+                  colourCategory === val
+                    ? "bg-[#ef8733] text-white"
+                    : "bg-[#f0ede8] text-[#111111] hover:bg-[#e5e1d8]"
+                }`}>
+                {label} {count > 0 && <span className="opacity-70">({count})</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        {filteredColours.length === 0 ? (
           <p className="text-sm text-[#6b7280] py-6 text-center border-2 border-dashed border-[#e5e1d8] rounded-xl">
-            No colours yet. Click &ldquo;Add Colour&rdquo; to build your palette.
+            No {COLOUR_CATEGORY_LABELS[colourCategory]} colours yet. Click &ldquo;Add Colour&rdquo; to get started.
           </p>
         ) : (
           <div className="flex flex-col gap-2">
-            {(settings.standardColours ?? []).map((c) => (
+            {filteredColours.map((c) => (
               <div key={c.id} className="grid grid-cols-[1fr_40px] gap-2 items-center">
                 <input type="text" placeholder="e.g. White, Black, Navy Blue, Red"
                   className={cellInputCls} value={c.name}

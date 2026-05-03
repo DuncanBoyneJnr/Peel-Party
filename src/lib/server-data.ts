@@ -218,6 +218,7 @@ export interface MaterialType {
 export interface StandardColour {
   id: string;
   name: string;
+  category: string;
 }
 
 export interface CostSettings {
@@ -271,7 +272,7 @@ export async function getCostSettings(): Promise<CostSettings> {
     ...defaultCostSettings,
     ...stored,
     standardSizes: (stored.standardSizes ?? []).map((s) => ({ ...s, category: s.category ?? "stickers" })),
-    standardColours: stored.standardColours ?? [],
+    standardColours: (stored.standardColours ?? []).map((c) => ({ ...c, category: c.category ?? "tshirts" })),
     maxOrderQty: stored.maxOrderQty ?? 1000,
     materials: stored.materials ?? [],
     productConfigs: stored.productConfigs ?? {},
