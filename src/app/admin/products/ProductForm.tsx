@@ -93,7 +93,7 @@ export default function ProductForm({
   const isStickerSheet = costCfg.productType === "sticker-sheet";
   const perSheet = isSticker ? calcPerSheet(costCfg.widthCm ?? 0, costCfg.heightCm ?? 0, sheetWidthCm, sheetHeightCm) : 0;
 
-  const SHEET_CATEGORIES = ["stickers", "coasters", "magnets", "bookmarks"];
+  const SHEET_CATEGORIES = ["stickers", "vinyl", "coasters", "magnets", "bookmarks"];
   const isSheetCategory = SHEET_CATEGORIES.includes(form.category ?? "");
   const isNamedCategory = ["mugs", "tshirts", "keyrings"].includes(form.category ?? "");
   const categorySizes = standardSizes.filter((s) => s.category === form.category);
@@ -294,6 +294,7 @@ export default function ProductForm({
             <label className={labelClass}>Category *</label>
             <select required className={inputClass} value={form.category} onChange={(e) => update("category", e.target.value)}>
               <option value="stickers">Stickers</option>
+              <option value="vinyl">Vinyl</option>
               <option value="mugs">Mugs</option>
               <option value="keyrings">Keyrings</option>
               <option value="coasters">Coasters</option>

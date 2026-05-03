@@ -246,6 +246,12 @@ export const categoryMeta = {
     heroImage: "/images/cat-stickers.jpg",
     colour: "#ef8733",
   },
+  vinyl: {
+    title: "Vinyl",
+    description: "Permanent vinyl decals, heat transfer vinyl, and HTV designs. Cut to any shape.",
+    heroImage: "/images/cat-vinyl.jpg",
+    colour: "#0ea5e9",
+  },
   mugs: {
     title: "Mugs",
     description: "Personalised and branded mugs. Full-wrap sublimation print, dishwasher safe.",

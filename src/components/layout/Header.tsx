@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 const shopCategories = [
   { label: "All Products", href: "/shop" },
   { label: "Stickers", href: "/shop/stickers" },
+  { label: "Vinyl", href: "/shop/vinyl" },
   { label: "Mugs", href: "/shop/mugs" },
   { label: "Keyrings", href: "/shop/keyrings" },
   { label: "Coasters", href: "/shop/coasters" },

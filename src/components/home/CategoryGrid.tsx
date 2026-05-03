@@ -16,6 +16,22 @@ const categories = [
     ),
   },
   {
+    slug: "vinyl",
+    title: "Vinyl",
+    description: "Permanent vinyl decals, heat transfer vinyl, and HTV. Cut to any shape or size.",
+    colour: "#0ea5e9",
+    lightColour: "#f0f9ff",
+    icon: (
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="12" fill="#0ea5e9" fillOpacity="0.15"/>
+        <path d="M12 20c0-2 1.5-3.5 3.5-3.5S19 18 19 20s-1.5 3.5-3.5 3.5S12 22 12 20Z" fill="#0ea5e9" fillOpacity="0.3" stroke="#0ea5e9" strokeWidth="2"/>
+        <path d="M19 20h17" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M32 14l4 6-4 6" stroke="#0ea5e9" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M14 28l16 4" stroke="#0ea5e9" strokeWidth="1.5" strokeLinecap="round" strokeDasharray="3 3"/>
+      </svg>
+    ),
+  },
+  {
     slug: "mugs",
     title: "Mugs",
     description: "Personalised photo mugs and branded business mugs, printed to order.",

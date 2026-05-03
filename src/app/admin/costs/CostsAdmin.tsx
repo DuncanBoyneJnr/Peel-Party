@@ -121,9 +121,9 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
 
   // ── Standard sizes ────────────────────────────────────────────────────────
 
-  const SHEET_CATEGORIES = ["stickers", "coasters", "magnets", "bookmarks"];
+  const SHEET_CATEGORIES = ["stickers", "vinyl", "coasters", "magnets", "bookmarks"];
   const SIZE_CATEGORY_LABELS: Record<string, string> = {
-    stickers: "Stickers", mugs: "Mugs", keyrings: "Keyrings",
+    stickers: "Stickers", vinyl: "Vinyl", mugs: "Mugs", keyrings: "Keyrings",
     coasters: "Coasters", magnets: "Magnets", tshirts: "T-Shirts", bookmarks: "Bookmarks",
   };
   const isSheetCategory = SHEET_CATEGORIES.includes(sizeCategory);

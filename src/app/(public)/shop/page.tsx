@@ -13,6 +13,7 @@ export const metadata: Metadata = {
 const categories = [
   { label: "All", value: "all" },
   { label: "Stickers", value: "stickers" },
+  { label: "Vinyl", value: "vinyl" },
   { label: "Mugs", value: "mugs" },
   { label: "Keyrings", value: "keyrings" },
   { label: "Coasters", value: "coasters" },
