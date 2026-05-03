@@ -106,8 +106,21 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
     ? (matrixTiers.find((t) => t.qty === effectiveQty) ?? matrixTiers[0])
     : null;
 
+  // Per-option-value pricing — first option with a priceMap whose selected value has a price wins
+  const optionUnitPrice = useMemo(() => {
+    for (const opt of product.options) {
+      if (opt.priceMap) {
+        const mapped = opt.priceMap[selectedOptions[opt.name]];
+        if (mapped !== undefined) return mapped;
+      }
+    }
+    return null;
+  }, [product.options, selectedOptions]);
+
+  const unitPrice = optionUnitPrice ?? product.price;
+
   // Volume discount — only applies to non-matrix products with a unit price
-  const activeVolumeTier = !hasMatrix && product.price > 0 && volumeDiscounts.length > 0
+  const activeVolumeTier = !hasMatrix && unitPrice > 0 && volumeDiscounts.length > 0
     ? [...volumeDiscounts].sort((a, b) => b.minQty - a.minQty).find((t) => effectiveQty >= t.minQty) ?? null
     : null;
   const volumeDiscountPct = activeVolumeTier?.discountPercent ?? 0;
@@ -116,7 +129,7 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
     ? customQtyData.totalPence / 100
     : currentTier
       ? currentTier.totalPence / 100
-      : product.price * effectiveQty * (1 - volumeDiscountPct / 100);
+      : unitPrice * effectiveQty * (1 - volumeDiscountPct / 100);
 
   const displayQtyLabel = !isCustomQty && currentTier ? effectiveQty : null;
 
@@ -156,7 +169,7 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
     } else {
       const linePrice = currentTier
         ? currentTier.totalPence / 100
-        : product.price * effectiveQty * (1 - volumeDiscountPct / 100);
+        : unitPrice * effectiveQty * (1 - volumeDiscountPct / 100);
       addItem(product, selectedOptions, effectiveQty, customText || undefined, artwork, linePrice);
     }
     setAdded(true);
@@ -183,7 +196,7 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
               <span className="text-sm text-[#6b7280]">{formatPrice(displayUnit)} each</span>
             )}
             {!currentTier && !isCustomQty && volumeDiscountPct > 0 && (
-              <span className="text-lg text-[#6b7280] line-through">{formatPrice(product.price * effectiveQty)}</span>
+              <span className="text-lg text-[#6b7280] line-through">{formatPrice(unitPrice * effectiveQty)}</span>
             )}
             {!currentTier && product.originalPrice && !isCustomQty && !activeVolumeTier && (
               <span className="text-lg text-[#6b7280] line-through">{formatPrice(product.originalPrice)}</span>
@@ -217,19 +230,22 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
             {opt.name}: <span className="text-[#ef8733]">{selectedOptions[opt.name]}</span>
           </label>
           <div className="flex flex-wrap gap-2">
-            {opt.values.map((val) => (
-              <button
-                key={val}
-                onClick={() => handleOptionChange(opt.name, val)}
-                className={`px-4 py-2 text-sm rounded-full border-2 transition-all cursor-pointer ${
-                  selectedOptions[opt.name] === val
-                    ? "border-[#ef8733] bg-[#fff7ed] text-[#ef8733] font-semibold"
-                    : "border-[#e5e1d8] text-[#111111] hover:border-[#ef8733]"
-                }`}
-              >
-                {val}
-              </button>
-            ))}
+            {opt.values.map((val) => {
+              const optPrice = opt.priceMap?.[val];
+              return (
+                <button
+                  key={val}
+                  onClick={() => handleOptionChange(opt.name, val)}
+                  className={`px-4 py-2 text-sm rounded-full border-2 transition-all cursor-pointer ${
+                    selectedOptions[opt.name] === val
+                      ? "border-[#ef8733] bg-[#fff7ed] text-[#ef8733] font-semibold"
+                      : "border-[#e5e1d8] text-[#111111] hover:border-[#ef8733]"
+                  }`}
+                >
+                  {val}{optPrice !== undefined ? ` — ${formatPrice(optPrice)}` : ""}
+                </button>
+              );
+            })}
           </div>
         </div>
       ))}

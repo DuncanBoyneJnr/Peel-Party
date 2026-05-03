@@ -215,6 +215,11 @@ export interface MaterialType {
   costPencePerUnit: number;  // pence per blank item (cups, t-shirts, etc.)
 }
 
+export interface StandardColour {
+  id: string;
+  name: string;
+}
+
 export interface CostSettings {
   hourlyRatePence: number;
   targetProfitPercent: number;
@@ -229,6 +234,7 @@ export interface CostSettings {
   heatTransferWidthCm: number;
   heatTransferHeightCm: number;
   standardSizes: StandardSize[];
+  standardColours: StandardColour[];
   maxOrderQty: number;
   materials: MaterialType[];
   productConfigs: Record<string, ProductCostConfig>;
@@ -251,6 +257,7 @@ const defaultCostSettings: CostSettings = {
   heatTransferWidthCm: 8 * IN_TO_CM,
   heatTransferHeightCm: 12 * IN_TO_CM,
   standardSizes: [],
+  standardColours: [],
   maxOrderQty: 1000,
   materials: [],
   productConfigs: {},
@@ -264,6 +271,7 @@ export async function getCostSettings(): Promise<CostSettings> {
     ...defaultCostSettings,
     ...stored,
     standardSizes: (stored.standardSizes ?? []).map((s) => ({ ...s, category: s.category ?? "stickers" })),
+    standardColours: stored.standardColours ?? [],
     maxOrderQty: stored.maxOrderQty ?? 1000,
     materials: stored.materials ?? [],
     productConfigs: stored.productConfigs ?? {},

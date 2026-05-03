@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { Save, CheckCircle2, Plus, Trash2, Calculator } from "lucide-react";
 import { Product, VolumeDiscountTier } from "@/lib/types";
-import { CostSettings, ProductCostConfig, StandardSize } from "@/lib/server-data";
+import { CostSettings, ProductCostConfig, StandardSize, StandardColour } from "@/lib/server-data";
 import { calcRunCosts, calcStickersPerSheet } from "@/lib/pricing";
 
 interface Props {
@@ -146,6 +146,24 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
 
   function deleteStandardSize(id: string) {
     setSettings((prev) => ({ ...prev, standardSizes: prev.standardSizes.filter((s) => s.id !== id) }));
+  }
+
+  // ── Standard colours ──────────────────────────────────────────────────────
+
+  function addStandardColour() {
+    const c: StandardColour = { id: `col_${Date.now()}`, name: "" };
+    setSettings((prev) => ({ ...prev, standardColours: [...(prev.standardColours ?? []), c] }));
+  }
+
+  function updateStandardColour(id: string, name: string) {
+    setSettings((prev) => ({
+      ...prev,
+      standardColours: prev.standardColours.map((c) => (c.id === id ? { ...c, name } : c)),
+    }));
+  }
+
+  function deleteStandardColour(id: string) {
+    setSettings((prev) => ({ ...prev, standardColours: prev.standardColours.filter((c) => c.id !== id) }));
   }
 
   // ── Volume discounts ──────────────────────────────────────────────────────
@@ -406,7 +424,39 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
         )}
       </SectionCard>
 
-      {/* 3. Production Run Calculator */}
+      {/* 3. Standard Colours */}
+      <SectionCard
+        title="Standard Colours"
+        subtitle="Define your available t-shirt and vinyl colour palette. Use 'Sync Colours' in the product editor to apply them."
+        action={
+          <button type="button" onClick={addStandardColour}
+            className="inline-flex items-center gap-1.5 h-9 px-4 bg-[#ef8733] text-white rounded-xl text-sm font-semibold hover:bg-[#ea7316] transition-colors cursor-pointer">
+            <Plus size={15} /> Add Colour
+          </button>
+        }
+      >
+        {(settings.standardColours ?? []).length === 0 ? (
+          <p className="text-sm text-[#6b7280] py-6 text-center border-2 border-dashed border-[#e5e1d8] rounded-xl">
+            No colours yet. Click &ldquo;Add Colour&rdquo; to build your palette.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {(settings.standardColours ?? []).map((c) => (
+              <div key={c.id} className="grid grid-cols-[1fr_40px] gap-2 items-center">
+                <input type="text" placeholder="e.g. White, Black, Navy Blue, Red"
+                  className={cellInputCls} value={c.name}
+                  onChange={(e) => updateStandardColour(c.id, e.target.value)} />
+                <button type="button" onClick={() => deleteStandardColour(c.id)}
+                  className="h-9 w-9 flex items-center justify-center rounded-lg text-[#6b7280] hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer">
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+
+      {/* 4. Production Run Calculator */}
       <SectionCard
         title="Production Run Calculator"
         subtitle="Select a product and quantity to get a full cost and pricing breakdown."

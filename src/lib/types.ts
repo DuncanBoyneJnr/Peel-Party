@@ -34,6 +34,7 @@ export type OrderType = "buy-now" | "request-quote";
 export interface ProductOption {
   name: string;
   values: string[];
+  priceMap?: Record<string, number>; // value → absolute price in pence (overrides product.price when set)
 }
 
 export interface Product {

@@ -6,12 +6,13 @@ import { useDropzone } from "react-dropzone";
 import Image from "next/image";
 import { Plus, X, Save, Upload, GripVertical } from "lucide-react";
 import { Product, SizeVariant, ProductCostConfig, ProductType } from "@/lib/types";
-import { StandardSize, MaterialType } from "@/lib/server-data";
+import { StandardSize, StandardColour, MaterialType } from "@/lib/server-data";
 
 interface Props {
   product?: Product;
   isNew?: boolean;
   standardSizes?: StandardSize[];
+  standardColours?: StandardColour[];
   sheetWidthCm?: number;
   sheetHeightCm?: number;
   maxOrderQty?: number;
@@ -64,6 +65,7 @@ export default function ProductForm({
   product,
   isNew,
   standardSizes = [],
+  standardColours = [],
   sheetWidthCm = 17.32,
   sheetHeightCm = 23.67,
   maxOrderQty = 1000,
@@ -196,12 +198,28 @@ export default function ProductForm({
 
     const existingOptions = (form.options ?? []).filter((o) => o.name !== "Size");
     const existingRaws = optionRaws.filter((_, i) => (form.options ?? [])[i]?.name !== "Size");
+    const existingSizeOption = (form.options ?? []).find((o) => o.name === "Size");
     const sizeValues = validSizes.map((s) => s.name).join(", ");
 
     update("sizeVariants", validSizes);
     if (validSizes.length > 0) {
-      update("options", [{ name: "Size", values: validSizes.map((s) => s.name) }, ...existingOptions]);
+      update("options", [{ name: "Size", values: validSizes.map((s) => s.name), priceMap: existingSizeOption?.priceMap }, ...existingOptions]);
       setOptionRaws([sizeValues, ...existingRaws]);
+    } else {
+      update("options", existingOptions);
+      setOptionRaws(existingRaws);
+    }
+  }
+
+  function syncColours() {
+    const names = standardColours.map((c) => c.name).filter(Boolean);
+    const existingOptions = (form.options ?? []).filter((o) => o.name !== "Colour");
+    const existingRaws = optionRaws.filter((_, i) => (form.options ?? [])[i]?.name !== "Colour");
+    const existingColourOption = (form.options ?? []).find((o) => o.name === "Colour");
+
+    if (names.length > 0) {
+      update("options", [...existingOptions, { name: "Colour", values: names, priceMap: existingColourOption?.priceMap }]);
+      setOptionRaws([...existingRaws, names.join(", ")]);
     } else {
       update("options", existingOptions);
       setOptionRaws(existingRaws);
@@ -212,9 +230,10 @@ export default function ProductForm({
     const names = categorySizes.map((s) => s.name).filter(Boolean);
     const existingOptions = (form.options ?? []).filter((o) => o.name !== "Size");
     const existingRaws = optionRaws.filter((_, i) => (form.options ?? [])[i]?.name !== "Size");
+    const existingSizeOption = (form.options ?? []).find((o) => o.name === "Size");
 
     if (names.length > 0) {
-      update("options", [{ name: "Size", values: names }, ...existingOptions]);
+      update("options", [{ name: "Size", values: names, priceMap: existingSizeOption?.priceMap }, ...existingOptions]);
       setOptionRaws([names.join(", "), ...existingRaws]);
     } else {
       update("options", existingOptions);
@@ -246,7 +265,29 @@ export default function ProductForm({
 
   function commitOptionValues(idx: number, raw: string) {
     const opts = [...(form.options ?? [])];
-    opts[idx] = { ...opts[idx], values: raw.split(",").map((v) => v.trim()).filter(Boolean) };
+    const newValues = raw.split(",").map((v) => v.trim()).filter(Boolean);
+    const oldPriceMap = opts[idx].priceMap;
+    const newPriceMap = oldPriceMap
+      ? Object.fromEntries(Object.entries(oldPriceMap).filter(([k]) => newValues.includes(k)))
+      : undefined;
+    opts[idx] = {
+      ...opts[idx],
+      values: newValues,
+      priceMap: newPriceMap && Object.keys(newPriceMap).length > 0 ? newPriceMap : undefined,
+    };
+    update("options", opts);
+  }
+
+  function updateOptionPrice(idx: number, value: string, raw: string) {
+    const opts = [...(form.options ?? [])];
+    const pounds = parseFloat(raw);
+    const current = opts[idx].priceMap ?? {};
+    if (!isNaN(pounds) && raw !== "") {
+      opts[idx] = { ...opts[idx], priceMap: { ...current, [value]: pounds } };
+    } else {
+      const { [value]: _, ...rest } = current;
+      opts[idx] = { ...opts[idx], priceMap: Object.keys(rest).length > 0 ? rest : undefined };
+    }
     update("options", opts);
   }
 
@@ -521,6 +562,49 @@ export default function ProductForm({
         </div>
       )}
 
+      {/* Colours — t-shirts and vinyl */}
+      {["tshirts", "vinyl"].includes(form.category ?? "") && (
+        <div className="bg-white rounded-2xl border border-[#e5e1d8] p-6">
+          <div className="flex items-start justify-between gap-4 mb-1">
+            <div>
+              <h2 className="font-display font-700 text-lg text-[#111111]">Available Colours</h2>
+              <p className="text-sm text-[#6b7280] mt-0.5">
+                Sync your standard colour palette from Cost Settings as a &quot;Colour&quot; product option.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={syncColours}
+              className="inline-flex items-center gap-1.5 h-9 px-4 bg-[#ef8733] text-white rounded-xl text-sm font-semibold hover:bg-[#ea7316] transition-colors cursor-pointer shrink-0"
+            >
+              Sync Colours
+            </button>
+          </div>
+
+          {standardColours.length === 0 ? (
+            <p className="text-sm text-[#6b7280] mt-4 p-4 bg-[#f9f7f4] rounded-xl">
+              No standard colours defined yet. Go to <strong>Admin → Costs &amp; Profit → Standard Colours</strong> to add them first.
+            </p>
+          ) : (
+            <div className="mt-4 flex flex-wrap gap-2">
+              {standardColours.map((c) => {
+                const synced = ((form.options ?? []).find((o) => o.name === "Colour")?.values ?? []).includes(c.name);
+                return (
+                  <span key={c.id} className={`px-3 py-1.5 rounded-full text-sm font-medium border-2 ${synced ? "border-[#ef8733] bg-[#fff7ed] text-[#ef8733]" : "border-[#e5e1d8] text-[#111111]"}`}>
+                    {c.name || "Unnamed"}
+                  </span>
+                );
+              })}
+              {((form.options ?? []).find((o) => o.name === "Colour")?.values ?? []).length > 0 && (
+                <p className="w-full text-xs text-[#6b7280] mt-1">
+                  ✓ Colour option synced with {(form.options ?? []).find((o) => o.name === "Colour")!.values.length} colour{(form.options ?? []).find((o) => o.name === "Colour")!.values.length !== 1 ? "s" : ""}.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Cost Setup */}
       <div className="bg-white rounded-2xl border border-[#e5e1d8] p-6">
         <h2 className="font-display font-700 text-lg text-[#111111] mb-1">Cost Setup</h2>
@@ -773,6 +857,30 @@ export default function ProductForm({
                   onBlur={(e) => commitOptionValues(i, e.target.value)}
                   placeholder="Value 1, Value 2, Value 3"
                 />
+                {opt.values.length > 0 && (
+                  <div className="mt-3">
+                    <p className="text-xs font-semibold text-[#6b7280] mb-2 uppercase tracking-wide">Per-value prices (£) — optional</p>
+                    <div className="grid grid-cols-2 gap-2">
+                      {opt.values.map((val) => (
+                        <label key={val} className="flex items-center gap-2">
+                          <span className="text-xs text-[#111111] truncate flex-1">{val}</span>
+                          <input
+                            type="number"
+                            step="0.01"
+                            min="0"
+                            placeholder="—"
+                            className="w-24 h-8 px-2 rounded-lg border-2 border-[#e5e1d8] text-xs focus:outline-none focus:border-[#ef8733] transition-colors bg-white"
+                            value={opt.priceMap?.[val] !== undefined ? opt.priceMap![val].toFixed(2) : ""}
+                            onChange={(e) => updateOptionPrice(i, val, e.target.value)}
+                          />
+                        </label>
+                      ))}
+                    </div>
+                    {opt.priceMap && Object.keys(opt.priceMap).length > 0 && (
+                      <p className="text-xs text-[#6b7280] mt-1.5">Customers will see the price next to each option and the total will update when they select.</p>
+                    )}
+                  </div>
+                )}
               </div>
               <button type="button" onClick={() => removeOption(i)} className="mt-7 text-[#d1c8bc] hover:text-red-500 transition-colors cursor-pointer">
                 <X size={16} />

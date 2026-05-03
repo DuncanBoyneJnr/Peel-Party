@@ -19,6 +19,7 @@ export default async function NewProductPage() {
       <ProductForm
         isNew
         standardSizes={costSettings.standardSizes}
+        standardColours={costSettings.standardColours}
         sheetWidthCm={costSettings.sheetWidthCm}
         sheetHeightCm={costSettings.sheetHeightCm}
         maxOrderQty={costSettings.maxOrderQty}
