@@ -75,6 +75,34 @@ const categories = [
       </svg>
     ),
   },
+  {
+    slug: "tshirts",
+    title: "T-Shirts",
+    description: "Custom printed t-shirts. Any design, any colour — perfect for events, teams, and gifts.",
+    colour: "#8b5cf6",
+    lightColour: "#f5f3ff",
+    icon: (
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="12" fill="#8b5cf6" fillOpacity="0.15"/>
+        <path d="M14 16l6-4h8l6 4-4 4v14H18V20l-4-4Z" fill="#8b5cf6" fillOpacity="0.25" stroke="#8b5cf6" strokeWidth="2" strokeLinejoin="round"/>
+        <path d="M14 16l-4 6h6" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M34 16l4 6h-6" stroke="#8b5cf6" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    ),
+  },
+  {
+    slug: "bookmarks",
+    title: "Bookmarks",
+    description: "Personalised bookmarks. A thoughtful gift for readers, events, and giveaways.",
+    colour: "#f43f5e",
+    lightColour: "#fff1f2",
+    icon: (
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="12" fill="#f43f5e" fillOpacity="0.15"/>
+        <path d="M16 10h16v28l-8-6-8 6V10Z" fill="#f43f5e" fillOpacity="0.25" stroke="#f43f5e" strokeWidth="2" strokeLinejoin="round"/>
+      </svg>
+    ),
+  },
 ];
 
 export default function CategoryGrid() {
@@ -87,7 +115,7 @@ export default function CategoryGrid() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {categories.map((cat) => (
           <Link
             key={cat.slug}

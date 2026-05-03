@@ -272,6 +272,8 @@ export default function ProductForm({
               <option value="keyrings">Keyrings</option>
               <option value="coasters">Coasters</option>
               <option value="magnets">Magnets</option>
+              <option value="tshirts">T-Shirts</option>
+              <option value="bookmarks">Bookmarks</option>
             </select>
           </div>
           <div>
@@ -399,7 +401,7 @@ export default function ProductForm({
       </div>
 
       {/* Sizes — sheet-based products */}
-      {["stickers", "coasters", "magnets"].includes(form.category ?? "") && (
+      {["stickers", "coasters", "magnets", "bookmarks"].includes(form.category ?? "") && (
         <div className="bg-white rounded-2xl border border-[#e5e1d8] p-6">
           <div className="flex items-start justify-between gap-4 mb-1">
             <div>

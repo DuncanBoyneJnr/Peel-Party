@@ -1,4 +1,4 @@
-export type Category = "stickers" | "mugs" | "keyrings" | "coasters" | "magnets";
+export type Category = "stickers" | "mugs" | "keyrings" | "coasters" | "magnets" | "tshirts" | "bookmarks";
 
 export type ProductType = "sticker" | "sticker-sheet" | "cup" | "tshirt" | "other";
 

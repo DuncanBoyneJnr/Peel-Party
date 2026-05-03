@@ -270,4 +270,16 @@ export const categoryMeta = {
     heroImage: "/images/cat-magnets.jpg",
     colour: "#ef8733",
   },
+  tshirts: {
+    title: "T-Shirts",
+    description: "Custom printed t-shirts. Any design, any colour, perfect for events, teams, and gifts.",
+    heroImage: "/images/cat-tshirts.jpg",
+    colour: "#ef8733",
+  },
+  bookmarks: {
+    title: "Bookmarks",
+    description: "Personalised bookmarks. A thoughtful gift for readers, events, and giveaways.",
+    heroImage: "/images/cat-bookmarks.jpg",
+    colour: "#ef8733",
+  },
 };

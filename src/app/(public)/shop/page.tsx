@@ -17,6 +17,8 @@ const categories = [
   { label: "Keyrings", value: "keyrings" },
   { label: "Coasters", value: "coasters" },
   { label: "Magnets", value: "magnets" },
+  { label: "T-Shirts", value: "tshirts" },
+  { label: "Bookmarks", value: "bookmarks" },
 ];
 
 export default async function ShopPage() {

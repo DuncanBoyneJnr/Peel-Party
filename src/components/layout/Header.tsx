@@ -14,6 +14,8 @@ const nav = [
   { label: "Keyrings", href: "/shop/keyrings" },
   { label: "Coasters", href: "/shop/coasters" },
   { label: "Magnets", href: "/shop/magnets" },
+  { label: "T-Shirts", href: "/shop/tshirts" },
+  { label: "Bookmarks", href: "/shop/bookmarks" },
   { label: "Our Work", href: "/gallery" },
   { label: "Custom Order", href: "/custom-order" },
   { label: "About", href: "/about" },

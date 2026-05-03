@@ -11,6 +11,8 @@ const links = {
     { label: "Keyrings", href: "/shop/keyrings" },
     { label: "Coasters", href: "/shop/coasters" },
     { label: "Magnets", href: "/shop/magnets" },
+    { label: "T-Shirts", href: "/shop/tshirts" },
+    { label: "Bookmarks", href: "/shop/bookmarks" },
   ],
   Company: [
     { label: "About Us", href: "/about" },
