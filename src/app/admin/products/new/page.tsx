@@ -20,6 +20,7 @@ export default async function NewProductPage() {
         isNew
         standardSizes={costSettings.standardSizes}
         standardColours={costSettings.standardColours}
+        standardPlacements={costSettings.standardPlacements}
         sheetWidthCm={costSettings.sheetWidthCm}
         sheetHeightCm={costSettings.sheetHeightCm}
         maxOrderQty={costSettings.maxOrderQty}

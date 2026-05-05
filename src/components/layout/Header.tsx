@@ -7,15 +7,23 @@ import { Menu, X, ShoppingCart, Search, ChevronDown } from "lucide-react";
 import { useCart } from "@/context/CartContext";
 import { cn } from "@/lib/utils";
 
-const shopCategories = [
+type ShopNavItem = { label: string; href: string } | { label: string; group: true };
+
+const shopCategories: ShopNavItem[] = [
   { label: "All Products", href: "/shop" },
+  { label: "Stickers & Vinyl", group: true },
   { label: "Stickers", href: "/shop/stickers" },
   { label: "Vinyl", href: "/shop/vinyl" },
+  { label: "Clothing", group: true },
+  { label: "T-Shirts", href: "/shop/tshirts" },
+  { label: "Hoodies", href: "/shop/hoodies" },
+  { label: "Polo Shirts", href: "/shop/polos" },
+  { label: "Hats", href: "/shop/hats" },
+  { label: "Gifts & Decor", group: true },
   { label: "Mugs", href: "/shop/mugs" },
   { label: "Keyrings", href: "/shop/keyrings" },
   { label: "Coasters", href: "/shop/coasters" },
   { label: "Magnets", href: "/shop/magnets" },
-  { label: "T-Shirts", href: "/shop/tshirts" },
   { label: "Bookmarks", href: "/shop/bookmarks" },
 ];
 
@@ -81,17 +89,19 @@ export default function Header() {
               </button>
 
               {shopOpen && (
-                <div className="absolute top-full left-0 mt-1 w-44 bg-white rounded-xl border border-[#e5e1d8] shadow-lg py-1 z-50">
-                  {shopCategories.map((item) => (
-                    <Link
-                      key={item.href}
-                      href={item.href}
-                      onClick={() => setShopOpen(false)}
-                      className="block px-4 py-2 text-sm text-[#111111] hover:bg-[#f0ede8] hover:text-[#ef8733] transition-colors"
-                    >
-                      {item.label}
-                    </Link>
-                  ))}
+                <div className="absolute top-full left-0 mt-1 w-52 bg-white rounded-xl border border-[#e5e1d8] shadow-lg py-1 z-50">
+                  {shopCategories.map((item, i) =>
+                    "group" in item ? (
+                      <p key={i} className="px-4 pt-3 pb-0.5 text-[10px] font-bold uppercase tracking-widest text-[#9ca3af]">
+                        {item.label}
+                      </p>
+                    ) : (
+                      <Link key={item.href} href={item.href} onClick={() => setShopOpen(false)}
+                        className="block px-4 py-1.5 text-sm text-[#111111] hover:bg-[#f0ede8] hover:text-[#ef8733] transition-colors">
+                        {item.label}
+                      </Link>
+                    )
+                  )}
                 </div>
               )}
             </div>
@@ -155,17 +165,18 @@ export default function Header() {
         {mobileOpen && (
           <div className="xl:hidden border-t border-[#e5e1d8] bg-white px-4 pb-4">
             <nav className="flex flex-col pt-2 gap-1">
-              <p className="px-3 pt-2 pb-1 text-xs font-semibold uppercase tracking-wider text-[#9ca3af]">Shop</p>
-              {shopCategories.map((item) => (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileOpen(false)}
-                  className="px-3 py-2.5 text-sm font-medium rounded-lg text-[#111111] hover:bg-[#f0ede8] transition-colors"
-                >
-                  {item.label}
-                </Link>
-              ))}
+              {shopCategories.map((item, i) =>
+                "group" in item ? (
+                  <p key={i} className="px-3 pt-3 pb-0.5 text-[10px] font-bold uppercase tracking-widest text-[#9ca3af]">
+                    {item.label}
+                  </p>
+                ) : (
+                  <Link key={item.href} href={item.href} onClick={() => setMobileOpen(false)}
+                    className="px-3 py-2.5 text-sm font-medium rounded-lg text-[#111111] hover:bg-[#f0ede8] transition-colors block">
+                    {item.label}
+                  </Link>
+                )
+              )}
               <div className="my-1 border-t border-[#f0ede8]" />
               {topNav.map((item) => (
                 <Link

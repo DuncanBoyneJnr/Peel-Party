@@ -19,6 +19,9 @@ const categories = [
   { label: "Coasters", value: "coasters" },
   { label: "Magnets", value: "magnets" },
   { label: "T-Shirts", value: "tshirts" },
+  { label: "Hoodies", value: "hoodies" },
+  { label: "Polo Shirts", value: "polos" },
+  { label: "Hats", value: "hats" },
   { label: "Bookmarks", value: "bookmarks" },
 ];
 

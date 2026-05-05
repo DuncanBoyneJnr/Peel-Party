@@ -282,6 +282,24 @@ export const categoryMeta = {
     heroImage: "/images/cat-tshirts.jpg",
     colour: "#ef8733",
   },
+  hoodies: {
+    title: "Hoodies",
+    description: "Custom printed hoodies. Cosy and personalised — perfect for teams, events, and gifts.",
+    heroImage: "/images/cat-hoodies.jpg",
+    colour: "#ea580c",
+  },
+  polos: {
+    title: "Polo Shirts",
+    description: "Embroidered or printed polo shirts. Professional, smart, and fully customisable.",
+    heroImage: "/images/cat-polos.jpg",
+    colour: "#0891b2",
+  },
+  hats: {
+    title: "Hats",
+    description: "Custom embroidered and printed hats. Baseball caps, beanies, and more.",
+    heroImage: "/images/cat-hats.jpg",
+    colour: "#7c3aed",
+  },
   bookmarks: {
     title: "Bookmarks",
     description: "Personalised bookmarks. A thoughtful gift for readers, events, and giveaways.",

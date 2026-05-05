@@ -215,6 +215,13 @@ export interface MaterialType {
   costPencePerUnit: number;  // pence per blank item (cups, t-shirts, etc.)
 }
 
+export interface StandardPlacement {
+  id: string;
+  name: string;    // "Front Only", "Back Only", "Front & Back"
+  category: string;
+  price: number;   // pounds (same unit as product.price)
+}
+
 export interface StandardColour {
   id: string;
   name: string;
@@ -236,6 +243,7 @@ export interface CostSettings {
   heatTransferHeightCm: number;
   standardSizes: StandardSize[];
   standardColours: StandardColour[];
+  standardPlacements: StandardPlacement[];
   maxOrderQty: number;
   materials: MaterialType[];
   productConfigs: Record<string, ProductCostConfig>;
@@ -259,6 +267,7 @@ const defaultCostSettings: CostSettings = {
   heatTransferHeightCm: 12 * IN_TO_CM,
   standardSizes: [],
   standardColours: [],
+  standardPlacements: [],
   maxOrderQty: 1000,
   materials: [],
   productConfigs: {},
@@ -273,6 +282,7 @@ export async function getCostSettings(): Promise<CostSettings> {
     ...stored,
     standardSizes: (stored.standardSizes ?? []).map((s) => ({ ...s, category: s.category ?? "stickers" })),
     standardColours: (stored.standardColours ?? []).map((c) => ({ ...c, category: c.category ?? "tshirts" })),
+    standardPlacements: stored.standardPlacements ?? [],
     maxOrderQty: stored.maxOrderQty ?? 1000,
     materials: stored.materials ?? [],
     productConfigs: stored.productConfigs ?? {},

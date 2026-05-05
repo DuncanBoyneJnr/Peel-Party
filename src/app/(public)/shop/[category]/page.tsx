@@ -28,6 +28,9 @@ export function generateStaticParams() {
     { category: "coasters" },
     { category: "magnets" },
     { category: "tshirts" },
+    { category: "hoodies" },
+    { category: "polos" },
+    { category: "hats" },
     { category: "bookmarks" },
   ];
 }
@@ -35,7 +38,7 @@ export function generateStaticParams() {
 export default async function CategoryPage({ params }: PageProps) {
   const { category } = await params;
 
-  if (!["stickers", "vinyl", "mugs", "keyrings", "coasters", "magnets", "tshirts", "bookmarks"].includes(category)) notFound();
+  if (!["stickers", "vinyl", "mugs", "keyrings", "coasters", "magnets", "tshirts", "hoodies", "polos", "hats", "bookmarks"].includes(category)) notFound();
 
   const meta = categoryMeta[category as Category];
   const categoryProducts = await getProductsByCategory(category);
@@ -66,6 +69,9 @@ export default async function CategoryPage({ params }: PageProps) {
           { label: "Coasters", href: "/shop/coasters" },
           { label: "Magnets", href: "/shop/magnets" },
           { label: "T-Shirts", href: "/shop/tshirts" },
+          { label: "Hoodies", href: "/shop/hoodies" },
+          { label: "Polo Shirts", href: "/shop/polos" },
+          { label: "Hats", href: "/shop/hats" },
           { label: "Bookmarks", href: "/shop/bookmarks" },
         ].map((item) => (
           <Link

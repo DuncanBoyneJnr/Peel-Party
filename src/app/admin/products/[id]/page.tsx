@@ -27,6 +27,7 @@ export default async function EditProductPage({ params }: Props) {
         product={product}
         standardSizes={costSettings.standardSizes}
         standardColours={costSettings.standardColours}
+        standardPlacements={costSettings.standardPlacements}
         sheetWidthCm={costSettings.sheetWidthCm}
         sheetHeightCm={costSettings.sheetHeightCm}
         maxOrderQty={costSettings.maxOrderQty}

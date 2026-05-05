@@ -12,6 +12,9 @@ const links = {
     { label: "Coasters", href: "/shop/coasters" },
     { label: "Magnets", href: "/shop/magnets" },
     { label: "T-Shirts", href: "/shop/tshirts" },
+    { label: "Hoodies", href: "/shop/hoodies" },
+    { label: "Polo Shirts", href: "/shop/polos" },
+    { label: "Hats", href: "/shop/hats" },
     { label: "Bookmarks", href: "/shop/bookmarks" },
   ],
   Company: [

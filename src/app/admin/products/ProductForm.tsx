@@ -6,13 +6,14 @@ import { useDropzone } from "react-dropzone";
 import Image from "next/image";
 import { Plus, X, Save, Upload, GripVertical } from "lucide-react";
 import { Product, SizeVariant, ProductCostConfig, ProductType } from "@/lib/types";
-import { StandardSize, StandardColour, MaterialType } from "@/lib/server-data";
+import { StandardSize, StandardColour, StandardPlacement, MaterialType } from "@/lib/server-data";
 
 interface Props {
   product?: Product;
   isNew?: boolean;
   standardSizes?: StandardSize[];
   standardColours?: StandardColour[];
+  standardPlacements?: StandardPlacement[];
   sheetWidthCm?: number;
   sheetHeightCm?: number;
   maxOrderQty?: number;
@@ -66,6 +67,7 @@ export default function ProductForm({
   isNew,
   standardSizes = [],
   standardColours = [],
+  standardPlacements = [],
   sheetWidthCm = 17.32,
   sheetHeightCm = 23.67,
   maxOrderQty = 1000,
@@ -96,8 +98,10 @@ export default function ProductForm({
   const perSheet = isSticker ? calcPerSheet(costCfg.widthCm ?? 0, costCfg.heightCm ?? 0, sheetWidthCm, sheetHeightCm) : 0;
 
   const SHEET_CATEGORIES = ["stickers", "vinyl", "coasters", "magnets", "bookmarks"];
+  const CLOTHING_CATEGORIES = ["tshirts", "hoodies", "polos", "hats"];
   const isSheetCategory = SHEET_CATEGORIES.includes(form.category ?? "");
-  const isNamedCategory = ["mugs", "tshirts", "keyrings"].includes(form.category ?? "");
+  const isNamedCategory = ["mugs", "tshirts", "hoodies", "polos", "hats", "keyrings"].includes(form.category ?? "");
+  const isClothingCategory = CLOTHING_CATEGORIES.includes(form.category ?? "");
   const categorySizes = standardSizes.filter((s) => s.category === form.category);
 
   function updateCostConfig(field: keyof ProductCostConfig, value: string | number | string[] | undefined) {
@@ -226,6 +230,28 @@ export default function ProductForm({
     }
   }
 
+  function syncPlacement() {
+    const placements = standardPlacements.filter((p) => p.category === form.category);
+    const existingOptions = (form.options ?? []).filter((o) => o.name !== "Placement");
+    const existingRaws = optionRaws.filter((_, i) => (form.options ?? [])[i]?.name !== "Placement");
+    const existingPlacementOption = (form.options ?? []).find((o) => o.name === "Placement");
+
+    if (placements.length > 0) {
+      const priceMap: Record<string, number> = {};
+      placements.forEach((p) => { if (p.price > 0) priceMap[p.name] = p.price; });
+      const newOpt = {
+        name: "Placement",
+        values: placements.map((p) => p.name),
+        priceMap: Object.keys(priceMap).length > 0 ? priceMap : existingPlacementOption?.priceMap,
+      };
+      update("options", [newOpt, ...existingOptions]);
+      setOptionRaws([placements.map((p) => p.name).join(", "), ...existingRaws]);
+    } else {
+      update("options", existingOptions);
+      setOptionRaws(existingRaws);
+    }
+  }
+
   function syncOptions() {
     const names = categorySizes.map((s) => s.name).filter(Boolean);
     const existingOptions = (form.options ?? []).filter((o) => o.name !== "Size");
@@ -336,12 +362,19 @@ export default function ProductForm({
             <select required className={inputClass} value={form.category} onChange={(e) => update("category", e.target.value)}>
               <option value="stickers">Stickers</option>
               <option value="vinyl">Vinyl</option>
-              <option value="mugs">Mugs</option>
-              <option value="keyrings">Keyrings</option>
-              <option value="coasters">Coasters</option>
-              <option value="magnets">Magnets</option>
-              <option value="tshirts">T-Shirts</option>
-              <option value="bookmarks">Bookmarks</option>
+              <optgroup label="Clothing">
+                <option value="tshirts">T-Shirts</option>
+                <option value="hoodies">Hoodies</option>
+                <option value="polos">Polo Shirts</option>
+                <option value="hats">Hats</option>
+              </optgroup>
+              <optgroup label="Gifts &amp; Decor">
+                <option value="mugs">Mugs</option>
+                <option value="keyrings">Keyrings</option>
+                <option value="coasters">Coasters</option>
+                <option value="magnets">Magnets</option>
+                <option value="bookmarks">Bookmarks</option>
+              </optgroup>
             </select>
           </div>
           <div>
@@ -562,8 +595,8 @@ export default function ProductForm({
         </div>
       )}
 
-      {/* Colours — t-shirts and vinyl */}
-      {["tshirts", "vinyl"].includes(form.category ?? "") && (
+      {/* Colours — clothing and vinyl */}
+      {(isClothingCategory || form.category === "vinyl") && (
         <div className="bg-white rounded-2xl border border-[#e5e1d8] p-6">
           <div className="flex items-start justify-between gap-4 mb-1">
             <div>
@@ -598,6 +631,53 @@ export default function ProductForm({
               {((form.options ?? []).find((o) => o.name === "Colour")?.values ?? []).length > 0 && (
                 <p className="w-full text-xs text-[#6b7280] mt-1">
                   ✓ Colour option synced with {(form.options ?? []).find((o) => o.name === "Colour")!.values.length} colour{(form.options ?? []).find((o) => o.name === "Colour")!.values.length !== 1 ? "s" : ""}.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Print Placement — clothing categories */}
+      {isClothingCategory && (
+        <div className="bg-white rounded-2xl border border-[#e5e1d8] p-6">
+          <div className="flex items-start justify-between gap-4 mb-1">
+            <div>
+              <h2 className="font-display font-700 text-lg text-[#111111]">Print Placement</h2>
+              <p className="text-sm text-[#6b7280] mt-0.5">
+                Sync placement options (Front Only, Back Only, Front &amp; Back) with prices from Cost Settings.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={syncPlacement}
+              className="inline-flex items-center gap-1.5 h-9 px-4 bg-[#ef8733] text-white rounded-xl text-sm font-semibold hover:bg-[#ea7316] transition-colors cursor-pointer shrink-0"
+            >
+              Sync Placement
+            </button>
+          </div>
+
+          {standardPlacements.filter((p) => p.category === form.category).length === 0 ? (
+            <p className="text-sm text-[#6b7280] mt-4 p-4 bg-[#f9f7f4] rounded-xl">
+              No placements defined for this category yet. Go to <strong>Admin → Costs &amp; Profit → Standard Placements</strong> to add them.
+            </p>
+          ) : (
+            <div className="mt-4 flex flex-col gap-2">
+              {standardPlacements.filter((p) => p.category === form.category).map((p) => {
+                const syncedValues = (form.options ?? []).find((o) => o.name === "Placement")?.values ?? [];
+                const synced = syncedValues.includes(p.name);
+                return (
+                  <div key={p.id} className={`flex items-center justify-between px-4 py-2.5 rounded-xl border-2 ${synced ? "border-[#ef8733] bg-[#fff7ed]" : "border-[#e5e1d8]"}`}>
+                    <span className={`text-sm font-semibold ${synced ? "text-[#ef8733]" : "text-[#111111]"}`}>{p.name || "Unnamed"}</span>
+                    {p.price > 0 && (
+                      <span className="text-xs text-[#6b7280]">£{p.price.toFixed(2)}</span>
+                    )}
+                  </div>
+                );
+              })}
+              {((form.options ?? []).find((o) => o.name === "Placement")?.values ?? []).length > 0 && (
+                <p className="text-xs text-[#6b7280] mt-1">
+                  ✓ Placement option synced. Customers will see prices next to each option and the total updates on selection.
                 </p>
               )}
             </div>

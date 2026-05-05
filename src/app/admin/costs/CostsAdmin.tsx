@@ -3,7 +3,7 @@
 import { useState, useMemo } from "react";
 import { Save, CheckCircle2, Plus, Trash2, Calculator } from "lucide-react";
 import { Product, VolumeDiscountTier } from "@/lib/types";
-import { CostSettings, ProductCostConfig, StandardSize, StandardColour } from "@/lib/server-data";
+import { CostSettings, ProductCostConfig, StandardSize, StandardColour, StandardPlacement } from "@/lib/server-data";
 import { calcRunCosts, calcStickersPerSheet } from "@/lib/pricing";
 
 interface Props {
@@ -106,6 +106,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
 
   const [sizeCategory, setSizeCategory] = useState("stickers");
   const [colourCategory, setColourCategory] = useState("tshirts");
+  const [placementCategory, setPlacementCategory] = useState("tshirts");
   const [calcProductId, setCalcProductId] = useState("");
   const [calcSizeName, setCalcSizeName] = useState("");
   const [calcQty, setCalcQty] = useState(100);
@@ -123,9 +124,11 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
   // ── Standard sizes ────────────────────────────────────────────────────────
 
   const SHEET_CATEGORIES = ["stickers", "vinyl", "coasters", "magnets", "bookmarks"];
+  const CLOTHING_CATEGORIES = ["tshirts", "hoodies", "polos", "hats"];
   const SIZE_CATEGORY_LABELS: Record<string, string> = {
     stickers: "Stickers", vinyl: "Vinyl", mugs: "Mugs", keyrings: "Keyrings",
-    coasters: "Coasters", magnets: "Magnets", tshirts: "T-Shirts", bookmarks: "Bookmarks",
+    coasters: "Coasters", magnets: "Magnets", tshirts: "T-Shirts",
+    hoodies: "Hoodies", polos: "Polo Shirts", hats: "Hats", bookmarks: "Bookmarks",
   };
   const isSheetCategory = SHEET_CATEGORIES.includes(sizeCategory);
   const filteredSizes = settings.standardSizes.filter((s) => s.category === sizeCategory);
@@ -152,7 +155,10 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
   // ── Standard colours ──────────────────────────────────────────────────────
 
   const COLOUR_CATEGORY_LABELS: Record<string, string> = {
-    tshirts: "T-Shirts", vinyl: "Vinyl", mugs: "Mugs", keyrings: "Keyrings",
+    tshirts: "T-Shirts", hoodies: "Hoodies", polos: "Polo Shirts", hats: "Hats", vinyl: "Vinyl",
+  };
+  const PLACEMENT_CATEGORY_LABELS: Record<string, string> = {
+    tshirts: "T-Shirts", hoodies: "Hoodies", polos: "Polo Shirts", hats: "Hats",
   };
   const filteredColours = (settings.standardColours ?? []).filter((c) => c.category === colourCategory);
 
@@ -170,6 +176,26 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
 
   function deleteStandardColour(id: string) {
     setSettings((prev) => ({ ...prev, standardColours: prev.standardColours.filter((c) => c.id !== id) }));
+  }
+
+  // ── Standard placements ───────────────────────────────────────────────────
+
+  const filteredPlacements = (settings.standardPlacements ?? []).filter((p) => p.category === placementCategory);
+
+  function addStandardPlacement() {
+    const p: StandardPlacement = { id: `pl_${Date.now()}`, name: "", category: placementCategory, price: 0 };
+    setSettings((prev) => ({ ...prev, standardPlacements: [...(prev.standardPlacements ?? []), p] }));
+  }
+
+  function updateStandardPlacement(id: string, field: "name" | "price", value: string | number) {
+    setSettings((prev) => ({
+      ...prev,
+      standardPlacements: prev.standardPlacements.map((p) => (p.id === id ? { ...p, [field]: value } : p)),
+    }));
+  }
+
+  function deleteStandardPlacement(id: string) {
+    setSettings((prev) => ({ ...prev, standardPlacements: prev.standardPlacements.filter((p) => p.id !== id) }));
   }
 
   // ── Volume discounts ──────────────────────────────────────────────────────
@@ -479,7 +505,64 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
         )}
       </SectionCard>
 
-      {/* 4. Production Run Calculator */}
+      {/* 4. Standard Placements */}
+      <SectionCard
+        title="Standard Placements"
+        subtitle="Define print placement options (Front Only, Back Only, Front & Back) with prices per clothing type."
+        action={
+          <button type="button" onClick={addStandardPlacement}
+            className="inline-flex items-center gap-1.5 h-9 px-4 bg-[#ef8733] text-white rounded-xl text-sm font-semibold hover:bg-[#ea7316] transition-colors cursor-pointer">
+            <Plus size={15} /> Add Placement
+          </button>
+        }
+      >
+        {/* Category tabs */}
+        <div className="flex flex-wrap gap-1.5 mb-5">
+          {Object.entries(PLACEMENT_CATEGORY_LABELS).map(([val, label]) => {
+            const count = (settings.standardPlacements ?? []).filter((p) => p.category === val).length;
+            return (
+              <button key={val} type="button" onClick={() => setPlacementCategory(val)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-colors cursor-pointer ${
+                  placementCategory === val
+                    ? "bg-[#ef8733] text-white"
+                    : "bg-[#f0ede8] text-[#111111] hover:bg-[#e5e1d8]"
+                }`}>
+                {label} {count > 0 && <span className="opacity-70">({count})</span>}
+              </button>
+            );
+          })}
+        </div>
+
+        {filteredPlacements.length === 0 ? (
+          <p className="text-sm text-[#6b7280] py-6 text-center border-2 border-dashed border-[#e5e1d8] rounded-xl">
+            No {PLACEMENT_CATEGORY_LABELS[placementCategory]} placements yet. Click &ldquo;Add Placement&rdquo; to get started.
+          </p>
+        ) : (
+          <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-[1fr_100px_40px] gap-2 px-1 mb-1">
+              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">Name</span>
+              <span className="text-xs font-semibold text-[#6b7280] uppercase tracking-wider">Price (£)</span>
+              <span />
+            </div>
+            {filteredPlacements.map((p) => (
+              <div key={p.id} className="grid grid-cols-[1fr_100px_40px] gap-2 items-center">
+                <input type="text" placeholder="e.g. Front Only, Back Only, Front & Back"
+                  className={cellInputCls} value={p.name}
+                  onChange={(e) => updateStandardPlacement(p.id, "name", e.target.value)} />
+                <input type="number" step="0.01" min="0" placeholder="0.00"
+                  className={cellInputCls} value={p.price || ""}
+                  onChange={(e) => updateStandardPlacement(p.id, "price", parseFloat(e.target.value || "0"))} />
+                <button type="button" onClick={() => deleteStandardPlacement(p.id)}
+                  className="h-9 w-9 flex items-center justify-center rounded-lg text-[#6b7280] hover:bg-red-50 hover:text-red-500 transition-colors cursor-pointer">
+                  <Trash2 size={15} />
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+      </SectionCard>
+
+      {/* 5. Production Run Calculator */}
       <SectionCard
         title="Production Run Calculator"
         subtitle="Select a product and quantity to get a full cost and pricing breakdown."

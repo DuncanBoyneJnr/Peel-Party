@@ -107,6 +107,54 @@ const categories = [
     ),
   },
   {
+    slug: "hoodies",
+    title: "Hoodies",
+    description: "Custom printed hoodies. Cosy and personalised — perfect for teams, events, and gifts.",
+    colour: "#ea580c",
+    lightColour: "#fff7ed",
+    icon: (
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="12" fill="#ea580c" fillOpacity="0.15"/>
+        <path d="M14 16l6-4h8l6 4-4 4v16H18V20l-4-4Z" fill="#ea580c" fillOpacity="0.25" stroke="#ea580c" strokeWidth="2" strokeLinejoin="round"/>
+        <path d="M14 16l-4 6h6" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M34 16l4 6h-6" stroke="#ea580c" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M20 16c0 0 2 3 4 3s4-3 4-3" stroke="#ea580c" strokeWidth="2" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
+  {
+    slug: "polos",
+    title: "Polo Shirts",
+    description: "Embroidered or printed polo shirts. Professional, smart, and fully customisable.",
+    colour: "#0891b2",
+    lightColour: "#ecfeff",
+    icon: (
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="12" fill="#0891b2" fillOpacity="0.15"/>
+        <path d="M14 16l6-4h8l6 4-4 4v16H18V20l-4-4Z" fill="#0891b2" fillOpacity="0.25" stroke="#0891b2" strokeWidth="2" strokeLinejoin="round"/>
+        <path d="M14 16l-4 6h6" stroke="#0891b2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M34 16l4 6h-6" stroke="#0891b2" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+        <path d="M22 12v5" stroke="#0891b2" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M26 12v5" stroke="#0891b2" strokeWidth="2" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
+  {
+    slug: "hats",
+    title: "Hats",
+    description: "Custom embroidered and printed hats. Baseball caps, beanies, and more.",
+    colour: "#7c3aed",
+    lightColour: "#f5f3ff",
+    icon: (
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="12" fill="#7c3aed" fillOpacity="0.15"/>
+        <path d="M10 30c0 0 14 0 28 0" stroke="#7c3aed" strokeWidth="2.5" strokeLinecap="round"/>
+        <path d="M14 30V25c0-5.5 4.5-11 10-11s10 5.5 10 11v5" fill="#7c3aed" fillOpacity="0.2" stroke="#7c3aed" strokeWidth="2" strokeLinejoin="round"/>
+        <path d="M34 30c0 0 4 0 4 2s-4 2-4 2" stroke="#7c3aed" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    ),
+  },
+  {
     slug: "bookmarks",
     title: "Bookmarks",
     description: "Personalised bookmarks. A thoughtful gift for readers, events, and giveaways.",
