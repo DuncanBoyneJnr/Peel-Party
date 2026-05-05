@@ -112,6 +112,9 @@ export function getQuantityTiers(stickersPerSheet: number, maxQty: number): numb
 // Standard quantity tiers for unit-based products
 export const UNIT_QTY_TIERS = [1, 5, 10, 25, 50, 100, 250, 500];
 
+// Quantity tiers for DTF-priced clothing (small steps exposed so the per-item saving is visible)
+export const DTF_QTY_TIERS = [1, 2, 3, 4, 5, 10, 25, 50, 100, 250, 500];
+
 // Build a price matrix for a product and store it alongside the product.
 // Called server-side when a product is saved.
 export function buildPriceMatrix(
@@ -150,6 +153,22 @@ export function buildPriceMatrix(
       : isSticker
         ? calcStickersPerSheet(config.widthCm ?? 0, config.heightCm ?? 0, costSettings.sheetWidthCm, costSettings.sheetHeightCm)
         : 0;
+  // DTF (Direct-to-Film) pricing: first item includes one-time transfer postage; subsequent items don't
+  if (config.dtfPricingMode && ips === 0) {
+    const r1 = calcRunCosts(config, costSettings, 1, profitPct);
+    const firstItemPence = r1.suggestedPrice;
+    const configNoPostage = { ...config, postagePence: 0 };
+    const rSub = calcRunCosts(configNoPostage, costSettings, 1, profitPct);
+    const subsequentItemPence = rSub.suggestedPrice;
+    const qtys = DTF_QTY_TIERS.filter((q) => q <= maxOrderQty);
+    return {
+      "": qtys.map((qty) => {
+        const totalPence = firstItemPence + (qty - 1) * subsequentItemPence;
+        return { qty, totalPence, unitPence: Math.round(totalPence / qty), firstItemPence, subsequentItemPence };
+      }),
+    };
+  }
+
   const qtys = ips > 0
     ? getQuantityTiers(ips, maxOrderQty)
     : UNIT_QTY_TIERS.filter((q) => q <= maxOrderQty);

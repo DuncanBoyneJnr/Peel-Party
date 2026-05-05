@@ -82,9 +82,14 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
   const matrixTiers = product.priceMatrix?.[sizeKey] ?? [];
   const hasMatrix = matrixTiers.length > 0;
 
-  const validQtys = hasMatrix ? matrixTiers.map((t) => t.qty) : null;
-  const defaultQty = validQtys?.[0] ?? 1;
-  const effectiveQty = quantity !== null && (!validQtys || validQtys.includes(quantity))
+  // DTF mode: first tier carries firstItemPence/subsequentItemPence; quantity is free-form via stepper
+  const isDtfMode = !!(matrixTiers[0]?.firstItemPence !== undefined && matrixTiers[0]?.subsequentItemPence !== undefined);
+  const dtfFirstItemPence = matrixTiers[0]?.firstItemPence ?? 0;
+  const dtfSubsequentItemPence = matrixTiers[0]?.subsequentItemPence ?? 0;
+
+  const validQtys = hasMatrix && !isDtfMode ? matrixTiers.map((t) => t.qty) : null;
+  const defaultQty = isDtfMode ? 1 : (validQtys?.[0] ?? 1);
+  const effectiveQty = quantity !== null && (!validQtys || isDtfMode || validQtys.includes(quantity))
     ? quantity
     : defaultQty;
 
@@ -98,9 +103,8 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
     )].sort((a, b) => a - b);
   }, [hasMatrix, stickersPerSheet, maxOrderQty]);
 
-  const tierQtys: number[] = hasMatrix
-    ? matrixTiers.map((t) => t.qty)
-    : (legacyTiers ?? []);
+  // DTF mode uses a free-form stepper — no tier buttons
+  const tierQtys: number[] = isDtfMode ? [] : (hasMatrix ? matrixTiers.map((t) => t.qty) : (legacyTiers ?? []));
   const showTierButtons = tierQtys.length > 1;
 
   // Custom qty is available for any product that shows tier buttons
@@ -167,17 +171,25 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
     : null;
   const volumeDiscountPct = activeVolumeTier?.discountPercent ?? 0;
 
-  const displayPrice = isCustomQty && customQtyData && !customQtyData.overMax
-    ? customQtyData.totalPence / 100
-    : currentTier
-      ? currentTier.totalPence / 100
-      : unitPrice * effectiveQty * (1 - volumeDiscountPct / 100);
+  const dtfTotalPence = isDtfMode
+    ? dtfFirstItemPence + (effectiveQty - 1) * dtfSubsequentItemPence
+    : 0;
 
-  const displayQtyLabel = !isCustomQty && currentTier ? effectiveQty : null;
+  const displayPrice = isDtfMode
+    ? dtfTotalPence / 100
+    : isCustomQty && customQtyData && !customQtyData.overMax
+      ? customQtyData.totalPence / 100
+      : currentTier
+        ? currentTier.totalPence / 100
+        : unitPrice * effectiveQty * (1 - volumeDiscountPct / 100);
 
-  const displayUnit = isCustomQty && customQtyData && !customQtyData.overMax && customQtyData.pricedQty > 1
-    ? customQtyData.unitPence / 100
-    : (currentTier && effectiveQty > 1 ? currentTier.unitPence / 100 : null);
+  const displayQtyLabel = !isDtfMode && !isCustomQty && currentTier ? effectiveQty : null;
+
+  const displayUnit = !isDtfMode && (
+    isCustomQty && customQtyData && !customQtyData.overMax && customQtyData.pricedQty > 1
+      ? customQtyData.unitPence / 100
+      : (currentTier && effectiveQty > 1 ? currentTier.unitPence / 100 : null)
+  ) || null;
 
   function handleOptionChange(optName: string, val: string) {
     setSelectedOptions((prev) => ({ ...prev, [optName]: val }));
@@ -197,7 +209,9 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
         return url ? [{ placement: slot.label, url }] : [];
       });
     const artworksArg = artworks.length ? artworks : undefined;
-    if (isCustomQty) {
+    if (isDtfMode) {
+      addItem(product, selectedOptions, effectiveQty, customText || undefined, artworksArg, dtfTotalPence / 100);
+    } else if (isCustomQty) {
       if (!customQtyData || customQtyData.overMax) return;
       addItem(product, selectedOptions, customQtyData.pricedQty, customText || undefined, artworksArg, customQtyData.totalPence / 100);
     } else {
@@ -229,10 +243,10 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
             {displayUnit && (
               <span className="text-sm text-[#6b7280]">{formatPrice(displayUnit)} each</span>
             )}
-            {!currentTier && !isCustomQty && volumeDiscountPct > 0 && (
+            {!currentTier && !isCustomQty && !isDtfMode && volumeDiscountPct > 0 && (
               <span className="text-lg text-[#6b7280] line-through">{formatPrice(unitPrice * effectiveQty)}</span>
             )}
-            {!currentTier && product.originalPrice && !isCustomQty && !activeVolumeTier && (
+            {!currentTier && !isDtfMode && product.originalPrice && !isCustomQty && !activeVolumeTier && (
               <span className="text-lg text-[#6b7280] line-through">{formatPrice(product.originalPrice)}</span>
             )}
             {displayQtyLabel && (
@@ -240,13 +254,18 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
                 for {displayQtyLabel}
               </span>
             )}
-            {!currentTier && !isCustomQty && activeVolumeTier && (
+            {!currentTier && !isCustomQty && !isDtfMode && activeVolumeTier && (
               <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">
                 {activeVolumeTier.discountPercent}% off
               </span>
             )}
           </div>
-          {!hasMatrix && volumeDiscounts.length > 0 && (
+          {isDtfMode && (
+            <p className="text-xs text-[#6b7280]">
+              1st item {formatPrice(dtfFirstItemPence / 100)} (includes transfer postage) · each after {formatPrice(dtfSubsequentItemPence / 100)}
+            </p>
+          )}
+          {!isDtfMode && !hasMatrix && volumeDiscounts.length > 0 && (
             <p className="text-xs text-[#6b7280]">
               {[...volumeDiscounts]
                 .sort((a, b) => a.minQty - b.minQty)
@@ -326,7 +345,23 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
         <div>
           <label className="block text-sm font-semibold text-[#111111] mb-2">Quantity</label>
 
-          {showTierButtons ? (
+          {isDtfMode ? (
+            <div className="flex items-center gap-3">
+              <button
+                onClick={() => setQuantity(Math.max(1, effectiveQty - 1))}
+                className="w-10 h-10 rounded-full border-2 border-[#e5e1d8] flex items-center justify-center hover:border-[#ef8733] transition-colors cursor-pointer"
+              >
+                <Minus size={16} />
+              </button>
+              <span className="text-lg font-semibold text-[#111111] w-8 text-center">{effectiveQty}</span>
+              <button
+                onClick={() => setQuantity(Math.min(maxOrderQty, effectiveQty + 1))}
+                className="w-10 h-10 rounded-full border-2 border-[#e5e1d8] flex items-center justify-center hover:border-[#ef8733] transition-colors cursor-pointer"
+              >
+                <Plus size={16} />
+              </button>
+            </div>
+          ) : showTierButtons ? (
             <>
               <div className="flex flex-wrap gap-2">
                 {tierQtys.map((q) => (

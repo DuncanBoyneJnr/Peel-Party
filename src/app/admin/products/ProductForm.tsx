@@ -882,7 +882,10 @@ export default function ProductForm({
           </div>
 
           <div>
-            <label className={labelClass}>Postage / order <span className="text-[#6b7280] font-normal">(£, blank = global default)</span></label>
+            <label className={labelClass}>
+              {costCfg.dtfPricingMode ? "DTF Transfer Postage (1st item only)" : "Postage / order"}{" "}
+              <span className="text-[#6b7280] font-normal">(£, blank = global default)</span>
+            </label>
             <input
               type="number" step="0.01" min="0" placeholder="default"
               className={inputClass}
@@ -892,6 +895,25 @@ export default function ProductForm({
               }
             />
           </div>
+
+          {costCfg.productType === "tshirt" && (
+            <div className="sm:col-span-2 flex items-start gap-3 px-4 py-3 rounded-xl border-2 border-[#e5e1d8] bg-[#fafaf9]">
+              <input
+                id="dtfPricingMode"
+                type="checkbox"
+                checked={!!costCfg.dtfPricingMode}
+                onChange={(e) => updateCostConfig("dtfPricingMode", e.target.checked || undefined)}
+                className="mt-0.5 w-4 h-4 accent-[#ef8733]"
+              />
+              <label htmlFor="dtfPricingMode" className="flex flex-col cursor-pointer">
+                <span className="text-sm font-semibold text-[#111111]">DTF Transfer Postage Pricing</span>
+                <span className="text-xs text-[#6b7280] mt-0.5">
+                  First item price includes the one-time DTF transfer postage. Each additional item is priced without it — customers see{" "}
+                  <em>1st item: £X · each after: £Y</em> on the product page.
+                </span>
+              </label>
+            </div>
+          )}
 
           <div>
             <label className={labelClass}>Profit % <span className="text-[#6b7280] font-normal">(blank = global default: {defaultProfitPercent}%)</span></label>
