@@ -55,6 +55,7 @@ export default function CheckoutPage() {
             selectedOptions: i.selectedOptions,
             customText: i.customText,
             artworkUrl: i.artworkUrl,
+            artworks: i.artworks,
           })),
           customer: { ...form },
           promoCode: state.appliedPromo?.code,

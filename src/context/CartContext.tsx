@@ -9,7 +9,7 @@ import {
   useEffect,
   ReactNode,
 } from "react";
-import { CartItem, CartState, Product, AppliedPromo, VolumeDiscountTier } from "@/lib/types";
+import { CartItem, CartState, Product, AppliedPromo, VolumeDiscountTier, ArtworkFile } from "@/lib/types";
 
 type CartAction =
   | { type: "ADD_ITEM"; payload: CartItem }
@@ -73,7 +73,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
 
 interface CartContextValue {
   state: CartState;
-  addItem: (product: Product, options: Record<string, string>, qty?: number, text?: string, artwork?: string, linePrice?: number) => void;
+  addItem: (product: Product, options: Record<string, string>, qty?: number, text?: string, artworks?: ArtworkFile[], linePrice?: number) => void;
   removeItem: (id: string) => void;
   updateQty: (id: string, qty: number) => void;
   clearCart: () => void;
@@ -131,12 +131,12 @@ export function CartProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const addItem = useCallback(
-    (product: Product, options: Record<string, string>, qty = 1, text?: string, artwork?: string, linePrice?: number) => {
+    (product: Product, options: Record<string, string>, qty = 1, text?: string, artworks?: ArtworkFile[], linePrice?: number) => {
       const id = `${product.id}-${Object.values(options).join("-")}-${text ?? ""}`;
       const resolvedLinePrice = linePrice ?? product.price * qty;
       dispatch({
         type: "ADD_ITEM",
-        payload: { id, product, quantity: qty, linePrice: resolvedLinePrice, selectedOptions: options, customText: text, artworkUrl: artwork },
+        payload: { id, product, quantity: qty, linePrice: resolvedLinePrice, selectedOptions: options, customText: text, artworks },
       });
     },
     []

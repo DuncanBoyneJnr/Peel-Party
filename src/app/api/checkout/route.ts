@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getProducts, getPostageSettings, setPendingOrder, getPromoCodes, savePromoCodes, setPendingStripeData, getCostSettings } from "@/lib/server-data";
 import { getStripeSecretKey, stripeFetch } from "@/lib/stripe";
 import { createPayPalOrder } from "@/lib/paypal";
-import { PriceTier, OrderItem, VolumeDiscountTier } from "@/lib/types";
+import { PriceTier, OrderItem, VolumeDiscountTier, ArtworkFile } from "@/lib/types";
 
 export const runtime = "nodejs";
 
@@ -11,7 +11,8 @@ interface CheckoutItem {
   quantity: number;
   selectedOptions?: Record<string, string>;
   customText?: string;
-  artworkUrl?: string;
+  artworkUrl?: string;  // legacy
+  artworks?: ArtworkFile[];
 }
 
 interface CustomerDetails {
@@ -126,7 +127,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Invalid price for: ${product.name}` }, { status: 400 });
 
     lineItems.push({ name: displayName, unitAmountPence, quantity: qty });
-    fullOrderItems.push({ name: displayName, unitAmountPence, quantity: qty, customText: item.customText, artworkUrl: item.artworkUrl });
+    fullOrderItems.push({ name: displayName, unitAmountPence, quantity: qty, customText: item.customText, artworkUrl: item.artworkUrl, artworks: item.artworks });
   }
 
   // Calculate discount (applied per-provider below — Stripe uses a coupon, PayPal subtracts from total)

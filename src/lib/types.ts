@@ -61,12 +61,18 @@ export interface Product {
   priceMatrix?: { [sizeName: string]: PriceTier[] };
 }
 
+export interface ArtworkFile {
+  placement: string; // e.g. "Front", "Back", "Artwork"
+  url: string;
+}
+
 export interface OrderItem {
   name: string;
   unitAmountPence: number;
   quantity: number;
   customText?: string;
-  artworkUrl?: string;
+  artworkUrl?: string;  // legacy single-file orders
+  artworks?: ArtworkFile[];
 }
 
 export type OrderStatus = "paid" | "processing" | "dispatched";
@@ -98,7 +104,8 @@ export interface CartItem {
   linePrice: number; // total for this line as shown at time of adding
   selectedOptions: Record<string, string>;
   customText?: string;
-  artworkUrl?: string;
+  artworkUrl?: string;  // legacy
+  artworks?: ArtworkFile[];
 }
 
 export interface PromoCode {

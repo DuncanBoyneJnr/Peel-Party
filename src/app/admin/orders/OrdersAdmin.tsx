@@ -144,11 +144,18 @@ export default function OrdersAdmin({ initialOrders }: Props) {
                             {item.customText && (
                               <p className="text-xs text-[#6b7280] mt-0.5">Text: <span className="text-[#111111] font-medium">{item.customText}</span></p>
                             )}
-                            {item.artworkUrl && (
-                              <a href={item.artworkUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-[#ef8733] hover:underline mt-0.5">
-                                <Paperclip size={11} /> View artwork
-                              </a>
-                            )}
+                            {item.artworks && item.artworks.length > 0
+                              ? item.artworks.map((a, ai) => (
+                                  <a key={ai} href={a.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-[#ef8733] hover:underline mt-0.5 mr-3">
+                                    <Paperclip size={11} /> {a.placement} artwork
+                                  </a>
+                                ))
+                              : item.artworkUrl && (
+                                  <a href={item.artworkUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-xs text-[#ef8733] hover:underline mt-0.5">
+                                    <Paperclip size={11} /> View artwork
+                                  </a>
+                                )
+                            }
                           </div>
                         ))}
                         {order.postagePence > 0 && (

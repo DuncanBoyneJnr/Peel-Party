@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import { ShoppingCart, FileText, Plus, Minus } from "lucide-react";
-import { Product } from "@/lib/types";
+import { Product, ArtworkFile } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
 import { useCart } from "@/context/CartContext";
 import Button from "@/components/ui/Button";
@@ -20,9 +20,8 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
     Object.fromEntries(product.options.map((o) => [o.name, o.values[0]]))
   );
   const [customText, setCustomText] = useState("");
-  const [artworkFile, setArtworkFile] = useState<File | null>(null);
-  const [artworkUrl, setArtworkUrl] = useState<string | null>(null);
-  const [artworkUploading, setArtworkUploading] = useState(false);
+  const [slotState, setSlotState] = useState<Record<string, { file: File | null; url: string | null; uploading: boolean }>>({});
+  const [slotResetKey, setSlotResetKey] = useState(0);
   const [quantity, setQuantity] = useState<number | null>(null);
   const [added, setAdded] = useState(false);
 
@@ -30,6 +29,49 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
   const [customQtyInput, setCustomQtyInput] = useState("");
 
   const isQuote = product.orderType === "request-quote";
+
+  // Determine upload slots based on the selected Placement option value
+  const uploadSlots = useMemo(() => {
+    if (!product.supportsFileUpload) return [] as { key: string; label: string }[];
+    const placement = selectedOptions["Placement"];
+    if (!placement) return [{ key: "artwork", label: "Artwork" }];
+    const lc = placement.toLowerCase();
+    const hasFront = lc.includes("front");
+    const hasBack = lc.includes("back");
+    if (hasFront && hasBack) return [{ key: "front", label: "Front" }, { key: "back", label: "Back" }];
+    if (hasFront) return [{ key: "front", label: "Front" }];
+    if (hasBack) return [{ key: "back", label: "Back" }];
+    return [{ key: "artwork", label: "Artwork" }];
+  }, [product.supportsFileUpload, selectedOptions]);
+
+  // Reset slot state when placement changes (clears uploaded files)
+  useEffect(() => {
+    const keys = new Set(uploadSlots.map((s) => s.key));
+    setSlotState((prev) => {
+      const pruned: typeof prev = {};
+      for (const [k, v] of Object.entries(prev)) {
+        if (keys.has(k)) pruned[k] = v;
+      }
+      return pruned;
+    });
+  }, [uploadSlots]);
+
+  async function handleFileSelect(key: string, file: File | null) {
+    setSlotState((prev) => ({ ...prev, [key]: { file, url: null, uploading: !!file } }));
+    if (!file) return;
+    try {
+      const fd = new FormData();
+      fd.append("file", file);
+      const res = await fetch("/api/artwork-upload", { method: "POST", body: fd });
+      const data = await res.json();
+      const url = res.ok && data.url ? (data.url as string) : null;
+      setSlotState((prev) => ({ ...prev, [key]: { file, url, uploading: false } }));
+    } catch {
+      setSlotState((prev) => ({ ...prev, [key]: { file, url: null, uploading: false } }));
+    }
+  }
+
+  const anyUploading = Object.values(slotState).some((s) => s.uploading);
 
   const selectedSizeVariant = useMemo(() => {
     if (!product.sizeVariants?.length) return null;
@@ -137,46 +179,38 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
     ? customQtyData.unitPence / 100
     : (currentTier && effectiveQty > 1 ? currentTier.unitPence / 100 : null);
 
-  async function handleFileSelect(file: File | null) {
-    setArtworkFile(file);
-    setArtworkUrl(null);
-    if (!file) return;
-    setArtworkUploading(true);
-    try {
-      const fd = new FormData();
-      fd.append("file", file);
-      const res = await fetch("/api/artwork-upload", { method: "POST", body: fd });
-      const data = await res.json();
-      if (res.ok && data.url) setArtworkUrl(data.url);
-    } catch {
-      // non-fatal — order proceeds without artwork URL
-    }
-    setArtworkUploading(false);
-  }
-
   function handleOptionChange(optName: string, val: string) {
     setSelectedOptions((prev) => ({ ...prev, [optName]: val }));
     setQuantity(null);
     setIsCustomQty(false);
     setCustomQtyInput("");
+    if (optName === "Placement") {
+      setSlotState({});
+      setSlotResetKey((k) => k + 1);
+    }
   }
 
   function handleAddToCart() {
-    const artwork = artworkUrl ?? undefined;
+    const artworks: ArtworkFile[] = uploadSlots
+      .flatMap((slot) => {
+        const url = slotState[slot.key]?.url;
+        return url ? [{ placement: slot.label, url }] : [];
+      });
+    const artworksArg = artworks.length ? artworks : undefined;
     if (isCustomQty) {
       if (!customQtyData || customQtyData.overMax) return;
-      addItem(product, selectedOptions, customQtyData.pricedQty, customText || undefined, artwork, customQtyData.totalPence / 100);
+      addItem(product, selectedOptions, customQtyData.pricedQty, customText || undefined, artworksArg, customQtyData.totalPence / 100);
     } else {
       const linePrice = currentTier
         ? currentTier.totalPence / 100
         : unitPrice * effectiveQty * (1 - volumeDiscountPct / 100);
-      addItem(product, selectedOptions, effectiveQty, customText || undefined, artwork, linePrice);
+      addItem(product, selectedOptions, effectiveQty, customText || undefined, artworksArg, linePrice);
     }
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   }
 
-  const addToCartDisabled = isCustomQty && (!customQtyData || customQtyData.overMax || !customQtyInput.trim());
+  const addToCartDisabled = anyUploading || (isCustomQty && (!customQtyData || customQtyData.overMax || !customQtyInput.trim()));
 
   return (
     <div className="flex flex-col gap-5">
@@ -267,15 +301,24 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
         </div>
       )}
 
-      {/* File upload */}
-      {product.supportsFileUpload && (
-        <FileUpload onFile={handleFileSelect} label="Upload Artwork (optional)" />
-      )}
-      {artworkUploading && (
-        <p className="text-xs text-[#6b7280]">Uploading artwork…</p>
-      )}
-      {artworkFile && !artworkUploading && artworkUrl && (
-        <p className="text-xs text-emerald-600">Artwork uploaded ✓</p>
+      {/* File upload — one slot per placement position */}
+      {uploadSlots.length > 0 && (
+        <div className="flex flex-col gap-4">
+          {uploadSlots.map((slot) => {
+            const s = slotState[slot.key] ?? { file: null, url: null, uploading: false };
+            return (
+              <div key={`${slotResetKey}-${slot.key}`}>
+                <FileUpload
+                  onFile={(f) => handleFileSelect(slot.key, f)}
+                  label={uploadSlots.length > 1 ? `${slot.label} Artwork` : "Upload Artwork (optional)"}
+                />
+                {s.uploading && <p className="text-xs text-[#6b7280] mt-1">Uploading…</p>}
+                {s.file && !s.uploading && s.url && <p className="text-xs text-emerald-600 mt-1">{slot.label} artwork uploaded ✓</p>}
+                {s.file && !s.uploading && !s.url && <p className="text-xs text-amber-600 mt-1">Upload failed — you can still add to cart</p>}
+              </div>
+            );
+          })}
+        </div>
       )}
 
       {/* Quantity */}
