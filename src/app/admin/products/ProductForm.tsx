@@ -940,6 +940,63 @@ export default function ProductForm({
             </div>
           )}
 
+          {costCfg.dtfPricingMode && (() => {
+            const placementValues = (form.options ?? []).find((o) => o.name === "Placement")?.values ?? [];
+            if (placementValues.length === 0) {
+              return (
+                <div className="sm:col-span-2 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
+                  Sync your Placement options above first, then return here to assign materials per placement.
+                </div>
+              );
+            }
+            return (
+              <div className="sm:col-span-2">
+                <label className={labelClass}>Materials per Placement</label>
+                <p className="text-xs text-[#6b7280] mb-3">
+                  Select the full material set for each placement (garment + correct transfer). Prices are calculated from these on save.
+                </p>
+                <div className="flex flex-col gap-3">
+                  {placementValues.map((placement) => {
+                    const selected = costCfg.placementMaterials?.[placement] ?? [];
+                    return (
+                      <div key={placement} className="p-3 rounded-xl border-2 border-[#e5e1d8] bg-[#fafaf9]">
+                        <p className="text-sm font-semibold text-[#111111] mb-2">{placement}</p>
+                        {materials.length === 0 ? (
+                          <p className="text-xs text-[#9ca3af]">No materials defined — add them in Costs &amp; Profit → Materials.</p>
+                        ) : (
+                          <div className="flex flex-col gap-1.5">
+                            {materials.map((m) => {
+                              const checked = selected.includes(m.id);
+                              return (
+                                <label key={m.id} className="flex items-center gap-2.5 cursor-pointer">
+                                  <input
+                                    type="checkbox"
+                                    checked={checked}
+                                    onChange={(e) => {
+                                      const next = e.target.checked
+                                        ? [...selected, m.id]
+                                        : selected.filter((id) => id !== m.id);
+                                      const updated = { ...(costCfg.placementMaterials ?? {}) };
+                                      if (next.length > 0) updated[placement] = next;
+                                      else delete updated[placement];
+                                      updateCostConfig("placementMaterials", Object.keys(updated).length > 0 ? updated : undefined);
+                                    }}
+                                    className="w-4 h-4 accent-[#ef8733]"
+                                  />
+                                  <span className="text-sm text-[#111111]">{m.name || "Unnamed"}</span>
+                                </label>
+                              );
+                            })}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
+
           <div>
             <label className={labelClass}>Profit % <span className="text-[#6b7280] font-normal">(blank = global default: {defaultProfitPercent}%)</span></label>
             <input

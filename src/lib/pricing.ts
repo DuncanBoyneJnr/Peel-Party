@@ -164,31 +164,38 @@ export function buildPriceMatrix(
         ? calcStickersPerSheet(config.widthCm ?? 0, config.heightCm ?? 0, costSettings.sheetWidthCm, costSettings.sheetHeightCm)
         : 0;
   // DTF (Direct-to-Film) pricing: matrix is built per placement.
-  // Garment base cost (material + labour, no transfer ink, no postage) is shared.
-  // Each placement adds N × transferCostPence per item (N = print positions).
+  // If placementMaterials is set, each placement uses its own material set (garment + correct transfer).
+  // Otherwise falls back to transferCostPence × print positions.
   // First item in any order also carries the one-time DTF transfer postage.
   if (config.dtfPricingMode && ips === 0) {
-    const transferCostPence = config.transferCostPence ?? 0;
     const postage = config.postagePence ?? costSettings.defaultPostagePence;
-
-    // Garment-only base cost: material + labour, no ink (transfer ink billed separately), no postage
-    const garmentResult = calcRunCosts(
-      { ...config, inkCostPence: 0, postagePence: 0 },
-      costSettings, 1, profitPct
-    );
-    const garmentBaseCost = garmentResult.totalCost;
-
     const qtys = DTF_QTY_TIERS.filter((q) => q <= maxOrderQty);
     const placements = product.options.find((o) => o.name === "Placement")?.values ?? [];
     const matrixKeys = placements.length > 0 ? placements : [""];
 
     const matrix: { [key: string]: PriceTier[] } = {};
     for (const placement of matrixKeys) {
-      const positions = placement ? countPrintPositions(placement) : 1;
-      const transferTotal = positions * transferCostPence;
+      let itemRawCost: number;
 
-      const firstItemPence = applyMargin(garmentBaseCost + transferTotal + postage, profitPct);
-      const subsequentItemPence = applyMargin(garmentBaseCost + transferTotal, profitPct);
+      if (config.placementMaterials && config.placementMaterials[placement]) {
+        // Use placement-specific materials (includes garment + correct transfer(s))
+        const result = calcRunCosts(
+          { ...config, materialIds: config.placementMaterials[placement], inkCostPence: 0, postagePence: 0 },
+          costSettings, 1, profitPct
+        );
+        itemRawCost = result.totalCost;
+      } else {
+        // Fallback: garment cost + N × transferCostPence per print position
+        const garmentResult = calcRunCosts(
+          { ...config, inkCostPence: 0, postagePence: 0 },
+          costSettings, 1, profitPct
+        );
+        const positions = placement ? countPrintPositions(placement) : 1;
+        itemRawCost = garmentResult.totalCost + positions * (config.transferCostPence ?? 0);
+      }
+
+      const firstItemPence = applyMargin(itemRawCost + postage, profitPct);
+      const subsequentItemPence = applyMargin(itemRawCost, profitPct);
 
       matrix[placement] = qtys.map((qty) => {
         const totalPence = firstItemPence + (qty - 1) * subsequentItemPence;

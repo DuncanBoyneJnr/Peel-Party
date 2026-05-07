@@ -12,7 +12,8 @@ export interface ProductCostConfig {
   batchMinutes: number;
   inkCostPence?: number;
   postagePence?: number;
-  transferCostPence?: number; // DTF: cost of ONE print position (ink + film) — multiplied by positions per placement
+  transferCostPence?: number; // DTF fallback: cost of ONE print position when placementMaterials not set
+  placementMaterials?: { [placementName: string]: string[] }; // DTF: full material set per placement (overrides materialIds)
   dtfPricingMode?: boolean; // clothing: first item includes DTF transfer postage; subsequent items priced without it
   profitPercent?: number; // overrides global targetProfitPercent when set
   maxOrderQty?: number;   // overrides global maxOrderQty when set; undefined = no cap beyond global
