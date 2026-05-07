@@ -79,7 +79,10 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
   }, [product.sizeVariants, selectedOptions]);
 
   const sizeKey = selectedSizeVariant?.name ?? "";
-  const matrixTiers = product.priceMatrix?.[sizeKey] ?? [];
+  // DTF products key the matrix by placement name; fall back to size key or "" for everything else
+  const placementKey = selectedOptions["Placement"] ?? "";
+  const matrixKey = product.priceMatrix?.[placementKey] !== undefined ? placementKey : sizeKey;
+  const matrixTiers = product.priceMatrix?.[matrixKey] ?? [];
   const hasMatrix = matrixTiers.length > 0;
 
   // DTF mode: first tier carries firstItemPence/subsequentItemPence; quantity is free-form via stepper

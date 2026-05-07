@@ -115,6 +115,16 @@ export const UNIT_QTY_TIERS = [1, 5, 10, 25, 50, 100, 250, 500];
 // Quantity tiers for DTF-priced clothing (small steps exposed so the per-item saving is visible)
 export const DTF_QTY_TIERS = [1, 2, 3, 4, 5, 10, 25, 50, 100, 250, 500];
 
+// "Front & Back" = 2 print positions; anything else = 1
+function countPrintPositions(placementName: string): number {
+  const lc = placementName.toLowerCase();
+  return lc.includes("front") && lc.includes("back") ? 2 : 1;
+}
+
+function applyMargin(rawCost: number, profitPct: number): number {
+  return profitPct < 100 ? Math.round(rawCost / (1 - profitPct / 100)) : rawCost * 2;
+}
+
 // Build a price matrix for a product and store it alongside the product.
 // Called server-side when a product is saved.
 export function buildPriceMatrix(
@@ -153,20 +163,39 @@ export function buildPriceMatrix(
       : isSticker
         ? calcStickersPerSheet(config.widthCm ?? 0, config.heightCm ?? 0, costSettings.sheetWidthCm, costSettings.sheetHeightCm)
         : 0;
-  // DTF (Direct-to-Film) pricing: first item includes one-time transfer postage; subsequent items don't
+  // DTF (Direct-to-Film) pricing: matrix is built per placement.
+  // Garment base cost (material + labour, no transfer ink, no postage) is shared.
+  // Each placement adds N × transferCostPence per item (N = print positions).
+  // First item in any order also carries the one-time DTF transfer postage.
   if (config.dtfPricingMode && ips === 0) {
-    const r1 = calcRunCosts(config, costSettings, 1, profitPct);
-    const firstItemPence = r1.suggestedPrice;
-    const configNoPostage = { ...config, postagePence: 0 };
-    const rSub = calcRunCosts(configNoPostage, costSettings, 1, profitPct);
-    const subsequentItemPence = rSub.suggestedPrice;
+    const transferCostPence = config.transferCostPence ?? 0;
+    const postage = config.postagePence ?? costSettings.defaultPostagePence;
+
+    // Garment-only base cost: material + labour, no ink (transfer ink billed separately), no postage
+    const garmentResult = calcRunCosts(
+      { ...config, inkCostPence: 0, postagePence: 0 },
+      costSettings, 1, profitPct
+    );
+    const garmentBaseCost = garmentResult.totalCost;
+
     const qtys = DTF_QTY_TIERS.filter((q) => q <= maxOrderQty);
-    return {
-      "": qtys.map((qty) => {
+    const placements = product.options.find((o) => o.name === "Placement")?.values ?? [];
+    const matrixKeys = placements.length > 0 ? placements : [""];
+
+    const matrix: { [key: string]: PriceTier[] } = {};
+    for (const placement of matrixKeys) {
+      const positions = placement ? countPrintPositions(placement) : 1;
+      const transferTotal = positions * transferCostPence;
+
+      const firstItemPence = applyMargin(garmentBaseCost + transferTotal + postage, profitPct);
+      const subsequentItemPence = applyMargin(garmentBaseCost + transferTotal, profitPct);
+
+      matrix[placement] = qtys.map((qty) => {
         const totalPence = firstItemPence + (qty - 1) * subsequentItemPence;
         return { qty, totalPence, unitPence: Math.round(totalPence / qty), firstItemPence, subsequentItemPence };
-      }),
-    };
+      });
+    }
+    return matrix;
   }
 
   const qtys = ips > 0

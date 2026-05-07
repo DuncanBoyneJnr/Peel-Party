@@ -146,7 +146,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const updateQty = useCallback((id: string, quantity: number) => {
     const item = state.items.find((i) => i.id === id);
     let newLinePrice: number | undefined;
-    const tier0 = item?.product.priceMatrix?.[""]?.[0];
+    const placementKey = item?.selectedOptions["Placement"] ?? "";
+    const tier0 = item?.product.priceMatrix?.[placementKey]?.[0] ?? item?.product.priceMatrix?.[""]?.[0];
     if (tier0?.firstItemPence !== undefined && tier0?.subsequentItemPence !== undefined) {
       // DTF pricing: first item at full price, each additional without transfer postage
       newLinePrice = (tier0.firstItemPence + (quantity - 1) * tier0.subsequentItemPence) / 100;

@@ -870,7 +870,13 @@ export default function ProductForm({
           </div>
 
           <div>
-            <label className={labelClass}>Ink Cost <span className="text-[#6b7280] font-normal">({isSticker || isStickerSheet ? "£ per sheet" : "£ per unit"}, blank = global default)</span></label>
+            <label className={labelClass}>
+              {costCfg.dtfPricingMode ? "Non-transfer Ink Cost" : "Ink Cost"}{" "}
+              <span className="text-[#6b7280] font-normal">
+                ({isSticker || isStickerSheet ? "£ per sheet" : "£ per unit"}, blank = global default
+                {costCfg.dtfPricingMode ? " — set 0 if all ink is in the DTF transfer cost below" : ""})
+              </span>
+            </label>
             <input
               type="number" step="0.01" min="0" placeholder="default"
               className={inputClass}
@@ -880,6 +886,25 @@ export default function ProductForm({
               }
             />
           </div>
+
+          {costCfg.dtfPricingMode && (
+            <div>
+              <label className={labelClass}>
+                DTF Transfer Cost <span className="text-[#6b7280] font-normal">(£ per print position — doubled automatically for Front &amp; Back)</span>
+              </label>
+              <input
+                type="number" step="0.01" min="0" placeholder="e.g. 3.00"
+                className={inputClass}
+                value={costCfg.transferCostPence !== undefined ? (costCfg.transferCostPence / 100).toFixed(2) : ""}
+                onChange={(e) =>
+                  updateCostConfig("transferCostPence", e.target.value !== "" ? Math.round(parseFloat(e.target.value) * 100) : undefined)
+                }
+              />
+              <p className="text-xs text-[#6b7280] mt-1">
+                Front Only or Back Only = 1 × this cost. Front &amp; Back = 2 × this cost. Prices per placement are calculated automatically on save.
+              </p>
+            </div>
+          )}
 
           <div>
             <label className={labelClass}>
