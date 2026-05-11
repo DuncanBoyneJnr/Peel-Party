@@ -10,6 +10,7 @@ import {
   ReactNode,
 } from "react";
 import { CartItem, CartState, Product, AppliedPromo, VolumeDiscountTier, ArtworkFile } from "@/lib/types";
+import { resolveProductMatrixPrice } from "@/lib/pricing";
 
 type CartAction =
   | { type: "ADD_ITEM"; payload: CartItem }
@@ -146,11 +147,9 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const updateQty = useCallback((id: string, quantity: number) => {
     const item = state.items.find((i) => i.id === id);
     let newLinePrice: number | undefined;
-    const placementKey = item?.selectedOptions["Placement"] ?? "";
-    const tier0 = item?.product.priceMatrix?.[placementKey]?.[0] ?? item?.product.priceMatrix?.[""]?.[0];
-    if (tier0?.firstItemPence !== undefined && tier0?.subsequentItemPence !== undefined) {
-      // DTF pricing: first item at full price, each additional without transfer postage
-      newLinePrice = (tier0.firstItemPence + (quantity - 1) * tier0.subsequentItemPence) / 100;
+    if (item?.product.priceMatrix && Object.keys(item.product.priceMatrix).length > 0) {
+      const resolved = resolveProductMatrixPrice(item.product, item.selectedOptions, quantity);
+      newLinePrice = resolved ? resolved.totalPence / 100 : undefined;
     } else if (item && item.product.price > 0) {
       newLinePrice = applyVolumeDiscount(volumeDiscounts, item.product.price, quantity);
     }

@@ -1,5 +1,5 @@
-import { Product, ProductCostConfig, PriceTier, SizeVariant } from "./types";
-import { CostSettings } from "./server-data";
+import type { Product, ProductCostConfig, PriceTier, SizeVariant } from "./types";
+import type { CostSettings } from "./server-data";
 
 export function calcStickersPerSheet(
   widthCm: number | undefined,
@@ -114,6 +114,50 @@ export const UNIT_QTY_TIERS = [1, 5, 10, 25, 50, 100, 250, 500];
 
 // Quantity tiers for DTF-priced clothing (small steps exposed so the per-item saving is visible)
 export const DTF_QTY_TIERS = [1, 2, 3, 4, 5, 10, 25, 50, 100, 250, 500];
+
+export interface MatrixPriceResult {
+  matrixKey: string;
+  totalPence: number;
+  unitPence: number;
+  tier: PriceTier;
+}
+
+export function getProductMatrixTiers(
+  product: Product,
+  selectedOptions: Record<string, string> = {}
+): { matrixKey: string; tiers: PriceTier[] } {
+  const matrix = product.priceMatrix ?? {};
+  const placementKey = selectedOptions["Placement"] ?? "";
+  const sizeKey = selectedOptions["Size"] ?? "";
+  const matrixKey = matrix[placementKey] !== undefined ? placementKey : sizeKey;
+  return { matrixKey, tiers: matrix[matrixKey] ?? matrix[""] ?? [] };
+}
+
+export function resolveProductMatrixPrice(
+  product: Product,
+  selectedOptions: Record<string, string> = {},
+  quantity: number
+): MatrixPriceResult | null {
+  const { matrixKey, tiers } = getProductMatrixTiers(product, selectedOptions);
+  if (!tiers.length || quantity < 1) return null;
+
+  const first = tiers[0];
+  if (first.firstItemPence !== undefined && first.subsequentItemPence !== undefined) {
+    const totalPence = first.firstItemPence + (quantity - 1) * first.subsequentItemPence;
+    return { matrixKey, totalPence, unitPence: Math.round(totalPence / quantity), tier: first };
+  }
+
+  const exact = tiers.find((t) => t.qty === quantity);
+  if (exact) return { matrixKey, totalPence: exact.totalPence, unitPence: exact.unitPence, tier: exact };
+
+  const floorTier = [...tiers].reverse().find((t) => t.qty <= quantity);
+  if (floorTier) {
+    const unitPence = Math.round(floorTier.totalPence / floorTier.qty);
+    return { matrixKey, totalPence: unitPence * quantity, unitPence, tier: floorTier };
+  }
+
+  return { matrixKey, totalPence: first.totalPence, unitPence: first.unitPence, tier: first };
+}
 
 // "Front & Back" = 2 print positions; anything else = 1
 function countPrintPositions(placementName: string): number {

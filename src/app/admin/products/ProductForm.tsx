@@ -104,7 +104,7 @@ export default function ProductForm({
   const isClothingCategory = CLOTHING_CATEGORIES.includes(form.category ?? "");
   const categorySizes = standardSizes.filter((s) => s.category === form.category);
 
-  function updateCostConfig(field: keyof ProductCostConfig, value: string | number | string[] | undefined) {
+  function updateCostConfig(field: keyof ProductCostConfig, value: ProductCostConfig[keyof ProductCostConfig] | undefined) {
     update("costConfig", { ...costCfg, [field]: value });
   }
 

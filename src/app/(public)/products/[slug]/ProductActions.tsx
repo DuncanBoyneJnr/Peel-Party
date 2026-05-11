@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ShoppingCart, FileText, Plus, Minus } from "lucide-react";
 import { Product, ArtworkFile } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
+import { getProductMatrixTiers, resolveProductMatrixPrice } from "@/lib/pricing";
 import { useCart } from "@/context/CartContext";
 import Button from "@/components/ui/Button";
 import FileUpload from "@/components/ui/FileUpload";
@@ -80,9 +81,11 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
 
   const sizeKey = selectedSizeVariant?.name ?? "";
   // DTF products key the matrix by placement name; fall back to size key or "" for everything else
-  const placementKey = selectedOptions["Placement"] ?? "";
-  const matrixKey = product.priceMatrix?.[placementKey] !== undefined ? placementKey : sizeKey;
-  const matrixTiers = product.priceMatrix?.[matrixKey] ?? [];
+  const matrixOptions = useMemo(
+    () => ({ ...selectedOptions, Size: selectedOptions["Size"] ?? sizeKey }),
+    [selectedOptions, sizeKey]
+  );
+  const { tiers: matrixTiers } = getProductMatrixTiers(product, matrixOptions);
   const hasMatrix = matrixTiers.length > 0;
 
   // DTF mode: first tier carries firstItemPence/subsequentItemPence; quantity is free-form via stepper
@@ -127,28 +130,13 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
       return { overMax: true as const, raw, sheetsNeeded, pricedQty };
     }
 
-    // Exact match in price matrix
-    const exact = matrixTiers.find((t) => t.qty === pricedQty);
-    if (exact) {
-      return { overMax: false as const, raw, sheetsNeeded, pricedQty, totalPence: exact.totalPence, unitPence: exact.unitPence };
-    }
-
-    // No exact match — extrapolate from the highest tier ≤ pricedQty
-    const floorTier = [...matrixTiers].reverse().find((t) => t.qty <= pricedQty);
-    if (floorTier) {
-      const unitPence = Math.round(floorTier.totalPence / floorTier.qty);
-      return { overMax: false as const, raw, sheetsNeeded, pricedQty, totalPence: unitPence * pricedQty, unitPence };
-    }
-
-    // Below the minimum tier — enforce the first (minimum) tier price
-    const first = matrixTiers[0];
-    if (first) {
-      const minSheets = stickersPerSheet > 0 ? first.qty / stickersPerSheet : 1;
-      return { overMax: false as const, raw, sheetsNeeded: minSheets, pricedQty: first.qty, totalPence: first.totalPence, unitPence: first.unitPence };
+    const resolved = resolveProductMatrixPrice(product, matrixOptions, pricedQty);
+    if (resolved) {
+      return { overMax: false as const, raw, sheetsNeeded, pricedQty, totalPence: resolved.totalPence, unitPence: resolved.unitPence };
     }
 
     return null;
-  }, [isCustomQty, customQtyInput, stickersPerSheet, matrixTiers, maxOrderQty]);
+  }, [isCustomQty, customQtyInput, stickersPerSheet, product, matrixOptions, maxOrderQty]);
 
   // Resolve price and display qty (custom takes priority)
   const currentTier = hasMatrix

@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getProducts, getPostageSettings, setPendingOrder, getPromoCodes, savePromoCodes, setPendingStripeData, getCostSettings } from "@/lib/server-data";
 import { getStripeSecretKey, stripeFetch } from "@/lib/stripe";
 import { createPayPalOrder } from "@/lib/paypal";
-import { PriceTier, OrderItem, VolumeDiscountTier, ArtworkFile } from "@/lib/types";
+import { OrderItem, VolumeDiscountTier, ArtworkFile } from "@/lib/types";
+import { resolveProductMatrixPrice } from "@/lib/pricing";
 
 export const runtime = "nodejs";
 
@@ -102,16 +103,11 @@ export async function POST(req: NextRequest) {
     let displayName: string;
 
     if (product.priceMatrix && Object.keys(product.priceMatrix).length > 0) {
-      const sizeKey = item.selectedOptions?.["Size"] ?? "";
-      const tiers: PriceTier[] = product.priceMatrix[sizeKey] ?? product.priceMatrix[""] ?? [];
-      if (!tiers.length) return NextResponse.json({ error: `No pricing found for: ${product.name}` }, { status: 400 });
-      const tier =
-        tiers.find((t) => t.qty === item.quantity) ??
-        [...tiers].reverse().find((t) => t.qty <= item.quantity) ??
-        tiers[0];
-      unitAmountPence = tier.totalPence;
+      const resolved = resolveProductMatrixPrice(product, item.selectedOptions ?? {}, item.quantity);
+      if (!resolved) return NextResponse.json({ error: `No pricing found for: ${product.name}` }, { status: 400 });
+      unitAmountPence = resolved.totalPence;
       qty = 1;
-      subtotalPounds += tier.totalPence / 100;
+      subtotalPounds += resolved.totalPence / 100;
       displayName = `${product.name} × ${item.quantity}`;
     } else {
       if (!product.price || product.price <= 0)
