@@ -294,7 +294,7 @@ export default function ProductForm({
     const newValues = raw.split(",").map((v) => v.trim()).filter(Boolean);
     const oldPriceMap = opts[idx].priceMap;
     const newPriceMap = oldPriceMap
-      ? Object.fromEntries(Object.entries(oldPriceMap).filter(([k]) => newValues.includes(k)))
+      ? Object.fromEntries(Object.entries(oldPriceMap).filter(([k, v]) => newValues.includes(k) && v > 0))
       : undefined;
     opts[idx] = {
       ...opts[idx],
@@ -308,7 +308,7 @@ export default function ProductForm({
     const opts = [...(form.options ?? [])];
     const pounds = parseFloat(raw);
     const current = opts[idx].priceMap ?? {};
-    if (!isNaN(pounds) && raw !== "") {
+    if (!isNaN(pounds) && raw !== "" && pounds > 0) {
       opts[idx] = { ...opts[idx], priceMap: { ...current, [value]: pounds } };
     } else {
       const { [value]: _, ...rest } = current;
@@ -1054,13 +1054,13 @@ export default function ProductForm({
                             min="0"
                             placeholder="—"
                             className="w-24 h-8 px-2 rounded-lg border-2 border-[#e5e1d8] text-xs focus:outline-none focus:border-[#ef8733] transition-colors bg-white"
-                            value={opt.priceMap?.[val] !== undefined ? opt.priceMap![val].toFixed(2) : ""}
+                            value={opt.priceMap?.[val] !== undefined && opt.priceMap![val] > 0 ? opt.priceMap![val].toFixed(2) : ""}
                             onChange={(e) => updateOptionPrice(i, val, e.target.value)}
                           />
                         </label>
                       ))}
                     </div>
-                    {opt.priceMap && Object.keys(opt.priceMap).length > 0 && (
+                    {opt.priceMap && Object.values(opt.priceMap).some((price) => price > 0) && (
                       <p className="text-xs text-[#6b7280] mt-1.5">Customers will see the price next to each option and the total will update when they select.</p>
                     )}
                   </div>

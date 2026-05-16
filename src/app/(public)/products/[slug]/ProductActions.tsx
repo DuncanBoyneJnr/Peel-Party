@@ -148,7 +148,7 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
     for (const opt of product.options) {
       if (opt.priceMap) {
         const mapped = opt.priceMap[selectedOptions[opt.name]];
-        if (mapped !== undefined) return mapped;
+        if (mapped !== undefined && mapped > 0) return mapped;
       }
     }
     return null;
@@ -286,7 +286,7 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
                       : "border-[#e5e1d8] text-[#111111] hover:border-[#ef8733]"
                   }`}
                 >
-                  {val}{optPrice !== undefined ? ` — ${formatPrice(optPrice)}` : ""}
+                  {val}{optPrice !== undefined && optPrice > 0 ? ` — ${formatPrice(optPrice)}` : ""}
                 </button>
               );
             })}
