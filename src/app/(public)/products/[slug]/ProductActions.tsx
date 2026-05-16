@@ -295,6 +295,7 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
             <div className="flex flex-wrap gap-2">
               {opt.values.map((val) => {
                 const optPrice = opt.priceMap?.[val];
+                const optPriceLabel = product.costConfig?.dtfPricingMode ? ` + ${formatPrice(optPrice ?? 0)}` : ` — ${formatPrice(optPrice ?? 0)}`;
                 return (
                   <button
                     key={val}
@@ -302,10 +303,10 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
                     className={`px-4 py-2 text-sm rounded-full border-2 transition-all cursor-pointer ${
                       selectedOptions[opt.name] === val
                         ? "border-[#ef8733] bg-[#fff7ed] text-[#ef8733] font-semibold"
-                        : "border-[#e5e1d8] text-[#111111] hover:border-[#ef8733]"
+                      : "border-[#e5e1d8] text-[#111111] hover:border-[#ef8733]"
                     }`}
                   >
-                    {val}{optPrice !== undefined && optPrice > 0 ? ` — ${formatPrice(optPrice)}` : ""}
+                    {val}{optPrice !== undefined && optPrice > 0 ? optPriceLabel : ""}
                   </button>
                 );
               })}

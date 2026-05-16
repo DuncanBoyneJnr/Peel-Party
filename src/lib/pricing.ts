@@ -178,7 +178,9 @@ export function resolveProductOptionUnitPrice(
 ): number | null {
   for (const opt of product.options) {
     const mapped = opt.priceMap?.[selectedOptions[opt.name]];
-    if (mapped !== undefined && mapped > 0) return mapped;
+    if (mapped !== undefined && mapped > 0) {
+      return product.costConfig?.dtfPricingMode ? product.price + mapped : mapped;
+    }
   }
 
   return null;

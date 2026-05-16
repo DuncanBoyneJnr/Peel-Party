@@ -38,7 +38,7 @@ function cartReducer(state: CartState, action: CartAction): CartState {
           isOpen: true,
           items: state.items.map((i) =>
             i.id === action.payload.id
-              ? { ...i, quantity: i.quantity + action.payload.quantity }
+              ? { ...i, quantity: i.quantity + action.payload.quantity, linePrice: i.linePrice + action.payload.linePrice }
               : i
           ),
         };
