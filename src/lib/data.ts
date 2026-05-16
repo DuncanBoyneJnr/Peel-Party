@@ -306,4 +306,28 @@ export const categoryMeta = {
     heroImage: "/images/cat-bookmarks.jpg",
     colour: "#ef8733",
   },
+  "personalised-glasses": {
+    title: "Personalised Glasses",
+    description: "Heart-shaped party glasses with colourful frames and personalised vinyl designs on the lenses.",
+    heroImage: "/images/cat-personalised-glasses.jpg",
+    colour: "#f43f5e",
+  },
+  bows: {
+    title: "Bows",
+    description: "Personalised bows for party outfits, gifts, favours, and special occasions.",
+    heroImage: "/images/cat-bows.jpg",
+    colour: "#ec4899",
+  },
+  "cake-toppers": {
+    title: "Cake Toppers",
+    description: "Custom cake toppers for birthdays, weddings, celebrations, and themed parties.",
+    heroImage: "/images/cat-cake-toppers.jpg",
+    colour: "#a855f7",
+  },
+  "party-favours": {
+    title: "Party Favours",
+    description: "Party boxes, colouring books, bubble labels, favour stickers, and small personalised party extras.",
+    heroImage: "/images/cat-party-favours.jpg",
+    colour: "#14b8a6",
+  },
 };

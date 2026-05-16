@@ -25,6 +25,10 @@ const shopCategories: ShopNavItem[] = [
   { label: "Coasters", href: "/shop/coasters" },
   { label: "Magnets", href: "/shop/magnets" },
   { label: "Bookmarks", href: "/shop/bookmarks" },
+  { label: "Personalised Glasses", href: "/shop/personalised-glasses" },
+  { label: "Bows", href: "/shop/bows" },
+  { label: "Cake Toppers", href: "/shop/cake-toppers" },
+  { label: "Party Favours", href: "/shop/party-favours" },
 ];
 
 const topNav = [
@@ -89,7 +93,7 @@ export default function Header() {
               </button>
 
               {shopOpen && (
-                <div className="absolute top-full left-0 mt-1 w-52 bg-white rounded-xl border border-[#e5e1d8] shadow-lg py-1 z-50">
+                <div className="absolute top-full left-0 mt-1 w-60 bg-white rounded-xl border border-[#e5e1d8] shadow-lg py-1 z-50">
                   {shopCategories.map((item, i) =>
                     "group" in item ? (
                       <p key={i} className="px-4 pt-3 pb-0.5 text-[10px] font-bold uppercase tracking-widest text-[#9ca3af]">

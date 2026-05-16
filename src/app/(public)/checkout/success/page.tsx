@@ -60,7 +60,12 @@ async function processPayPalOrder(token: string): Promise<"success" | "already_d
     }
 
     const itemRows = order.items
-      .map((i) => `<tr><td style="padding:6px 12px;border-bottom:1px solid #f0ede8">${i.name}</td><td style="padding:6px 12px;border-bottom:1px solid #f0ede8;text-align:right">${fmt(i.unitAmountPence * i.quantity)}</td></tr>`)
+      .map((i) => {
+        const options = i.selectedOptions
+          ? `<br><span style="color:#6b7280;font-size:12px">${Object.entries(i.selectedOptions).map(([k, v]) => `${k}: ${v}`).join(" | ")}</span>`
+          : "";
+        return `<tr><td style="padding:6px 12px;border-bottom:1px solid #f0ede8">${i.name}${options}</td><td style="padding:6px 12px;border-bottom:1px solid #f0ede8;text-align:right">${fmt(i.unitAmountPence * i.quantity)}</td></tr>`;
+      })
       .join("");
     const postageRow = order.postagePence > 0
       ? `<tr><td style="padding:6px 12px;border-bottom:1px solid #f0ede8">Postage &amp; Packaging</td><td style="padding:6px 12px;border-bottom:1px solid #f0ede8;text-align:right">${fmt(order.postagePence)}</td></tr>`

@@ -23,6 +23,10 @@ const categories = [
   { label: "Polo Shirts", value: "polos" },
   { label: "Hats", value: "hats" },
   { label: "Bookmarks", value: "bookmarks" },
+  { label: "Personalised Glasses", value: "personalised-glasses" },
+  { label: "Bows", value: "bows" },
+  { label: "Cake Toppers", value: "cake-toppers" },
+  { label: "Party Favours", value: "party-favours" },
 ];
 
 export default async function ShopPage() {
@@ -57,8 +61,8 @@ export default async function ShopPage() {
       </div>
 
       <div className="mt-16 p-8 bg-[#f9f7f4] rounded-2xl border border-[#e5e1d8] text-center">
-        <h2 className="font-display font-700 text-2xl text-[#111111] mb-2">Can't find what you need?</h2>
-        <p className="text-[#6b7280] mb-4">We do fully custom work. Tell us what you're after and we'll quote you.</p>
+        <h2 className="font-display font-700 text-2xl text-[#111111] mb-2">Can&apos;t find what you need?</h2>
+        <p className="text-[#6b7280] mb-4">We do fully custom work. Tell us what you&apos;re after and we&apos;ll quote you.</p>
         <Link
           href="/custom-order"
           className="inline-flex items-center h-11 px-6 bg-[#ef8733] text-white rounded-full text-sm font-semibold hover:bg-[#ea7316] transition-colors"

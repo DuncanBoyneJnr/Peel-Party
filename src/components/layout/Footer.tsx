@@ -16,6 +16,10 @@ const links = {
     { label: "Polo Shirts", href: "/shop/polos" },
     { label: "Hats", href: "/shop/hats" },
     { label: "Bookmarks", href: "/shop/bookmarks" },
+    { label: "Personalised Glasses", href: "/shop/personalised-glasses" },
+    { label: "Bows", href: "/shop/bows" },
+    { label: "Cake Toppers", href: "/shop/cake-toppers" },
+    { label: "Party Favours", href: "/shop/party-favours" },
   ],
   Company: [
     { label: "About Us", href: "/about" },

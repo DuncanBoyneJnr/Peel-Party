@@ -32,13 +32,17 @@ export function generateStaticParams() {
     { category: "polos" },
     { category: "hats" },
     { category: "bookmarks" },
+    { category: "personalised-glasses" },
+    { category: "bows" },
+    { category: "cake-toppers" },
+    { category: "party-favours" },
   ];
 }
 
 export default async function CategoryPage({ params }: PageProps) {
   const { category } = await params;
 
-  if (!["stickers", "vinyl", "mugs", "keyrings", "coasters", "magnets", "tshirts", "hoodies", "polos", "hats", "bookmarks"].includes(category)) notFound();
+  if (!["stickers", "vinyl", "mugs", "keyrings", "coasters", "magnets", "tshirts", "hoodies", "polos", "hats", "bookmarks", "personalised-glasses", "bows", "cake-toppers", "party-favours"].includes(category)) notFound();
 
   const meta = categoryMeta[category as Category];
   const categoryProducts = await getProductsByCategory(category);
@@ -73,6 +77,10 @@ export default async function CategoryPage({ params }: PageProps) {
           { label: "Polo Shirts", href: "/shop/polos" },
           { label: "Hats", href: "/shop/hats" },
           { label: "Bookmarks", href: "/shop/bookmarks" },
+          { label: "Personalised Glasses", href: "/shop/personalised-glasses" },
+          { label: "Bows", href: "/shop/bows" },
+          { label: "Cake Toppers", href: "/shop/cake-toppers" },
+          { label: "Party Favours", href: "/shop/party-favours" },
         ].map((item) => (
           <Link
             key={item.href}
@@ -102,7 +110,7 @@ export default async function CategoryPage({ params }: PageProps) {
 
       <div className="mt-16 p-8 bg-[#111111] rounded-2xl text-center">
         <h2 className="font-display font-700 text-2xl text-white mb-2">Need something bespoke?</h2>
-        <p className="text-gray-400 mb-5">Custom shapes, sizes, finishes — we'll quote you fast.</p>
+        <p className="text-gray-400 mb-5">Custom shapes, sizes, finishes — we&apos;ll quote you fast.</p>
         <Link
           href="/custom-order"
           className="inline-flex items-center h-11 px-6 bg-[#ef8733] text-white rounded-full text-sm font-semibold hover:bg-[#ea7316] transition-colors"

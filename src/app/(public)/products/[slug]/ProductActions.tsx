@@ -1,11 +1,11 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { ShoppingCart, FileText, Plus, Minus } from "lucide-react";
 import { Product, ArtworkFile } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
-import { getProductMatrixTiers, resolveProductMatrixPrice } from "@/lib/pricing";
+import { getProductMatrixTiers, resolveProductMatrixPrice, resolveProductOptionUnitPrice } from "@/lib/pricing";
 import { useCart } from "@/context/CartContext";
 import Button from "@/components/ui/Button";
 import FileUpload from "@/components/ui/FileUpload";
@@ -30,6 +30,9 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
   const [customQtyInput, setCustomQtyInput] = useState("");
 
   const isQuote = product.orderType === "request-quote";
+  const dropdownOptionNames = product.category === "personalised-glasses" || product.category === "bows"
+    ? ["Colour"]
+    : [];
 
   // Determine upload slots based on the selected Placement option value
   const uploadSlots = useMemo(() => {
@@ -44,18 +47,6 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
     if (hasBack) return [{ key: "back", label: "Back" }];
     return [{ key: "artwork", label: "Artwork" }];
   }, [product.supportsFileUpload, selectedOptions]);
-
-  // Reset slot state when placement changes (clears uploaded files)
-  useEffect(() => {
-    const keys = new Set(uploadSlots.map((s) => s.key));
-    setSlotState((prev) => {
-      const pruned: typeof prev = {};
-      for (const [k, v] of Object.entries(prev)) {
-        if (keys.has(k)) pruned[k] = v;
-      }
-      return pruned;
-    });
-  }, [uploadSlots]);
 
   async function handleFileSelect(key: string, file: File | null) {
     setSlotState((prev) => ({ ...prev, [key]: { file, url: null, uploading: !!file } }));
@@ -144,21 +135,21 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
     : null;
 
   // Per-option-value pricing — first option with a priceMap whose selected value has a price wins
-  const optionUnitPrice = useMemo(() => {
-    for (const opt of product.options) {
-      if (opt.priceMap) {
-        const mapped = opt.priceMap[selectedOptions[opt.name]];
-        if (mapped !== undefined && mapped > 0) return mapped;
-      }
-    }
-    return null;
-  }, [product.options, selectedOptions]);
+  const optionUnitPrice = useMemo(
+    () => resolveProductOptionUnitPrice(product, selectedOptions),
+    [product, selectedOptions]
+  );
 
-  const unitPrice = optionUnitPrice ?? product.price;
+  const pricedOptionUnitPrice = !isDtfMode ? optionUnitPrice : null;
+  const unitPrice = pricedOptionUnitPrice ?? product.price;
+  const optionQty = isCustomQty && customQtyInput.trim()
+    ? parseInt(customQtyInput, 10)
+    : effectiveQty;
+  const optionQtyIsValid = !isNaN(optionQty) && optionQty >= 1 && optionQty <= maxOrderQty;
 
   // Volume discount — only applies to non-matrix products with a unit price
-  const activeVolumeTier = !hasMatrix && unitPrice > 0 && volumeDiscounts.length > 0
-    ? [...volumeDiscounts].sort((a, b) => b.minQty - a.minQty).find((t) => effectiveQty >= t.minQty) ?? null
+  const activeVolumeTier = (!hasMatrix || pricedOptionUnitPrice !== null) && unitPrice > 0 && volumeDiscounts.length > 0
+    ? [...volumeDiscounts].sort((a, b) => b.minQty - a.minQty).find((t) => optionQty >= t.minQty) ?? null
     : null;
   const volumeDiscountPct = activeVolumeTier?.discountPercent ?? 0;
 
@@ -168,6 +159,8 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
 
   const displayPrice = isDtfMode
     ? dtfTotalPence / 100
+    : pricedOptionUnitPrice !== null
+      ? (optionQtyIsValid ? unitPrice * optionQty * (1 - volumeDiscountPct / 100) : 0)
     : isCustomQty && customQtyData && !customQtyData.overMax
       ? customQtyData.totalPence / 100
       : currentTier
@@ -203,19 +196,32 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
     if (isDtfMode) {
       addItem(product, selectedOptions, effectiveQty, customText || undefined, artworksArg, dtfTotalPence / 100);
     } else if (isCustomQty) {
+      if (pricedOptionUnitPrice !== null) {
+        if (!optionQtyIsValid) return;
+        addItem(product, selectedOptions, optionQty, customText || undefined, artworksArg, unitPrice * optionQty * (1 - volumeDiscountPct / 100));
+        setAdded(true);
+        setTimeout(() => setAdded(false), 2000);
+        return;
+      }
       if (!customQtyData || customQtyData.overMax) return;
       addItem(product, selectedOptions, customQtyData.pricedQty, customText || undefined, artworksArg, customQtyData.totalPence / 100);
     } else {
-      const linePrice = currentTier
-        ? currentTier.totalPence / 100
-        : unitPrice * effectiveQty * (1 - volumeDiscountPct / 100);
+      const linePrice = pricedOptionUnitPrice !== null
+        ? unitPrice * optionQty * (1 - volumeDiscountPct / 100)
+        : currentTier
+          ? currentTier.totalPence / 100
+          : unitPrice * effectiveQty * (1 - volumeDiscountPct / 100);
       addItem(product, selectedOptions, effectiveQty, customText || undefined, artworksArg, linePrice);
     }
     setAdded(true);
     setTimeout(() => setAdded(false), 2000);
   }
 
-  const addToCartDisabled = anyUploading || (isCustomQty && (!customQtyData || customQtyData.overMax || !customQtyInput.trim()));
+  const addToCartDisabled = anyUploading || (isCustomQty && (
+    pricedOptionUnitPrice !== null
+      ? !optionQtyIsValid || !customQtyInput.trim()
+      : !customQtyData || customQtyData.overMax || !customQtyInput.trim()
+  ));
 
   return (
     <div className="flex flex-col gap-5">
@@ -234,18 +240,18 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
             {displayUnit && (
               <span className="text-sm text-[#6b7280]">{formatPrice(displayUnit)} each</span>
             )}
-            {!currentTier && !isCustomQty && !isDtfMode && volumeDiscountPct > 0 && (
+            {pricedOptionUnitPrice !== null && !isCustomQty && !isDtfMode && volumeDiscountPct > 0 && (
               <span className="text-lg text-[#6b7280] line-through">{formatPrice(unitPrice * effectiveQty)}</span>
             )}
-            {!currentTier && !isDtfMode && product.originalPrice && !isCustomQty && !activeVolumeTier && (
+            {!currentTier && pricedOptionUnitPrice === null && !isDtfMode && product.originalPrice && !isCustomQty && !activeVolumeTier && (
               <span className="text-lg text-[#6b7280] line-through">{formatPrice(product.originalPrice)}</span>
             )}
-            {displayQtyLabel && (
+            {pricedOptionUnitPrice === null && displayQtyLabel && (
               <span className="text-xs text-[#6b7280] bg-[#f0ede8] px-2 py-1 rounded-lg">
                 for {displayQtyLabel}
               </span>
             )}
-            {!currentTier && !isCustomQty && !isDtfMode && activeVolumeTier && (
+            {pricedOptionUnitPrice !== null && !isCustomQty && !isDtfMode && activeVolumeTier && (
               <span className="text-xs font-semibold text-emerald-600 bg-emerald-50 px-2 py-1 rounded-lg">
                 {activeVolumeTier.discountPercent}% off
               </span>
@@ -256,7 +262,7 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
               1st item {formatPrice(dtfFirstItemPence / 100)} (includes transfer postage) · each after {formatPrice(dtfSubsequentItemPence / 100)}
             </p>
           )}
-          {!isDtfMode && !hasMatrix && volumeDiscounts.length > 0 && (
+          {!isDtfMode && (!hasMatrix || pricedOptionUnitPrice !== null) && volumeDiscounts.length > 0 && (
             <p className="text-xs text-[#6b7280]">
               {[...volumeDiscounts]
                 .sort((a, b) => a.minQty - b.minQty)
@@ -273,24 +279,38 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
           <label className="block text-sm font-semibold text-[#111111] mb-2">
             {opt.name}: <span className="text-[#ef8733]">{selectedOptions[opt.name]}</span>
           </label>
-          <div className="flex flex-wrap gap-2">
-            {opt.values.map((val) => {
-              const optPrice = opt.priceMap?.[val];
-              return (
-                <button
-                  key={val}
-                  onClick={() => handleOptionChange(opt.name, val)}
-                  className={`px-4 py-2 text-sm rounded-full border-2 transition-all cursor-pointer ${
-                    selectedOptions[opt.name] === val
-                      ? "border-[#ef8733] bg-[#fff7ed] text-[#ef8733] font-semibold"
-                      : "border-[#e5e1d8] text-[#111111] hover:border-[#ef8733]"
-                  }`}
-                >
-                  {val}{optPrice !== undefined && optPrice > 0 ? ` — ${formatPrice(optPrice)}` : ""}
-                </button>
-              );
-            })}
-          </div>
+          {dropdownOptionNames.includes(opt.name) ? (
+            <select
+              value={selectedOptions[opt.name]}
+              onChange={(e) => handleOptionChange(opt.name, e.target.value)}
+              className="w-full h-11 px-4 rounded-xl border-2 border-[#e5e1d8] bg-white text-sm text-[#111111] focus:outline-none focus:border-[#ef8733] transition-colors"
+            >
+              {opt.values.map((val) => (
+                <option key={val} value={val}>
+                  {val}
+                </option>
+              ))}
+            </select>
+          ) : (
+            <div className="flex flex-wrap gap-2">
+              {opt.values.map((val) => {
+                const optPrice = opt.priceMap?.[val];
+                return (
+                  <button
+                    key={val}
+                    onClick={() => handleOptionChange(opt.name, val)}
+                    className={`px-4 py-2 text-sm rounded-full border-2 transition-all cursor-pointer ${
+                      selectedOptions[opt.name] === val
+                        ? "border-[#ef8733] bg-[#fff7ed] text-[#ef8733] font-semibold"
+                        : "border-[#e5e1d8] text-[#111111] hover:border-[#ef8733]"
+                    }`}
+                  >
+                    {val}{optPrice !== undefined && optPrice > 0 ? ` — ${formatPrice(optPrice)}` : ""}
+                  </button>
+                );
+              })}
+            </div>
+          )}
         </div>
       ))}
 

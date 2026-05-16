@@ -43,7 +43,12 @@ interface StripeSession {
 function buildOwnerEmail(order: Order): string {
   const fmt = (p: number) => `£${(p / 100).toFixed(2)}`;
   const itemRows = order.items
-    .map((i) => `<tr><td style="padding:6px 12px;border-bottom:1px solid #f0ede8">${i.name}</td><td style="padding:6px 12px;border-bottom:1px solid #f0ede8;text-align:right">${fmt(i.unitAmountPence * i.quantity)}</td></tr>`)
+    .map((i) => {
+      const options = i.selectedOptions
+        ? `<br><span style="color:#6b7280;font-size:12px">${Object.entries(i.selectedOptions).map(([k, v]) => `${k}: ${v}`).join(" | ")}</span>`
+        : "";
+      return `<tr><td style="padding:6px 12px;border-bottom:1px solid #f0ede8">${i.name}${options}</td><td style="padding:6px 12px;border-bottom:1px solid #f0ede8;text-align:right">${fmt(i.unitAmountPence * i.quantity)}</td></tr>`;
+    })
     .join("");
   const { firstName, lastName, email, phone, address1, address2, city, postcode } = order.customer;
   return `
@@ -69,7 +74,12 @@ function buildOwnerEmail(order: Order): string {
 function buildCustomerEmail(order: Order): string {
   const fmt = (p: number) => `£${(p / 100).toFixed(2)}`;
   const itemRows = order.items
-    .map((i) => `<tr><td style="padding:6px 12px;border-bottom:1px solid #f0ede8">${i.name}</td><td style="padding:6px 12px;border-bottom:1px solid #f0ede8;text-align:right">${fmt(i.unitAmountPence * i.quantity)}</td></tr>`)
+    .map((i) => {
+      const options = i.selectedOptions
+        ? `<br><span style="color:#6b7280;font-size:12px">${Object.entries(i.selectedOptions).map(([k, v]) => `${k}: ${v}`).join(" | ")}</span>`
+        : "";
+      return `<tr><td style="padding:6px 12px;border-bottom:1px solid #f0ede8">${i.name}${options}</td><td style="padding:6px 12px;border-bottom:1px solid #f0ede8;text-align:right">${fmt(i.unitAmountPence * i.quantity)}</td></tr>`;
+    })
     .join("");
   return `
     <div style="font-family:sans-serif;max-width:600px;margin:0 auto;color:#111">

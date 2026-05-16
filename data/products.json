@@ -372,6 +372,316 @@
     "rating": 4.6
   },
   {
+    "id": "pg1",
+    "slug": "personalised-heart-party-glasses",
+    "name": "Personalised Heart Party Glasses",
+    "category": "personalised-glasses",
+    "price": 4.5,
+    "description": "Heart-shaped party glasses with your name, age, or short phrase in vinyl on the lenses.",
+    "longDescription": "Fun heart-shaped glasses finished with bold vinyl lettering or simple themed details directly on the lenses. Choose your frame colour and add the wording you would like. Perfect for birthdays, hen parties, concerts, party bags, and photo props.",
+    "images": [],
+    "options": [
+      {
+        "name": "Colour",
+        "values": [
+          "Pink",
+          "Red",
+          "Blue",
+          "Purple",
+          "Green",
+          "Black",
+          "White"
+        ]
+      },
+      {
+        "name": "Vinyl Colour",
+        "values": [
+          "White",
+          "Black",
+          "Gold",
+          "Silver",
+          "Pink"
+        ]
+      }
+    ],
+    "supportsTextInput": true,
+    "supportsFileUpload": false,
+    "orderType": "buy-now",
+    "badge": "New",
+    "featured": true,
+    "inStock": true,
+    "reviewCount": 0,
+    "rating": 5
+  },
+  {
+    "id": "pg2",
+    "slug": "personalised-glasses-party-pack",
+    "name": "Personalised Glasses Party Pack",
+    "category": "personalised-glasses",
+    "price": 0,
+    "description": "Matching personalised glasses for parties, teams, concerts, or birthday groups.",
+    "longDescription": "A coordinated set of heart-shaped party glasses for your group. Pick the frame colours, add names or a short shared theme, and we will prepare a proof before making them. Ideal when every guest needs their own personalised pair.",
+    "images": [],
+    "options": [
+      {
+        "name": "Colour",
+        "values": [
+          "Mixed Colours",
+          "Pink",
+          "Red",
+          "Blue",
+          "Purple",
+          "Green",
+          "Black",
+          "White"
+        ]
+      },
+      {
+        "name": "Pack Size",
+        "values": [
+          "6",
+          "10",
+          "15",
+          "20+"
+        ]
+      }
+    ],
+    "supportsTextInput": true,
+    "supportsFileUpload": true,
+    "orderType": "request-quote",
+    "badge": "Party Pack",
+    "featured": false,
+    "inStock": true,
+    "reviewCount": 0,
+    "rating": 5
+  },
+  {
+    "id": "bw1",
+    "slug": "personalised-party-bow",
+    "name": "Personalised Party Bow",
+    "category": "bows",
+    "price": 3.5,
+    "description": "A sweet personalised bow for outfits, gifts, party bags, or special occasions.",
+    "longDescription": "Choose your bow colour and add a name, age, initials, or short message. These are lovely for birthday outfits, party bags, gift wrapping, and matching celebration details.",
+    "images": [],
+    "options": [
+      {
+        "name": "Colour",
+        "values": [
+          "Pink",
+          "White",
+          "Red",
+          "Purple",
+          "Blue",
+          "Gold",
+          "Silver"
+        ]
+      },
+      {
+        "name": "Vinyl Colour",
+        "values": [
+          "White",
+          "Black",
+          "Gold",
+          "Silver",
+          "Pink"
+        ]
+      }
+    ],
+    "supportsTextInput": true,
+    "supportsFileUpload": false,
+    "orderType": "buy-now",
+    "badge": "New",
+    "featured": true,
+    "inStock": true,
+    "reviewCount": 0,
+    "rating": 5
+  },
+  {
+    "id": "ct1",
+    "slug": "custom-cake-topper",
+    "name": "Custom Cake Topper",
+    "category": "cake-toppers",
+    "price": 12,
+    "description": "Personalised cake topper for birthdays, weddings, and themed celebrations.",
+    "longDescription": "A made-to-order cake topper designed around your name, age, colour theme, or party style. Add your wording and upload inspiration if you have it. We will send a proof before production.",
+    "images": [],
+    "options": [
+      {
+        "name": "Style",
+        "values": [
+          "Name",
+          "Age",
+          "Name and Age",
+          "Themed Design"
+        ]
+      },
+      {
+        "name": "Finish",
+        "values": [
+          "Card",
+          "Glitter Card",
+          "Acrylic Look"
+        ]
+      }
+    ],
+    "supportsTextInput": true,
+    "supportsFileUpload": true,
+    "orderType": "request-quote",
+    "badge": "Custom",
+    "featured": true,
+    "inStock": true,
+    "reviewCount": 0,
+    "rating": 5
+  },
+  {
+    "id": "pf1",
+    "slug": "personalised-party-boxes",
+    "name": "Personalised Party Boxes",
+    "category": "party-favours",
+    "price": 0,
+    "description": "Party boxes personalised with names, ages, themes, or matching labels.",
+    "longDescription": "Create party boxes that match your celebration theme. Add names, ages, colours, and any design ideas, then we will quote based on quantity and finish.",
+    "images": [],
+    "options": [
+      {
+        "name": "Quantity",
+        "values": [
+          "10",
+          "15",
+          "20",
+          "30+"
+        ]
+      },
+      {
+        "name": "Style",
+        "values": [
+          "Name Label",
+          "Theme Label",
+          "Full Party Set"
+        ]
+      }
+    ],
+    "supportsTextInput": true,
+    "supportsFileUpload": true,
+    "orderType": "request-quote",
+    "badge": "Party Favourite",
+    "featured": true,
+    "inStock": true,
+    "reviewCount": 0,
+    "rating": 5
+  },
+  {
+    "id": "pf2",
+    "slug": "personalised-colouring-books",
+    "name": "Personalised Colouring Books",
+    "category": "party-favours",
+    "price": 0,
+    "description": "Mini colouring books for party bags, personalised to your theme.",
+    "longDescription": "A lovely quiet activity for party bags and tables. We can personalise the cover with a name, age, or party theme and match it with stickers or favour labels.",
+    "images": [],
+    "options": [
+      {
+        "name": "Quantity",
+        "values": [
+          "10",
+          "20",
+          "30",
+          "50+"
+        ]
+      },
+      {
+        "name": "Theme",
+        "values": [
+          "Birthday",
+          "Princess",
+          "Football",
+          "Animals",
+          "Custom"
+        ]
+      }
+    ],
+    "supportsTextInput": true,
+    "supportsFileUpload": true,
+    "orderType": "request-quote",
+    "featured": false,
+    "inStock": true,
+    "reviewCount": 0,
+    "rating": 5
+  },
+  {
+    "id": "pf3",
+    "slug": "personalised-bubble-labels",
+    "name": "Personalised Bubble Labels",
+    "category": "party-favours",
+    "price": 0,
+    "description": "Custom bubble wand labels for party bags and celebration tables.",
+    "longDescription": "Personalised labels made to fit bubble favours. Share the name, age, theme, and quantity you need, and we will create labels to match the rest of your party items.",
+    "images": [],
+    "options": [
+      {
+        "name": "Quantity",
+        "values": [
+          "10",
+          "20",
+          "30",
+          "50+"
+        ]
+      },
+      {
+        "name": "Finish",
+        "values": [
+          "Gloss",
+          "Matte"
+        ]
+      }
+    ],
+    "supportsTextInput": true,
+    "supportsFileUpload": true,
+    "orderType": "request-quote",
+    "featured": false,
+    "inStock": true,
+    "reviewCount": 0,
+    "rating": 5
+  },
+  {
+    "id": "pf4",
+    "slug": "party-favour-stickers",
+    "name": "Party Favour Stickers",
+    "category": "party-favours",
+    "price": 0,
+    "description": "Small personalised stickers for sweets, bags, bubbles, and party favours.",
+    "longDescription": "Little details that pull a party theme together. Use these stickers on sweet bags, party boxes, bubble favours, thank-you gifts, and more.",
+    "images": [],
+    "options": [
+      {
+        "name": "Shape",
+        "values": [
+          "Circle",
+          "Square",
+          "Heart",
+          "Custom"
+        ]
+      },
+      {
+        "name": "Quantity",
+        "values": [
+          "25",
+          "50",
+          "100",
+          "250+"
+        ]
+      }
+    ],
+    "supportsTextInput": true,
+    "supportsFileUpload": true,
+    "orderType": "request-quote",
+    "featured": false,
+    "inStock": true,
+    "reviewCount": 0,
+    "rating": 5
+  },
+  {
     "name": "Test Sticker Pack",
     "slug": "test-sticker-pack",
     "category": "stickers",

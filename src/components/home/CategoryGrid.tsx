@@ -167,6 +167,68 @@ const categories = [
       </svg>
     ),
   },
+  {
+    slug: "personalised-glasses",
+    title: "Personalised Glasses",
+    description: "Heart-shaped party glasses with bold vinyl names, ages, or tiny themed details.",
+    colour: "#f43f5e",
+    lightColour: "#fff1f2",
+    icon: (
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="12" fill="#f43f5e" fillOpacity="0.15"/>
+        <path d="M15 17c-3.5 0-6 2.5-6 6 0 5 7.5 9.5 9 11 1.5-1.5 9-6 9-11 0-3.5-2.5-6-6-6-1.5 0-2.7.6-3.5 1.6A4.4 4.4 0 0 0 15 17Z" fill="#f43f5e" fillOpacity="0.25" stroke="#f43f5e" strokeWidth="2" strokeLinejoin="round"/>
+        <path d="M27 23h4" stroke="#f43f5e" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M33 17c-1.5 0-2.7.6-3.5 1.6A4.4 4.4 0 0 0 27 17c-1.2 0-2.3.3-3.2.9" stroke="#f43f5e" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M30 34c1.5-1.5 9-6 9-11 0-3.5-2.5-6-6-6" stroke="#f43f5e" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+      </svg>
+    ),
+  },
+  {
+    slug: "bows",
+    title: "Bows",
+    description: "Personalised bows for outfits, gifts, party bags, and special occasions.",
+    colour: "#ec4899",
+    lightColour: "#fdf2f8",
+    icon: (
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="12" fill="#ec4899" fillOpacity="0.15"/>
+        <path d="M23 20c-4-5-10-7-13-4-3 3-.5 10 5 12 3 1 6-.5 8-3" fill="#ec4899" fillOpacity="0.25" stroke="#ec4899" strokeWidth="2" strokeLinejoin="round"/>
+        <path d="M25 20c4-5 10-7 13-4 3 3 .5 10-5 12-3 1-6-.5-8-3" fill="#ec4899" fillOpacity="0.25" stroke="#ec4899" strokeWidth="2" strokeLinejoin="round"/>
+        <rect x="20" y="19" width="8" height="9" rx="2" fill="#ec4899"/>
+      </svg>
+    ),
+  },
+  {
+    slug: "cake-toppers",
+    title: "Cake Toppers",
+    description: "Custom toppers for birthdays, weddings, celebrations, and themed parties.",
+    colour: "#a855f7",
+    lightColour: "#faf5ff",
+    icon: (
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="12" fill="#a855f7" fillOpacity="0.15"/>
+        <path d="M24 10l3 6 7 .8-5 4.7 1.4 6.8L24 25l-6.4 3.3 1.4-6.8-5-4.7 7-.8 3-6Z" fill="#a855f7" fillOpacity="0.3" stroke="#a855f7" strokeWidth="2" strokeLinejoin="round"/>
+        <path d="M24 28v10" stroke="#a855f7" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M17 38h14" stroke="#a855f7" strokeWidth="2" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
+  {
+    slug: "party-favours",
+    title: "Party Favours",
+    description: "Party boxes, colouring books, bubble labels, favour stickers, and little extras.",
+    colour: "#14b8a6",
+    lightColour: "#f0fdfa",
+    icon: (
+      <svg width="48" height="48" viewBox="0 0 48 48" fill="none">
+        <rect width="48" height="48" rx="12" fill="#14b8a6" fillOpacity="0.15"/>
+        <path d="M14 19h20v17H14V19Z" fill="#14b8a6" fillOpacity="0.25" stroke="#14b8a6" strokeWidth="2" strokeLinejoin="round"/>
+        <path d="M18 19c0-4 3-7 6-7s6 3 6 7" stroke="#14b8a6" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M18 27h12" stroke="#14b8a6" strokeWidth="2" strokeLinecap="round"/>
+        <path d="M18 32h7" stroke="#14b8a6" strokeWidth="2" strokeLinecap="round"/>
+      </svg>
+    ),
+  },
 ];
 
 export default function CategoryGrid() {
@@ -175,7 +237,7 @@ export default function CategoryGrid() {
       <div className="text-center mb-12">
         <h2 className="font-display font-800 text-4xl text-[#111111] mb-3">Shop by Category</h2>
         <p className="text-[#6b7280] text-lg max-w-xl mx-auto">
-          Whether you need one or ten thousand — we've got you covered.
+          Whether you need one or ten thousand — we&apos;ve got you covered.
         </p>
       </div>
 

@@ -159,6 +159,20 @@ export function resolveProductMatrixPrice(
   return { matrixKey, totalPence: first.totalPence, unitPence: first.unitPence, tier: first };
 }
 
+export function resolveProductOptionUnitPrice(
+  product: Product,
+  selectedOptions: Record<string, string> = {}
+): number | null {
+  if (product.costConfig?.dtfPricingMode) return null;
+
+  for (const opt of product.options) {
+    const mapped = opt.priceMap?.[selectedOptions[opt.name]];
+    if (mapped !== undefined && mapped > 0) return mapped;
+  }
+
+  return null;
+}
+
 // "Front & Back" = 2 print positions; anything else = 1
 function countPrintPositions(placementName: string): number {
   const lc = placementName.toLowerCase();

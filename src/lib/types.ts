@@ -1,4 +1,4 @@
-export type Category = "stickers" | "vinyl" | "mugs" | "keyrings" | "coasters" | "magnets" | "tshirts" | "hoodies" | "polos" | "hats" | "bookmarks";
+export type Category = "stickers" | "vinyl" | "mugs" | "keyrings" | "coasters" | "magnets" | "tshirts" | "hoodies" | "polos" | "hats" | "bookmarks" | "personalised-glasses" | "bows" | "cake-toppers" | "party-favours";
 
 export type ProductType = "sticker" | "sticker-sheet" | "cup" | "tshirt" | "other";
 
@@ -75,6 +75,7 @@ export interface OrderItem {
   name: string;
   unitAmountPence: number;
   quantity: number;
+  selectedOptions?: Record<string, string>;
   customText?: string;
   artworkUrl?: string;  // legacy single-file orders
   artworks?: ArtworkFile[];

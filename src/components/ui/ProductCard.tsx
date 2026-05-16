@@ -3,6 +3,7 @@ import Image from "next/image";
 import { ShoppingCart, FileText } from "lucide-react";
 import { Product } from "@/lib/types";
 import { formatPrice } from "@/lib/utils";
+import { categoryMeta } from "@/lib/data";
 import Badge from "./Badge";
 import Rating from "./Rating";
 
@@ -25,6 +26,7 @@ function getFromPrice(product: Product): number | null {
 export default function ProductCard({ product }: ProductCardProps) {
   const isQuote = product.orderType === "request-quote";
   const fromPrice = getFromPrice(product);
+  const categoryLabel = categoryMeta[product.category]?.title ?? product.category;
 
   return (
     <Link
@@ -66,7 +68,7 @@ export default function ProductCard({ product }: ProductCardProps) {
       {/* Content */}
       <div className="flex flex-col gap-2 p-4 flex-1">
         <p className="text-xs font-semibold uppercase tracking-wider text-[#ef8733]">
-          {product.category}
+          {categoryLabel}
         </p>
         <h3 className="font-display font-700 text-[#111111] leading-snug group-hover:text-[#ef8733] transition-colors">
           {product.name}

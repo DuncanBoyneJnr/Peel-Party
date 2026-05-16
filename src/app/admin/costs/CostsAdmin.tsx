@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState } from "react";
 import { Save, CheckCircle2, Plus, Trash2, Calculator } from "lucide-react";
 import { Product, VolumeDiscountTier } from "@/lib/types";
 import { CostSettings, ProductCostConfig, StandardSize, StandardColour, StandardPlacement } from "@/lib/server-data";
@@ -124,11 +124,12 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
   // ── Standard sizes ────────────────────────────────────────────────────────
 
   const SHEET_CATEGORIES = ["stickers", "vinyl", "coasters", "magnets", "bookmarks"];
-  const CLOTHING_CATEGORIES = ["tshirts", "hoodies", "polos", "hats"];
   const SIZE_CATEGORY_LABELS: Record<string, string> = {
     stickers: "Stickers", vinyl: "Vinyl", mugs: "Mugs", keyrings: "Keyrings",
     coasters: "Coasters", magnets: "Magnets", tshirts: "T-Shirts",
     hoodies: "Hoodies", polos: "Polo Shirts", hats: "Hats", bookmarks: "Bookmarks",
+    "personalised-glasses": "Personalised Glasses", bows: "Bows",
+    "cake-toppers": "Cake Toppers", "party-favours": "Party Favours",
   };
   const isSheetCategory = SHEET_CATEGORIES.includes(sizeCategory);
   const filteredSizes = settings.standardSizes.filter((s) => s.category === sizeCategory);
@@ -156,6 +157,7 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
 
   const COLOUR_CATEGORY_LABELS: Record<string, string> = {
     tshirts: "T-Shirts", hoodies: "Hoodies", polos: "Polo Shirts", hats: "Hats", vinyl: "Vinyl",
+    "personalised-glasses": "Personalised Glasses", bows: "Bows",
   };
   const PLACEMENT_CATEGORY_LABELS: Record<string, string> = {
     tshirts: "T-Shirts", hoodies: "Hoodies", polos: "Polo Shirts", hats: "Hats",
@@ -245,10 +247,9 @@ export default function CostsAdmin({ products, initialSettings }: Props) {
   const calcProduct = products.find((p) => p.id === calcProductId);
   const calcConfig = calcProductId ? (calcProduct?.costConfig ?? getConfig(calcProductId)) : null;
   const calcSizeVariant = calcProduct?.sizeVariants?.find((v) => v.name === calcSizeName) ?? undefined;
-  const calcResult = useMemo(() => {
-    if (!calcConfig || calcQty < 1) return null;
-    return calcRunCosts(calcConfig, settings, calcQty, calcProfitPct, calcSizeVariant);
-  }, [calcConfig, settings, calcQty, calcProfitPct, calcSizeVariant]);
+  const calcResult = calcConfig && calcQty >= 1
+    ? calcRunCosts(calcConfig, settings, calcQty, calcProfitPct, calcSizeVariant)
+    : null;
 
   const calcMaterialNames = (calcConfig?.materialIds ?? [])
     .map((id) => settings.materials.find((m) => m.id === id)?.name)

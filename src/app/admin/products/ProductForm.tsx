@@ -102,6 +102,7 @@ export default function ProductForm({
   const isSheetCategory = SHEET_CATEGORIES.includes(form.category ?? "");
   const isNamedCategory = ["mugs", "tshirts", "hoodies", "polos", "hats", "keyrings"].includes(form.category ?? "");
   const isClothingCategory = CLOTHING_CATEGORIES.includes(form.category ?? "");
+  const isColourCategory = isClothingCategory || ["vinyl", "personalised-glasses", "bows"].includes(form.category ?? "");
   const categorySizes = standardSizes.filter((s) => s.category === form.category);
 
   function updateCostConfig(field: keyof ProductCostConfig, value: ProductCostConfig[keyof ProductCostConfig] | undefined) {
@@ -311,7 +312,8 @@ export default function ProductForm({
     if (!isNaN(pounds) && raw !== "" && pounds > 0) {
       opts[idx] = { ...opts[idx], priceMap: { ...current, [value]: pounds } };
     } else {
-      const { [value]: _, ...rest } = current;
+      const rest = { ...current };
+      delete rest[value];
       opts[idx] = { ...opts[idx], priceMap: Object.keys(rest).length > 0 ? rest : undefined };
     }
     update("options", opts);
@@ -374,6 +376,10 @@ export default function ProductForm({
                 <option value="coasters">Coasters</option>
                 <option value="magnets">Magnets</option>
                 <option value="bookmarks">Bookmarks</option>
+                <option value="personalised-glasses">Personalised Glasses</option>
+                <option value="bows">Bows</option>
+                <option value="cake-toppers">Cake Toppers</option>
+                <option value="party-favours">Party Favours</option>
               </optgroup>
             </select>
           </div>
@@ -596,7 +602,7 @@ export default function ProductForm({
       )}
 
       {/* Colours — clothing and vinyl */}
-      {(isClothingCategory || form.category === "vinyl") && (
+      {isColourCategory && (
         <div className="bg-white rounded-2xl border border-[#e5e1d8] p-6">
           <div className="flex items-start justify-between gap-4 mb-1">
             <div>

@@ -3,7 +3,7 @@ import { getProducts, getPostageSettings, setPendingOrder, getPromoCodes, savePr
 import { getStripeSecretKey, stripeFetch } from "@/lib/stripe";
 import { createPayPalOrder } from "@/lib/paypal";
 import { OrderItem, VolumeDiscountTier, ArtworkFile } from "@/lib/types";
-import { resolveProductMatrixPrice } from "@/lib/pricing";
+import { resolveProductMatrixPrice, resolveProductOptionUnitPrice } from "@/lib/pricing";
 
 export const runtime = "nodejs";
 
@@ -102,7 +102,14 @@ export async function POST(req: NextRequest) {
     let qty: number;
     let displayName: string;
 
-    if (product.priceMatrix && Object.keys(product.priceMatrix).length > 0) {
+    const optionUnitPrice = resolveProductOptionUnitPrice(product, item.selectedOptions ?? {});
+    if (optionUnitPrice !== null) {
+      const lineTotalPounds = getVolumeDiscountedTotal(volumeDiscounts, optionUnitPrice, item.quantity);
+      unitAmountPence = Math.round(lineTotalPounds * 100);
+      qty = 1;
+      subtotalPounds += lineTotalPounds;
+      displayName = product.name;
+    } else if (product.priceMatrix && Object.keys(product.priceMatrix).length > 0) {
       const resolved = resolveProductMatrixPrice(product, item.selectedOptions ?? {}, item.quantity);
       if (!resolved) return NextResponse.json({ error: `No pricing found for: ${product.name}` }, { status: 400 });
       unitAmountPence = resolved.totalPence;
@@ -123,7 +130,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: `Invalid price for: ${product.name}` }, { status: 400 });
 
     lineItems.push({ name: displayName, unitAmountPence, quantity: qty });
-    fullOrderItems.push({ name: displayName, unitAmountPence, quantity: qty, customText: item.customText, artworkUrl: item.artworkUrl, artworks: item.artworks });
+    fullOrderItems.push({ name: displayName, unitAmountPence, quantity: qty, selectedOptions: item.selectedOptions, customText: item.customText, artworkUrl: item.artworkUrl, artworks: item.artworks });
   }
 
   // Calculate discount (applied per-provider below — Stripe uses a coupon, PayPal subtracts from total)
