@@ -2,7 +2,10 @@ import Redis from "ioredis";
 import fs from "fs";
 import path from "path";
 import { Product, ProductType, ProductCostConfig, PostageSettings, Order, PromoCode, VolumeDiscountTier } from "./types";
+import { defaultShopNavSections } from "./shop-nav";
+import type { ShopNavSection } from "./shop-nav";
 export type { ProductType, ProductCostConfig, PostageSettings, Order, PromoCode };
+export type { ShopNavLink, ShopNavSection } from "./shop-nav";
 
 // --- Redis (production) ---
 
@@ -138,6 +141,7 @@ export interface SiteSettings {
   socialTiktok: string;
   metaTitle: string;
   metaDescription: string;
+  shopNavSections: ShopNavSection[];
 }
 
 const defaultSettings: SiteSettings = {
@@ -158,10 +162,17 @@ const defaultSettings: SiteSettings = {
   socialTiktok: "",
   metaTitle: "Peel & Party Co. | Custom Stickers, Gifts & Party Decor",
   metaDescription: "Personalised stickers, gifts and party decor made in the UK.",
+  shopNavSections: defaultShopNavSections,
 };
 
 export async function getSettings(): Promise<SiteSettings> {
-  return (await rget<SiteSettings>("settings")) ?? defaultSettings;
+  const stored = await rget<Partial<SiteSettings>>("settings");
+  if (!stored) return defaultSettings;
+  return {
+    ...defaultSettings,
+    ...stored,
+    shopNavSections: stored.shopNavSections?.length ? stored.shopNavSections : defaultShopNavSections,
+  };
 }
 
 export async function saveSettings(settings: SiteSettings): Promise<void> {

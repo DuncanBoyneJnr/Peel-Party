@@ -159,12 +159,23 @@ export function resolveProductMatrixPrice(
   return { matrixKey, totalPence: first.totalPence, unitPence: first.unitPence, tier: first };
 }
 
+export function resolveDtfMatrixPrice(
+  product: Product,
+  selectedOptions: Record<string, string> = {},
+  quantity: number
+): MatrixPriceResult | null {
+  if (!product.costConfig?.dtfPricingMode) return null;
+  const resolved = resolveProductMatrixPrice(product, selectedOptions, quantity);
+  if (!resolved) return null;
+  return resolved.tier.firstItemPence !== undefined && resolved.tier.subsequentItemPence !== undefined
+    ? resolved
+    : null;
+}
+
 export function resolveProductOptionUnitPrice(
   product: Product,
   selectedOptions: Record<string, string> = {}
 ): number | null {
-  if (product.costConfig?.dtfPricingMode) return null;
-
   for (const opt of product.options) {
     const mapped = opt.priceMap?.[selectedOptions[opt.name]];
     if (mapped !== undefined && mapped > 0) return mapped;

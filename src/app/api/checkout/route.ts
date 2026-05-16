@@ -3,7 +3,7 @@ import { getProducts, getPostageSettings, setPendingOrder, getPromoCodes, savePr
 import { getStripeSecretKey, stripeFetch } from "@/lib/stripe";
 import { createPayPalOrder } from "@/lib/paypal";
 import { OrderItem, VolumeDiscountTier, ArtworkFile } from "@/lib/types";
-import { resolveProductMatrixPrice, resolveProductOptionUnitPrice } from "@/lib/pricing";
+import { resolveDtfMatrixPrice, resolveProductMatrixPrice, resolveProductOptionUnitPrice } from "@/lib/pricing";
 
 export const runtime = "nodejs";
 
@@ -102,8 +102,14 @@ export async function POST(req: NextRequest) {
     let qty: number;
     let displayName: string;
 
-    const optionUnitPrice = resolveProductOptionUnitPrice(product, item.selectedOptions ?? {});
-    if (optionUnitPrice !== null) {
+    const dtfMatrixPrice = resolveDtfMatrixPrice(product, item.selectedOptions ?? {}, item.quantity);
+    const optionUnitPrice = !dtfMatrixPrice ? resolveProductOptionUnitPrice(product, item.selectedOptions ?? {}) : null;
+    if (dtfMatrixPrice) {
+      unitAmountPence = dtfMatrixPrice.totalPence;
+      qty = 1;
+      subtotalPounds += dtfMatrixPrice.totalPence / 100;
+      displayName = `${product.name} x ${item.quantity}`;
+    } else if (optionUnitPrice !== null) {
       const lineTotalPounds = getVolumeDiscountedTotal(volumeDiscounts, optionUnitPrice, item.quantity);
       unitAmountPence = Math.round(lineTotalPounds * 100);
       qty = 1;
