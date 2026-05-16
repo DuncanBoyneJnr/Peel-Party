@@ -10,7 +10,7 @@ import {
   ReactNode,
 } from "react";
 import { CartItem, CartState, Product, AppliedPromo, VolumeDiscountTier, ArtworkFile } from "@/lib/types";
-import { resolveDtfMatrixPrice, resolveProductMatrixPrice, resolveProductOptionUnitPrice } from "@/lib/pricing";
+import { resolveProductMatrixPrice, resolveProductOptionUnitPrice } from "@/lib/pricing";
 
 type CartAction =
   | { type: "ADD_ITEM"; payload: CartItem }
@@ -147,11 +147,8 @@ export function CartProvider({ children }: { children: ReactNode }) {
   const updateQty = useCallback((id: string, quantity: number) => {
     const item = state.items.find((i) => i.id === id);
     let newLinePrice: number | undefined;
-    const dtfMatrixPrice = item ? resolveDtfMatrixPrice(item.product, item.selectedOptions, quantity) : null;
-    const optionUnitPrice = item && !dtfMatrixPrice ? resolveProductOptionUnitPrice(item.product, item.selectedOptions) : null;
-    if (dtfMatrixPrice) {
-      newLinePrice = dtfMatrixPrice.totalPence / 100;
-    } else if (item && optionUnitPrice !== null) {
+    const optionUnitPrice = item ? resolveProductOptionUnitPrice(item.product, item.selectedOptions) : null;
+    if (item && optionUnitPrice !== null) {
       newLinePrice = applyVolumeDiscount(volumeDiscounts, optionUnitPrice, quantity);
     } else if (item?.product.priceMatrix && Object.keys(item.product.priceMatrix).length > 0) {
       const resolved = resolveProductMatrixPrice(item.product, item.selectedOptions, quantity);

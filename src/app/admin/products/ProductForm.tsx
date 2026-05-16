@@ -877,10 +877,9 @@ export default function ProductForm({
 
           <div>
             <label className={labelClass}>
-              {costCfg.dtfPricingMode ? "Non-transfer Ink Cost" : "Ink Cost"}{" "}
+              Ink Cost{" "}
               <span className="text-[#6b7280] font-normal">
-                ({isSticker || isStickerSheet ? "£ per sheet" : "£ per unit"}, blank = global default
-                {costCfg.dtfPricingMode ? " — set 0 if all ink is in the DTF transfer cost below" : ""})
+                ({isSticker || isStickerSheet ? "£ per sheet" : "£ per unit"}, blank = global default)
               </span>
             </label>
             <input
@@ -893,28 +892,9 @@ export default function ProductForm({
             />
           </div>
 
-          {costCfg.dtfPricingMode && (
-            <div>
-              <label className={labelClass}>
-                DTF Transfer Cost <span className="text-[#6b7280] font-normal">(£ per print position — doubled automatically for Front &amp; Back)</span>
-              </label>
-              <input
-                type="number" step="0.01" min="0" placeholder="e.g. 3.00"
-                className={inputClass}
-                value={costCfg.transferCostPence !== undefined ? (costCfg.transferCostPence / 100).toFixed(2) : ""}
-                onChange={(e) =>
-                  updateCostConfig("transferCostPence", e.target.value !== "" ? Math.round(parseFloat(e.target.value) * 100) : undefined)
-                }
-              />
-              <p className="text-xs text-[#6b7280] mt-1">
-                Front Only or Back Only = 1 × this cost. Front &amp; Back = 2 × this cost. Prices per placement are calculated automatically on save.
-              </p>
-            </div>
-          )}
-
           <div>
             <label className={labelClass}>
-              {costCfg.dtfPricingMode ? "DTF Transfer Postage (1st item only)" : "Postage / order"}{" "}
+              Postage / order{" "}
               <span className="text-[#6b7280] font-normal">(£, blank = global default)</span>
             </label>
             <input
@@ -927,81 +907,6 @@ export default function ProductForm({
             />
           </div>
 
-          {costCfg.productType === "tshirt" && (
-            <div className="sm:col-span-2 flex items-start gap-3 px-4 py-3 rounded-xl border-2 border-[#e5e1d8] bg-[#fafaf9]">
-              <input
-                id="dtfPricingMode"
-                type="checkbox"
-                checked={!!costCfg.dtfPricingMode}
-                onChange={(e) => updateCostConfig("dtfPricingMode", e.target.checked || undefined)}
-                className="mt-0.5 w-4 h-4 accent-[#ef8733]"
-              />
-              <label htmlFor="dtfPricingMode" className="flex flex-col cursor-pointer">
-                <span className="text-sm font-semibold text-[#111111]">DTF Transfer Postage Pricing</span>
-                <span className="text-xs text-[#6b7280] mt-0.5">
-                  First item price includes the one-time DTF transfer postage. Each additional item is priced without it — customers see{" "}
-                  <em>1st item: £X · each after: £Y</em> on the product page.
-                </span>
-              </label>
-            </div>
-          )}
-
-          {costCfg.dtfPricingMode && (() => {
-            const placementValues = (form.options ?? []).find((o) => o.name === "Placement")?.values ?? [];
-            if (placementValues.length === 0) {
-              return (
-                <div className="sm:col-span-2 p-4 bg-amber-50 border border-amber-200 rounded-xl text-sm text-amber-700">
-                  Sync your Placement options above first, then return here to assign materials per placement.
-                </div>
-              );
-            }
-            return (
-              <div className="sm:col-span-2">
-                <label className={labelClass}>Materials per Placement</label>
-                <p className="text-xs text-[#6b7280] mb-3">
-                  Select the full material set for each placement (garment + correct transfer). Prices are calculated from these on save.
-                </p>
-                <div className="flex flex-col gap-3">
-                  {placementValues.map((placement) => {
-                    const selected = costCfg.placementMaterials?.[placement] ?? [];
-                    return (
-                      <div key={placement} className="p-3 rounded-xl border-2 border-[#e5e1d8] bg-[#fafaf9]">
-                        <p className="text-sm font-semibold text-[#111111] mb-2">{placement}</p>
-                        {materials.length === 0 ? (
-                          <p className="text-xs text-[#9ca3af]">No materials defined — add them in Costs &amp; Profit → Materials.</p>
-                        ) : (
-                          <div className="flex flex-col gap-1.5">
-                            {materials.map((m) => {
-                              const checked = selected.includes(m.id);
-                              return (
-                                <label key={m.id} className="flex items-center gap-2.5 cursor-pointer">
-                                  <input
-                                    type="checkbox"
-                                    checked={checked}
-                                    onChange={(e) => {
-                                      const next = e.target.checked
-                                        ? [...selected, m.id]
-                                        : selected.filter((id) => id !== m.id);
-                                      const updated = { ...(costCfg.placementMaterials ?? {}) };
-                                      if (next.length > 0) updated[placement] = next;
-                                      else delete updated[placement];
-                                      updateCostConfig("placementMaterials", Object.keys(updated).length > 0 ? updated : undefined);
-                                    }}
-                                    className="w-4 h-4 accent-[#ef8733]"
-                                  />
-                                  <span className="text-sm text-[#111111]">{m.name || "Unnamed"}</span>
-                                </label>
-                              );
-                            })}
-                          </div>
-                        )}
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            );
-          })()}
 
           <div>
             <label className={labelClass}>Profit % <span className="text-[#6b7280] font-normal">(blank = global default: {defaultProfitPercent}%)</span></label>

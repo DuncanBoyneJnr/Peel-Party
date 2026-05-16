@@ -12,9 +12,6 @@ export interface ProductCostConfig {
   batchMinutes: number;
   inkCostPence?: number;
   postagePence?: number;
-  transferCostPence?: number; // DTF fallback: cost of ONE print position when placementMaterials not set
-  placementMaterials?: { [placementName: string]: string[] }; // DTF: full material set per placement (overrides materialIds)
-  dtfPricingMode?: boolean; // clothing: first item includes DTF transfer postage; subsequent items priced without it
   profitPercent?: number; // overrides global targetProfitPercent when set
   maxOrderQty?: number;   // overrides global maxOrderQty when set; undefined = no cap beyond global
 }
@@ -23,8 +20,6 @@ export interface PriceTier {
   qty: number;
   totalPence: number;
   unitPence: number;
-  firstItemPence?: number;       // DTF pricing: price for the first item (includes transfer postage)
-  subsequentItemPence?: number;  // DTF pricing: price per additional item (no postage)
 }
 
 export interface SizeVariant {

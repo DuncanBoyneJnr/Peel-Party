@@ -112,9 +112,6 @@ export function getQuantityTiers(stickersPerSheet: number, maxQty: number): numb
 // Standard quantity tiers for unit-based products
 export const UNIT_QTY_TIERS = [1, 5, 10, 25, 50, 100, 250, 500];
 
-// Quantity tiers for DTF-priced clothing (small steps exposed so the per-item saving is visible)
-export const DTF_QTY_TIERS = [1, 2, 3, 4, 5, 10, 25, 50, 100, 250, 500];
-
 export interface MatrixPriceResult {
   matrixKey: string;
   totalPence: number;
@@ -142,11 +139,6 @@ export function resolveProductMatrixPrice(
   if (!tiers.length || quantity < 1) return null;
 
   const first = tiers[0];
-  if (first.firstItemPence !== undefined && first.subsequentItemPence !== undefined) {
-    const totalPence = first.firstItemPence + (quantity - 1) * first.subsequentItemPence;
-    return { matrixKey, totalPence, unitPence: Math.round(totalPence / quantity), tier: first };
-  }
-
   const exact = tiers.find((t) => t.qty === quantity);
   if (exact) return { matrixKey, totalPence: exact.totalPence, unitPence: exact.unitPence, tier: exact };
 
@@ -159,41 +151,15 @@ export function resolveProductMatrixPrice(
   return { matrixKey, totalPence: first.totalPence, unitPence: first.unitPence, tier: first };
 }
 
-export function resolveDtfMatrixPrice(
-  product: Product,
-  selectedOptions: Record<string, string> = {},
-  quantity: number
-): MatrixPriceResult | null {
-  if (!product.costConfig?.dtfPricingMode) return null;
-  const resolved = resolveProductMatrixPrice(product, selectedOptions, quantity);
-  if (!resolved) return null;
-  return resolved.tier.firstItemPence !== undefined && resolved.tier.subsequentItemPence !== undefined
-    ? resolved
-    : null;
-}
-
 export function resolveProductOptionUnitPrice(
   product: Product,
   selectedOptions: Record<string, string> = {}
 ): number | null {
   for (const opt of product.options) {
     const mapped = opt.priceMap?.[selectedOptions[opt.name]];
-    if (mapped !== undefined && mapped > 0) {
-      return product.costConfig?.dtfPricingMode ? product.price + mapped : mapped;
-    }
+    if (mapped !== undefined && mapped > 0) return mapped;
   }
-
   return null;
-}
-
-// "Front & Back" = 2 print positions; anything else = 1
-function countPrintPositions(placementName: string): number {
-  const lc = placementName.toLowerCase();
-  return lc.includes("front") && lc.includes("back") ? 2 : 1;
-}
-
-function applyMargin(rawCost: number, profitPct: number): number {
-  return profitPct < 100 ? Math.round(rawCost / (1 - profitPct / 100)) : rawCost * 2;
 }
 
 // Build a price matrix for a product and store it alongside the product.
@@ -222,7 +188,7 @@ export function buildPriceMatrix(
     return matrix;
   }
 
-  // No size variants — determine the quantity step:
+  // Determine the quantity step:
   // 1. itemsPerSheet if explicitly set
   // 2. For sticker-sheet products, batchSize (= copies per printable page)
   // 3. For individual stickers, calculate from dimensions vs sheet size
@@ -234,47 +200,6 @@ export function buildPriceMatrix(
       : isSticker
         ? calcStickersPerSheet(config.widthCm ?? 0, config.heightCm ?? 0, costSettings.sheetWidthCm, costSettings.sheetHeightCm)
         : 0;
-  // DTF (Direct-to-Film) pricing: matrix is built per placement.
-  // If placementMaterials is set, each placement uses its own material set (garment + correct transfer).
-  // Otherwise falls back to transferCostPence × print positions.
-  // First item in any order also carries the one-time DTF transfer postage.
-  if (config.dtfPricingMode && ips === 0) {
-    const postage = config.postagePence ?? costSettings.defaultPostagePence;
-    const qtys = DTF_QTY_TIERS.filter((q) => q <= maxOrderQty);
-    const placements = product.options.find((o) => o.name === "Placement")?.values ?? [];
-    const matrixKeys = placements.length > 0 ? placements : [""];
-
-    const matrix: { [key: string]: PriceTier[] } = {};
-    for (const placement of matrixKeys) {
-      let itemRawCost: number;
-
-      if (config.placementMaterials && config.placementMaterials[placement]) {
-        // Use placement-specific materials (includes garment + correct transfer(s))
-        const result = calcRunCosts(
-          { ...config, materialIds: config.placementMaterials[placement], inkCostPence: 0, postagePence: 0 },
-          costSettings, 1, profitPct
-        );
-        itemRawCost = result.totalCost;
-      } else {
-        // Fallback: garment cost + N × transferCostPence per print position
-        const garmentResult = calcRunCosts(
-          { ...config, inkCostPence: 0, postagePence: 0 },
-          costSettings, 1, profitPct
-        );
-        const positions = placement ? countPrintPositions(placement) : 1;
-        itemRawCost = garmentResult.totalCost + positions * (config.transferCostPence ?? 0);
-      }
-
-      const firstItemPence = applyMargin(itemRawCost + postage, profitPct);
-      const subsequentItemPence = applyMargin(itemRawCost, profitPct);
-
-      matrix[placement] = qtys.map((qty) => {
-        const totalPence = firstItemPence + (qty - 1) * subsequentItemPence;
-        return { qty, totalPence, unitPence: Math.round(totalPence / qty), firstItemPence, subsequentItemPence };
-      });
-    }
-    return matrix;
-  }
 
   const qtys = ips > 0
     ? getQuantityTiers(ips, maxOrderQty)
