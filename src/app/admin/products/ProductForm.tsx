@@ -649,9 +649,9 @@ export default function ProductForm({
         <div className="bg-white rounded-2xl border border-[#e5e1d8] p-6">
           <div className="flex items-start justify-between gap-4 mb-1">
             <div>
-              <h2 className="font-display font-700 text-lg text-[#111111]">Print Placement</h2>
+              <h2 className="font-display font-700 text-lg text-[#111111]">Print Placement &amp; Pricing</h2>
               <p className="text-sm text-[#6b7280] mt-0.5">
-                Sync placement options (Front Only, Back Only, Front &amp; Back) with prices from Cost Settings.
+                Sync placement options from Cost Settings, then set the <strong>total price per unit</strong> for each placement below (in the Product Options section). The customer&apos;s price updates instantly when they choose Chest, Back, or Both.
               </p>
             </div>
             <button
@@ -663,27 +663,35 @@ export default function ProductForm({
             </button>
           </div>
 
+          <div className="mt-3 p-3 bg-[#fff7ed] border border-[#ef8733]/30 rounded-xl text-sm text-[#6b7280]">
+            <strong className="text-[#111111]">How placement pricing works:</strong> Each placement option (e.g. &ldquo;Front Only&rdquo;, &ldquo;Front &amp; Back&rdquo;) needs its own price set in <strong>Product Options → Placement → Per-value prices</strong> below. Set the <em>complete</em> price per shirt for that placement — the customer pays that × their quantity. A simple quantity stepper is shown (not bulk tiers).
+          </div>
+
           {standardPlacements.filter((p) => p.category === form.category).length === 0 ? (
             <p className="text-sm text-[#6b7280] mt-4 p-4 bg-[#f9f7f4] rounded-xl">
-              No placements defined for this category yet. Go to <strong>Admin → Costs &amp; Profit → Standard Placements</strong> to add them.
+              No placements defined for this category yet. Go to <strong>Admin → Costs &amp; Profit → Standard Placements</strong> to add them first (e.g. &ldquo;Front Only&rdquo;, &ldquo;Back Only&rdquo;, &ldquo;Front &amp; Back&rdquo;).
             </p>
           ) : (
             <div className="mt-4 flex flex-col gap-2">
               {standardPlacements.filter((p) => p.category === form.category).map((p) => {
                 const syncedValues = (form.options ?? []).find((o) => o.name === "Placement")?.values ?? [];
                 const synced = syncedValues.includes(p.name);
+                const livePrice = (form.options ?? []).find((o) => o.name === "Placement")?.priceMap?.[p.name];
                 return (
                   <div key={p.id} className={`flex items-center justify-between px-4 py-2.5 rounded-xl border-2 ${synced ? "border-[#ef8733] bg-[#fff7ed]" : "border-[#e5e1d8]"}`}>
                     <span className={`text-sm font-semibold ${synced ? "text-[#ef8733]" : "text-[#111111]"}`}>{p.name || "Unnamed"}</span>
-                    {p.price > 0 && (
-                      <span className="text-xs text-[#6b7280]">£{p.price.toFixed(2)}</span>
-                    )}
+                    {livePrice !== undefined && livePrice > 0
+                      ? <span className="text-xs font-semibold text-emerald-700">£{livePrice.toFixed(2)} / unit ✓</span>
+                      : synced
+                        ? <span className="text-xs text-amber-600">No price set — add in Product Options below</span>
+                        : null
+                    }
                   </div>
                 );
               })}
               {((form.options ?? []).find((o) => o.name === "Placement")?.values ?? []).length > 0 && (
                 <p className="text-xs text-[#6b7280] mt-1">
-                  ✓ Placement option synced. Customers will see prices next to each option and the total updates on selection.
+                  ✓ Placement synced. Set per-unit prices in <strong>Product Options → Placement</strong> below — leave any placement at £0 to hide it from pricing.
                 </p>
               )}
             </div>

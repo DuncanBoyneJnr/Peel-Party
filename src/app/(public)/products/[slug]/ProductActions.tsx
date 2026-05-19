@@ -78,9 +78,15 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
   const { tiers: matrixTiers } = getProductMatrixTiers(product, matrixOptions);
   const hasMatrix = matrixTiers.length > 0;
 
+  // True when an option (e.g. Placement) has a priceMap price for the current selection.
+  // In this mode we use a free-entry stepper instead of matrix tier buttons.
+  const hasOptionPrice = product.options.some(
+    (opt) => (opt.priceMap?.[selectedOptions[opt.name]] ?? 0) > 0
+  );
+
   const validQtys = hasMatrix ? matrixTiers.map((t) => t.qty) : null;
   const defaultQty = validQtys?.[0] ?? 1;
-  const effectiveQty = quantity !== null && (!validQtys || validQtys.includes(quantity))
+  const effectiveQty = quantity !== null && (hasOptionPrice || !validQtys || validQtys.includes(quantity))
     ? quantity
     : defaultQty;
 
@@ -95,7 +101,9 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
   }, [hasMatrix, stickersPerSheet, maxOrderQty]);
 
   const tierQtys: number[] = hasMatrix ? matrixTiers.map((t) => t.qty) : (legacyTiers ?? []);
-  const showTierButtons = tierQtys.length > 1;
+  // Don't show matrix tier buttons when option-level pricing (e.g. placement) is active —
+  // use the free stepper instead so any quantity works at unitPrice × qty.
+  const showTierButtons = tierQtys.length > 1 && !hasOptionPrice;
 
   // Custom qty is available for any product that shows tier buttons
   const canCustomQty = showTierButtons;
@@ -412,7 +420,7 @@ export default function ProductActions({ product, maxOrderQty = 1000 }: ProductA
               </button>
               <span className="text-lg font-semibold text-[#111111] w-8 text-center">{effectiveQty}</span>
               <button
-                onClick={() => setQuantity(effectiveQty + 1)}
+                onClick={() => setQuantity(Math.min(maxOrderQty, effectiveQty + 1))}
                 className="w-10 h-10 rounded-full border-2 border-[#e5e1d8] flex items-center justify-center hover:border-[#ef8733] transition-colors cursor-pointer"
               >
                 <Plus size={16} />
