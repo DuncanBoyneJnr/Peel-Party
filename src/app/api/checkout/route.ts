@@ -211,31 +211,32 @@ export async function POST(req: NextRequest) {
   if (!stripeKey) return NextResponse.json({ error: "Stripe is not configured." }, { status: 503 });
   console.log(`[checkout/stripe] len=${stripeKey.length} fp=${fingerprint}`);
 
-  const stripeLineItems = lineItems.map((l) => ({
-    price_data: { currency: "gbp", product_data: { name: l.name }, unit_amount: l.unitAmountPence },
-    quantity: l.quantity,
-  }));
+  // Build Stripe line items with discount baked into product amounts only — shipping is never discounted
+  const productOnlyItems = lineItems.filter((l) => l.name !== "Postage & Packaging");
+  const shippingLineItem = lineItems.find((l) => l.name === "Postage & Packaging");
 
-  // For Stripe, apply the discount as a one-time coupon (negative line amounts aren't supported)
-  let stripeCouponId: string | null = null;
-  if (validatedPromoId && discountPounds > 0) {
-    const codes = await getPromoCodes();
-    const promo = codes.find((c) => c.id === validatedPromoId)!;
-    const couponParams = promo.discountType === "percent"
-      ? { duration: "once", percent_off: promo.discountValue }
-      : { duration: "once", amount_off: Math.round(discountPounds * 100), currency: "gbp" };
-    try {
-      const couponRes = await stripeFetch("/v1/coupons", {
-        method: "POST",
-        headers: { Authorization: `Bearer ${stripeKey}`, "Content-Type": "application/x-www-form-urlencoded" },
-        body: flattenParams(couponParams),
-      });
-      const couponBody = couponRes.body as { id?: string };
-      if (couponBody.id) stripeCouponId = couponBody.id;
-    } catch {
-      // Non-fatal: proceed without coupon if creation fails
-    }
+  let discountedProductItems = productOnlyItems;
+  if (discountPounds > 0) {
+    const discountPence = Math.round(discountPounds * 100);
+    const totalProductPence = productOnlyItems.reduce((s, l) => s + l.unitAmountPence * l.quantity, 0);
+    let remaining = discountPence;
+    discountedProductItems = productOnlyItems.map((l, i) => {
+      const isLast = i === productOnlyItems.length - 1;
+      const share = isLast ? remaining : Math.round(discountPence * (l.unitAmountPence * l.quantity) / totalProductPence);
+      remaining -= share;
+      return { ...l, unitAmountPence: Math.max(1, l.unitAmountPence * l.quantity - share), quantity: 1 };
+    });
   }
+
+  const stripeLineItems = [
+    ...discountedProductItems.map((l) => ({
+      price_data: { currency: "gbp", product_data: { name: l.name }, unit_amount: l.unitAmountPence },
+      quantity: l.quantity,
+    })),
+    ...(shippingLineItem
+      ? [{ price_data: { currency: "gbp", product_data: { name: shippingLineItem.name }, unit_amount: shippingLineItem.unitAmountPence }, quantity: 1 }]
+      : []),
+  ];
 
   const sessionParams: Record<string, unknown> = {
     mode: "payment",
@@ -256,7 +257,6 @@ export async function POST(req: NextRequest) {
     },
     line_items: stripeLineItems,
   };
-  if (stripeCouponId) sessionParams.discounts = [{ coupon: stripeCouponId }];
 
   try {
     const stripe = await stripeFetch("/v1/checkout/sessions", {
